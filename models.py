@@ -18,9 +18,9 @@ class Employee(Base):
     div_id = Column(Integer, ForeignKey('divisions.id'))
     part_of_div = relationship("Division", back_populates="employees_of_div") # division id
 
-    emp_trainings = relationship("Training", back_populates="trainee")
+    emp_trainings = relationship("Training", back_populates="employee")
 
-    # emp_trainingtargets = relationship("TrainingTarget", back_populates="trainee")
+    emp_trainingtargets = relationship("TrainingTarget", back_populates="trainee")
 
 class Training(Base):
     __tablename__ = 'trainings'
@@ -31,13 +31,15 @@ class Training(Base):
     proof = Column(Boolean)
 
     emp_id = Column(Integer, ForeignKey('employees.id'))
-    trainee = relationship("Employee", back_populates="emp_trainings") #employee id
+    employee = relationship("Employee", back_populates="emp_trainings") #employee id
 
-# class TrainingTarget(Base):
-#     __tablename__ = 'trainingtargets'
-#     id = Column(Integer, primary_key=True, index=True)
-#     year = Column(Integer)
-#     target_days = Column(Float)
+class TrainingTarget(Base):
+    __tablename__ = 'trainingtargets'
+    id = Column(Integer, primary_key=True, index=True)
+    year = Column(Integer)
+    target_days = Column(Float)
 
-#     emp_id = Column(Integer, ForeignKey('employees.id'))
-#     trainee = relationship("Employee", back_populates="emp_trainings") #employee id
+    emp_id = Column(Integer, ForeignKey('employees.id'))
+    trainee = relationship("Employee", back_populates="emp_trainingtargets") #employee id
+
+

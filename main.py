@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 import models
-from routers import division, employee, auth, training
+from routers import division, employee, auth, training, trainingTarget
 from database import engine
 
 models.Base.metadata.create_all(engine)
 
 app = FastAPI()
-# app.include_router(trainingTarget.router)
+app.include_router(trainingTarget.router)
 app.include_router(training.router)
 app.include_router(division.router)
 app.include_router(employee.router)

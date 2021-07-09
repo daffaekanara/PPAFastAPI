@@ -25,6 +25,13 @@ class ShowEmployee(BaseModel):
     class Config():
         orm_mode = True
 
+class ShowEmployeeOnly(BaseModel):
+    name:str
+    email:str
+
+    class Config():
+        orm_mode = True
+
 class Login(BaseModel):
     email: str
     password: str
@@ -44,17 +51,26 @@ class Training(BaseModel):
     proof:bool
     emp_id:int
 
+class TrainingIn(BaseModel):
+    name: Optional[str]
+    duration_days: Optional[float]
+    date: Optional[datetime.date]
+    proof: Optional[bool]
+    emp_id: Optional[int]
+
 class ShowTraining(BaseModel):
     name:str
     duration_days:float
     date:datetime.date
     proof:bool
-    trainee: ShowEmployee
-
+    emp_id:int
+    employee: ShowEmployeeOnly
+    
     class Config():
         orm_mode = True
 
-# class TrainingTarget(BaseModel):
-#     year:int
-#     target_days:float
-#     emp_id:int
+class TrainingTarget(BaseModel):
+    year:int
+    target_days:float
+    emp_id:int
+
