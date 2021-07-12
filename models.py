@@ -42,4 +42,19 @@ class TrainingTarget(Base):
     emp_id = Column(Integer, ForeignKey('employees.id'))
     trainee = relationship("Employee", back_populates="emp_trainingtargets") #employee id
 
+class DebugParent(Base):
+    __tablename__ = 'debugparent'
+    id = Column(Integer, primary_key=True, index=True)
+    first_name = Column(String)
+    last_name = Column(String)
 
+    children = relationship("DebugChild", back_populates="parent")
+
+class DebugChild(Base):
+    __tablename__ = 'debugchild'
+    id = Column(Integer, primary_key=True, index=True)
+    first_name = Column(String)
+    last_name = Column(String)
+
+    parent_id = Column(Integer, ForeignKey('debugparent.id'))
+    parent = relationship("DebugParent", back_populates="children")

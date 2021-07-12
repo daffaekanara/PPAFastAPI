@@ -74,3 +74,15 @@ class TrainingTarget(BaseModel):
     target_days:float
     emp_id:int
 
+class DebugParent(BaseModel):
+    first_name:str
+    last_name:str
+
+class DebugParentIn(BaseModel):
+    first_name:Optional[str]
+    last_name:Optional[str]
+
+class DebugChild(BaseModel):
+    first_name:str
+    last_name:str
+    parent_id:int
