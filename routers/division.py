@@ -1,7 +1,9 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
-import models, schemas, oauth2
+import schemas, oauth2
+from models import *
 from database import get_db
 
 router = APIRouter(
@@ -10,50 +12,58 @@ router = APIRouter(
 )
 
 @router.get('/')
-def get_all_divisions(db: Session = Depends(get_db)):
-    divs = db.query(models.Division).all()
+def get_all(db: Session = Depends(get_db)):
+    divs = db.query(Division).all()
     return divs
 
-@router.post('/', status_code=status.HTTP_201_CREATED)
-def create_division(req: schemas.Division, db: Session = Depends(get_db)):
-    new_div = models.Division(name=req.name)
-    db.add(new_div)
-    db.commit()
-    db.refresh(new_div)
-    return new_div
-
 @router.get('/{id}', status_code=status.HTTP_200_OK)
-def get_single_division(id: int, db: Session = Depends(get_db)):
-
-    div = db.query(models.Division).filter(models.Division.id == id).first()
-    # div = db.query(models.Division).filter_by(id= id).first()
+def get_single(id: int, db: Session = Depends(get_db)):
+    div = db.query(Division).filter(Division.id == id).first()
 
     if not div:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Division of ID ({id}) was not found!")
 
     return div
 
-# TODO 
-# [ ] Delete will return 200 even when ID is not found
-@router.delete('/{id}')
-def delete_division(id: int, db: Session = Depends(get_db), currUser = Depends(oauth2.get_current_user)):
-    div = db.query(models.Division).filter(models.Division.id == id)
+@router.post('/', status_code=status.HTTP_201_CREATED)
+def create(req: schemas.Division, db: Session = Depends(get_db)):
+    new_div = Division(
+        name=req.name
+    )
 
-    if not div:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Division of ID ({id}) was not found!")
-    
-    div.delete(synchronize_session=False)
+    db.add(new_div)
+    db.commit()
+    db.refresh(new_div)
+
+    return new_div
+
+@router.patch('/{id}', status_code=status.HTTP_202_ACCEPTED)
+def update(id: int, req: schemas.DivisionIn , db: Session = Depends(get_db)):
+    query_res = db.query(Division).filter(Division.id == id)
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    stored_data = jsonable_encoder(query_res.first())
+    stored_model = schemas.DivisionIn(**stored_data)
+
+    new_data = req.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    query_res.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/{id}', status_code=status.HTTP_202_ACCEPTED)
+def delete_division(id: int, db: Session = Depends(get_db)): #, currUser = Depends(oauth2.get_current_user)
+    query_res = db.query(Division).filter(Division.id == id)
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    query_res.delete()
     db.commit()
 
-@router.put('/{id}', status_code=status.HTTP_202_ACCEPTED)
-def update_division_name(id: int, req: schemas.Division , db: Session = Depends(get_db)):
-
-    div = db.query(models.Division).filter(models.Division.id == id).first()
-
-    if not div:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Division of ID ({id}) was not found!")
-
-    # div.update({'name': req.name})
-    div.name = req.name
-
-    db.commit()
+    return

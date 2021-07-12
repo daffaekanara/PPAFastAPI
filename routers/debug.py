@@ -1,5 +1,6 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 import schemas, oauth2
 from models import *
@@ -28,35 +29,21 @@ def create(req: schemas.DebugParent, db: Session = Depends(get_db)):
 
     return newParent
 
-@router.put('/parent/{id}')
-def update(id: int, req: schemas.DebugParentIn, db: Session = Depends(get_db)):
-    parent = db.query(DebugParent).filter(DebugParent.id == id)
+@router.patch('parent/{id}', status_code=status.HTTP_202_ACCEPTED)
+def patch(id: int, req: schemas.DebugParentIn, db: Session = Depends(get_db)):
+    query_res = db.query(DebugParent).filter(DebugParent.id == id)
 
-    ## TODO Fix partial data update (Update one column of a row)
-    # Right now .update() will take json as info to update the database
-    # but req (pydantic schemas) will assign NoneType to any unassigned field in the request
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
 
+    stored_data = jsonable_encoder(query_res.first())
+    stored_model = schemas.DebugParentIn(**stored_data)
 
-    parent.update(req.dict())
+    new_data = req.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    query_res.update(stored_data)
     db.commit()
-
-
-
-# @router.get('/child')
-# def get_children(db: Session = Depends(get_db)):
-#     children = db.query(DebugChild).all()
-#     return children
-
-# @router.post('/child')
-# def create_child(req: schemas.DebugChild, db: Session = Depends(get_db)):
-#     newChild = DebugChild(
-#         first_name=req.first_name, 
-#         last_name=req.last_name, 
-#         parent_id=req.parent_id
-#     )
-
-#     db.add(newChild)
-#     db.commit()
-#     db.refresh(newChild)
-
-#     return newChild
+    return updated

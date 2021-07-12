@@ -5,6 +5,9 @@ import datetime
 class Division(BaseModel):
     name:str
 
+class DivisionIn(BaseModel):
+    name:Optional[str]
+
 class ShowDivision(BaseModel):
     name:str
 
@@ -16,6 +19,12 @@ class Employee(BaseModel):
     email:str
     pw:str
     div_id:int
+
+class EmployeeIn(BaseModel):
+    name:Optional[str]
+    email:Optional[str]
+    pw:Optional[str]
+    div_id:Optional[int]
 
 class ShowEmployee(BaseModel):
     name:str
@@ -74,6 +83,11 @@ class TrainingTarget(BaseModel):
     target_days:float
     emp_id:int
 
+class TrainingTargetIn(BaseModel):
+    year:Optional[int]
+    target_days:Optional[float]
+    emp_id:Optional[int]
+
 class DebugParent(BaseModel):
     first_name:str
     last_name:str
@@ -82,7 +96,36 @@ class DebugParentIn(BaseModel):
     first_name:Optional[str]
     last_name:Optional[str]
 
-class DebugChild(BaseModel):
-    first_name:str
-    last_name:str
-    parent_id:int
+# Social Contributions
+class SocialType(BaseModel):
+    name        :str
+
+class SocialTypeIn(BaseModel):
+    name        :Optional[str]
+
+class ShowSocialType(BaseModel):
+    name        :str
+
+    class Config():
+        orm_mode = True
+
+class SocialContrib(BaseModel):
+    date        :datetime.date
+    topic_name  :str
+    div_id      :int
+    social_type_id:int
+
+class SocialContribIn(BaseModel):
+    date        :Optional[datetime.date]
+    topic_name  :Optional[str]
+    div_id      :Optional[int]
+    social_type_id:Optional[int]
+
+class ShowSocialContrib(BaseModel):
+    date        :str
+    topic_name  :str
+    div         :ShowDivision
+    social_type :ShowSocialType
+
+    class Config():
+        orm_mode = True
