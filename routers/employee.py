@@ -1,7 +1,9 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
-import models, schemas, hashing
+import schemas, hashing
+from models import *
 from database import get_db
 
 router = APIRouter(
@@ -9,50 +11,64 @@ router = APIRouter(
     prefix="/employee"
 )
 
-
-@router.post('/', status_code=status.HTTP_201_CREATED)
-def create_employee(req: schemas.Employee, db: Session = Depends(get_db)):
-    # new_emp = models.Employee(req)
-    hashed = hashing.bcrypt(req.pw)
-
-    new_emp = models.Employee(name=req.name, email=req.email, pw=hashed, div_id=req.div_id)
-
-    db.add(new_emp)
-    db.commit()
-    db.refresh(new_emp)
-    return new_emp
-
 @router.get('/')
-def get_all_employees(db: Session = Depends(get_db)):
-    emps = db.query(models.Employee).all()
+def get_all(db: Session = Depends(get_db)):
+    emps = db.query(Employee).all()
     return emps
 
-@router.get('/{id}',response_model=schemas.ShowEmployee)
-def get_single_employee(id: int, db: Session = Depends(get_db)):
-    emp = db.query(models.Employee).filter(models.Employee.id == id).first()
+@router.get('/{id}') #response_model=schemas.ShowEmployee
+def get_single(id: int, db: Session = Depends(get_db)):
+    emp = db.query(Employee).filter(Employee.id == id).first()
 
     if not emp:
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of ID ({id}) was not found!")
 
     return emp
 
-@router.put('/{id}', status_code=status.HTTP_202_ACCEPTED)
-def update_employee(id: int, req: schemas.Employee, db: Session = Depends(get_db)):
-    emp = db.query(models.Employee).filter(models.Employee.id == id)
+@router.post('/', status_code=status.HTTP_201_CREATED)
+def create(req: schemas.Employee, db: Session = Depends(get_db)):
+    hashed = hashing.bcrypt(req.pw)
 
-    if not emp.first():
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Division of ID ({id}) was not found!")
+    newEmp = Employee(
+        name    = req.name, 
+        email   = req.email, 
+        pw      = hashed, 
+        div_id  = req.div_id
+    )
 
-    emp.update(req)
+    db.add(newEmp)
+    db.commit()
+    db.refresh(newEmp)
 
-    pass
+    return newEmp
+
+@router.patch('/{id}', status_code=status.HTTP_202_ACCEPTED)
+def update(id: int, req: schemas.EmployeeIn, db: Session = Depends(get_db)):
+    query_res = db.query(Employee).filter(Employee.id == id)
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    stored_data = jsonable_encoder(query_res.first())
+    stored_model = schemas.EmployeeIn(**stored_data)
+
+    new_data = req.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    query_res.update(stored_data)
+    db.commit()
+    return updated
 
 @router.delete('/{id}')
 def delete_employee(id: int, db: Session = Depends(get_db)):
-    emp = db.query(models.Employee).filter(models.Employee.id == id)
+    query_res = db.query(Employee).filter(Employee.id == id)
 
-    if not emp:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of ID ({id} was not found)")
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
 
-    emp.delete(synchronize_session=False)
+    query_res.delete()
     db.commit()
+
+    return {'details': 'Deleted'}

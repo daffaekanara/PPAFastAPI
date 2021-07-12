@@ -6,7 +6,10 @@ class Division(Base):
     __tablename__ = 'divisions'
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String)
+
     employees_of_div = relationship("Employee", back_populates="part_of_div")
+
+    div_socialcontribs = relationship("SocialContrib", back_populates="div")
 
 class Employee(Base):
     __tablename__ = 'employees'
@@ -22,16 +25,17 @@ class Employee(Base):
 
     emp_trainingtargets = relationship("TrainingTarget", back_populates="trainee")
 
+# Training
 class Training(Base):
     __tablename__ = 'trainings'
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
-    date = Column(Date)
-    duration_days = Column(Float)
-    proof = Column(Boolean)
+    id              = Column(Integer, primary_key=True, index=True)
+    name            = Column(String)
+    date            = Column(Date)
+    duration_days   = Column(Float)
+    proof           = Column(Boolean)
 
-    emp_id = Column(Integer, ForeignKey('employees.id'))
-    employee = relationship("Employee", back_populates="emp_trainings") #employee id
+    emp_id          = Column(Integer, ForeignKey('employees.id'))
+    employee        = relationship("Employee", back_populates="emp_trainings") #employee id
 
 class TrainingTarget(Base):
     __tablename__ = 'trainingtargets'
@@ -44,17 +48,28 @@ class TrainingTarget(Base):
 
 class DebugParent(Base):
     __tablename__ = 'debugparent'
-    id = Column(Integer, primary_key=True, index=True)
-    first_name = Column(String)
-    last_name = Column(String)
+    id          = Column(Integer, primary_key=True, index=True)
+    first_name  = Column(String)
+    last_name   = Column(String)
 
-    children = relationship("DebugChild", back_populates="parent")
+# Social Contributions
+class SocialContrib(Base):
+    __tablename__ = 'socialcontribs'
+    id          = Column(Integer, primary_key=True, index=True)
+    date        = Column(Date)
+    topic_name  = Column(String)
 
-class DebugChild(Base):
-    __tablename__ = 'debugchild'
-    id = Column(Integer, primary_key=True, index=True)
-    first_name = Column(String)
-    last_name = Column(String)
+    div_id  = Column(Integer, ForeignKey('divisions.id'))
+    div     = relationship("Division", back_populates="div_socialcontribs")
 
-    parent_id = Column(Integer, ForeignKey('debugparent.id'))
-    parent = relationship("DebugParent", back_populates="children")
+    social_type_id  = Column(Integer, ForeignKey('socialtypes.id'))
+    social_type     = relationship("SocialType", back_populates="contribs")
+
+class SocialType(Base):
+    __tablename__ = 'socialtypes'
+    id          = Column(Integer, primary_key=True, index=True)
+    name        = Column(String)
+
+    contribs    = relationship("SocialContrib", back_populates="social_type")
+
+ 
