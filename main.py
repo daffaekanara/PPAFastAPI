@@ -1,12 +1,14 @@
 from fastapi import FastAPI
 import models
-from routers import division, employee, auth, training, trainingTarget, debug, socialContrib
+from routers import division, employee, auth, training, trainingTarget, debug, socialContrib, attrition, engagement
 from database import engine
 
 models.Base.metadata.create_all(engine)
 
 app = FastAPI()
 # app.include_router(debug.router)
+app.include_router(engagement.router)
+app.include_router(attrition.router)
 app.include_router(socialContrib.router)
 app.include_router(trainingTarget.router)
 app.include_router(training.router)

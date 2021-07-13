@@ -129,3 +129,61 @@ class ShowSocialContrib(BaseModel):
 
     class Config():
         orm_mode = True
+
+# Attrition
+class MonthlyAttrition(BaseModel):
+    joined_count    :int
+    resigned_count  :int
+    transfer_count  :int
+    month           :int
+    year            :int
+
+    div_id          :int
+
+class MonthlyAttritionIn(BaseModel):
+    joined_count    :Optional[int]
+    resigned_count  :Optional[int]
+    transfer_count  :Optional[int]
+    month           :Optional[int]
+    year            :Optional[int]
+
+    div_id          :Optional[int]
+
+class YearlyAttritionConst(BaseModel):
+    year                :int
+    start_headcount     :int
+    budget_headcount    :int
+    
+    div_id              :int
+
+class YearlyAttritionConstIn(BaseModel):
+    year                :Optional[int]
+    start_headcount     :Optional[int]
+    budget_headcount    :Optional[int]
+    
+    div_id              :Optional[int]
+
+# BUSU Engagement
+class EngagementType(BaseModel):
+    name :str
+
+class EngagementTypeIn(BaseModel):
+    name :Optional[str]
+
+class BUSUEngagement(BaseModel):
+    activity_name   : str
+    date            : datetime.date
+    proof           : bool
+
+    eng_type_id     : int
+
+    div_id          : int
+
+class BUSUEngagementIn(BaseModel):
+    activity_name   : Optional[str]
+    date            : Optional[datetime.date]
+    proof           : Optional[bool]
+
+    eng_type_id     : Optional[int]
+
+    div_id          : Optional[int]
