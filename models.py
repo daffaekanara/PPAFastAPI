@@ -9,7 +9,10 @@ class Division(Base):
 
     employees_of_div = relationship("Employee", back_populates="part_of_div")
 
-    div_socialcontribs = relationship("SocialContrib", back_populates="div")
+    div_socialcontribs  = relationship("SocialContrib", back_populates="div")
+    div_monthlyAttr     = relationship("MonthlyAttrition", back_populates="div")
+    div_yearlyAttr      = relationship("YearlyAttritionConst", back_populates="div")
+    div_busuengagements = relationship("BUSUEngagement", back_populates="div")
 
 class Employee(Base):
     __tablename__ = 'employees'
@@ -72,4 +75,45 @@ class SocialType(Base):
 
     contribs    = relationship("SocialContrib", back_populates="social_type")
 
- 
+# Attrition
+class MonthlyAttrition(Base):
+    __tablename__ = 'monthlyattritions'
+    id              = Column(Integer, primary_key=True, index=True)
+    joined_count    = Column(Integer)
+    resigned_count  = Column(Integer)
+    transfer_count  = Column(Integer)
+    month           = Column(Integer)
+    year            = Column(Integer)
+    div_id  = Column(Integer, ForeignKey('divisions.id'))
+    div     = relationship("Division", back_populates="div_monthlyAttr")
+
+class YearlyAttritionConst(Base):
+    __tablename__ = 'yearlyattritions'
+    id              = Column(Integer, primary_key=True, index=True)
+    year            = Column(Integer)
+    start_headcount = Column(Integer)
+    budget_headcount= Column(Integer)
+    div_id  = Column(Integer, ForeignKey('divisions.id'))
+    div     = relationship("Division", back_populates="div_yearlyAttr")
+
+# BU/SU Engagement
+class EngagementType(Base):
+    __tablename__ = 'engagementtypes'
+    id      = Column(Integer, primary_key=True, index=True)
+    name    = Column(String)
+
+    engagements = relationship("BUSUEngagement", back_populates="eng_type")
+
+
+class BUSUEngagement(Base):
+    __tablename__ = 'busuengagements'
+    id              = Column(Integer, primary_key=True, index=True)
+    activity_name   = Column(String)
+    date            = Column(Date)
+    proof           = Column(Boolean)
+
+    eng_type_id     = Column(Integer, ForeignKey('engagementtypes.id'))
+    eng_type        = relationship("EngagementType", back_populates="engagements")
+
+    div_id  = Column(Integer, ForeignKey('divisions.id'))
+    div     = relationship("Division", back_populates="div_busuengagements")
