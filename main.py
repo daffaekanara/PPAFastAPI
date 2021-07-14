@@ -9,10 +9,17 @@ models.Base.metadata.create_all(engine)
 app = FastAPI()
 
 origins = [
-    "https://111.95.148.87"
+    # "https://111.95.148.87"
+    "*"
 ]
 
-app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware, 
+    allow_origins=origins, 
+    allow_credentials=True, 
+    allow_methods=["*"], 
+    allow_headers=["*"]
+)
 
 # app.include_router(debug.router)
 app.include_router(engagement.router)
