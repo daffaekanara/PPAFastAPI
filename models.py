@@ -13,6 +13,7 @@ class Division(Base):
     div_monthlyAttr     = relationship("MonthlyAttrition", back_populates="div")
     div_yearlyAttr      = relationship("YearlyAttritionConst", back_populates="div")
     div_busuengagements = relationship("BUSUEngagement", back_populates="div")
+    div_projects        = relationship("Project", back_populates="div")
 
 class Employee(Base):
     __tablename__ = 'employees'
@@ -104,7 +105,6 @@ class EngagementType(Base):
 
     engagements = relationship("BUSUEngagement", back_populates="eng_type")
 
-
 class BUSUEngagement(Base):
     __tablename__ = 'busuengagements'
     id              = Column(Integer, primary_key=True, index=True)
@@ -117,3 +117,54 @@ class BUSUEngagement(Base):
 
     div_id  = Column(Integer, ForeignKey('divisions.id'))
     div     = relationship("Division", back_populates="div_busuengagements")
+
+# Audit Projects
+class ProjectStatus(Base):
+    __tablename__ = 'projectstatus'
+    id      = Column(Integer, primary_key=True, index=True)
+    name    = Column(String)
+
+    status_of_projects = relationship("Project", back_populates="status")
+
+class Project(Base):
+    __tablename__ = 'projects'
+    id              = Column(Integer, primary_key=True, index=True)
+    name            = Column(String)
+    used_DA         = Column(Boolean)
+    completion_PA   = Column(Boolean)
+    is_carried_over = Column(Boolean)
+
+    status_id       = Column(Integer, ForeignKey('projectstatus.id'))
+    status          = relationship("ProjectStatus", back_populates="status_of_projects")
+
+    div_id  = Column(Integer, ForeignKey('divisions.id'))
+    div     = relationship("Division", back_populates="div_projects")
+
+# Budgets
+class MonthlyBudget(Base):
+    __tablename__ = 'monthlybudget'
+    id                          = Column(Integer, primary_key=True, index=True)
+    year                        = Column(Integer)
+    month                       = Column(Integer)
+    staff_salaries              = Column(Float)
+    staff_training_reg_meeting  = Column(Float)
+    revenue_related             = Column(Float)
+    it_related                  = Column(Float)
+    occupancy_related           = Column(Float)
+    other_transport_travel      = Column(Float)
+    other_other                 = Column(Float)
+    indirect_expense            = Column(Float)
+
+class MonthlyActualBudget(Base):
+    __tablename__ = 'monthlyactualbudget'
+    id                          = Column(Integer, primary_key=True, index=True)
+    year                        = Column(Integer)
+    month                       = Column(Integer)
+    staff_salaries              = Column(Float)
+    staff_training_reg_meeting  = Column(Float)
+    revenue_related             = Column(Float)
+    it_related                  = Column(Float)
+    occupancy_related           = Column(Float)
+    other_transport_travel      = Column(Float)
+    other_other                 = Column(Float)
+    indirect_expense            = Column(Float)

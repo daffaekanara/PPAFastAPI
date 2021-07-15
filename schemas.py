@@ -187,3 +187,78 @@ class BUSUEngagementIn(BaseModel):
     eng_type_id     : Optional[int]
 
     div_id          : Optional[int]
+
+# Audit Projects
+class ProjectStatus(BaseModel):
+    name: str
+
+class ProjectStatusIn(BaseModel):
+    name: Optional[str]
+
+class Project(BaseModel):
+    name            :str
+    used_DA         :bool
+    completion_PA   :bool
+    is_carried_over :bool
+
+    status_id       :int
+    div_id          :int
+
+class ProjectIn(BaseModel):
+    name            :Optional[str]
+    used_DA         :Optional[bool]
+    completion_PA   :Optional[bool]
+    is_carried_over :Optional[bool]
+
+    status_id       :Optional[int]
+    div_id          :Optional[int]
+
+# Budgets
+class MonthlyBudget(BaseModel):
+    year                        :int
+    month                       :int
+    staff_salaries              :float
+    staff_training_reg_meeting  :float
+    revenue_related             :float
+    it_related                  :float
+    occupancy_related           :float
+    other_transport_travel      :float
+    other_other                 :float
+    indirect_expense            :float
+
+class MonthlyBudgetIn(BaseModel):
+    year                        :Optional[int]
+    month                       :Optional[int]
+    staff_salaries              :Optional[float]
+    staff_training_reg_meeting  :Optional[float]
+    revenue_related             :Optional[float]
+    it_related                  :Optional[float]
+    occupancy_related           :Optional[float]
+    other_transport_travel      :Optional[float]
+    other_other                 :Optional[float]
+    indirect_expense            :Optional[float]
+
+class MonthlyActualBudget(BaseModel):
+    year                        :int
+    month                       :int
+    staff_salaries              :float
+    staff_training_reg_meeting  :float
+    revenue_related             :float
+    it_related                  :float
+    occupancy_related           :float
+    other_transport_travel      :float
+    other_other                 :float
+    indirect_expense            :float
+
+class MonthlyActualBudgetIn(BaseModel):
+    year                        :Optional[int]
+    month                       :Optional[int]
+    staff_salaries              :Optional[float]
+    staff_training_reg_meeting  :Optional[float]
+    revenue_related             :Optional[float]
+    it_related                  :Optional[float]
+    occupancy_related           :Optional[float]
+    other_transport_travel      :Optional[float]
+    other_other                 :Optional[float]
+    indirect_expense            :Optional[float]
+
