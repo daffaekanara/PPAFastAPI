@@ -14,6 +14,8 @@ class Division(Base):
     div_yearlyAttr      = relationship("YearlyAttritionConst", back_populates="div")
     div_busuengagements = relationship("BUSUEngagement", back_populates="div")
     div_projects        = relationship("Project", back_populates="div")
+    # div_csfs_by_prf     = relationship("CSF", back_populates="by_prj_div")
+    # div_invdiv_by_prf   = relationship("CSF", back_populates="by_invdiv_div")
 
 class Employee(Base):
     __tablename__ = 'employees'
@@ -49,6 +51,8 @@ class Employee(Base):
     emp_certifications = relationship("Certification", back_populates="owner")
 
     emp_qaip_tl = relationship("QAIP", back_populates="tl")
+
+    emp_csf_tl  = relationship("CSF", back_populates="tl")
 
 class Certification(Base):
     __tablename__ = 'certifications'
@@ -262,3 +266,40 @@ class QAIPHeadDiv(Base):
 
     qaip_id = Column(Integer, ForeignKey('qaips.id'))
     qaip    = relationship("QAIP", back_populates="head_divs")
+
+# CSF
+class CSF(Base):
+    __tablename__ = 'csfs'
+    id                  = Column(Integer, primary_key=True, index=True)
+    audit_project_name  = Column(String)
+    client_name         = Column(String)
+    client_unit         = Column(String)
+    csf_date            = Column(Date)
+    atp_1               = Column(Float)
+    atp_2               = Column(Float)
+    atp_3               = Column(Float)
+    atp_4               = Column(Float)
+    atp_5               = Column(Float)
+    atp_6               = Column(Float)
+    ac_1                = Column(Float)
+    ac_2                = Column(Float)
+    ac_3                = Column(Float)
+    ac_4                = Column(Float)
+    ac_5                = Column(Float)
+    ac_6                = Column(Float)
+    paw_1               = Column(Float)
+    paw_2               = Column(Float)
+    paw_3               = Column(Float)
+
+
+    #tl_emp_id
+    tl_id = Column(Integer, ForeignKey('employees.id'))
+    tl    = relationship("Employee", back_populates="emp_csf_tl")
+
+    #by_prj_div_id
+    by_prj_div_id = Column(Integer, ForeignKey('divisions.id'))
+    by_prj_div    = relationship("Division", foreign_keys=[by_prj_div_id], backref="div_prj_by_prf")
+
+    #by_invdiv_div_id
+    by_invdiv_div_id = Column(Integer, ForeignKey('divisions.id'))
+    by_invdiv_div    = relationship("Division", foreign_keys=[by_invdiv_div_id], backref="div_invdiv_by_prf")

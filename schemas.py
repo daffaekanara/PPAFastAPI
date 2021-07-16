@@ -394,3 +394,54 @@ class QAIPHeadDiv(BaseModel):
 class QAIPHeadDivIn(BaseModel):
     div_head: Optional[str]
     qaip_id : Optional[int]
+
+# CSF
+class CSF(BaseModel):
+    audit_project_name  :str
+    client_name         :str
+    client_unit         :str
+    csf_date            :datetime.date
+    atp_1               :float
+    atp_2               :float
+    atp_3               :float
+    atp_4               :float
+    atp_5               :float
+    atp_6               :float
+    ac_1                :float
+    ac_2                :float
+    ac_3                :float
+    ac_4                :float
+    ac_5                :float
+    ac_6                :float
+    paw_1               :float
+    paw_2               :float
+    paw_3               :float
+
+    tl_id               :int
+    by_prj_div_id       :int
+    by_invdiv_div_id    :int
+
+class CSFIn(BaseModel):
+    audit_project_name  :Optional[str]
+    client_name         :Optional[str]
+    client_unit         :Optional[str]
+    csf_date            :Optional[datetime.date]
+    atp_1               :Optional[float]
+    atp_2               :Optional[float]
+    atp_3               :Optional[float]
+    atp_4               :Optional[float]
+    atp_5               :Optional[float]
+    atp_6               :Optional[float]
+    ac_1                :Optional[float]
+    ac_2                :Optional[float]
+    ac_3                :Optional[float]
+    ac_4                :Optional[float]
+    ac_5                :Optional[float]
+    ac_6                :Optional[float]
+    paw_1               :Optional[float]
+    paw_2               :Optional[float]
+    paw_3               :Optional[float]
+    
+    tl_id               :Optional[int]
+    by_prj_div_id       :Optional[int]
+    by_invdiv_div_id    :Optional[int]
