@@ -18,9 +18,26 @@ class Division(Base):
 class Employee(Base):
     __tablename__ = 'employees'
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
-    email = Column(String)
-    pw = Column(String)
+    name    = Column(String)
+    email   = Column(String)
+    pw      = Column(String)
+
+    staff_id                = Column(String)
+    div_stream              = Column(String)
+    corporate_title         = Column(String)
+    corporate_grade         = Column(String)
+    date_of_birth           = Column(Date)
+    date_first_employment   = Column(Date)
+    date_first_uob          = Column(Date)
+    date_first_ia           = Column(Date)
+    gender                  = Column(String)
+    year_audit_non_uob      = Column(Integer)
+    edu_level               = Column(String)
+    edu_major               = Column(String)
+    edu_category            = Column(String)
+    ia_background           = Column(Boolean)
+    ea_background           = Column(Boolean)
+
 
     div_id = Column(Integer, ForeignKey('divisions.id'))
     part_of_div = relationship("Division", back_populates="employees_of_div") # division id
@@ -28,6 +45,18 @@ class Employee(Base):
     emp_trainings = relationship("Training", back_populates="employee")
 
     emp_trainingtargets = relationship("TrainingTarget", back_populates="trainee")
+
+    emp_certifications = relationship("Certification", back_populates="owner")
+
+class Certification(Base):
+    __tablename__ = 'certifications'
+    id = Column(Integer, primary_key=True, index=True)
+
+    cert_name   = Column(String)
+    cert_proof  = Column(Boolean)
+
+    emp_id = Column(Integer, ForeignKey('employees.id'))
+    owner = relationship("Employee", back_populates="emp_certifications")
 
 # Training
 class Training(Base):

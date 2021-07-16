@@ -22,16 +22,16 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# app.include_router(debug.router)
-# app.include_router(budget.router)
-# app.include_router(project.router)
-# app.include_router(engagement.router)
-# app.include_router(attrition.router)
-# app.include_router(socialContrib.router)
+app.include_router(debug.router)
+app.include_router(budget.router)
+app.include_router(project.router)
+app.include_router(engagement.router)
+app.include_router(attrition.router)
+app.include_router(socialContrib.router)
 app.include_router(training.router)
-# app.include_router(division.router)
-# app.include_router(employee.router)
-# app.include_router(auth.router)
+app.include_router(division.router)
+app.include_router(employee.router)
+app.include_router(auth.router)
 
 
 @app.get('/')

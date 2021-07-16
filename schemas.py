@@ -15,16 +15,46 @@ class ShowDivision(BaseModel):
         orm_mode = True
 
 class Employee(BaseModel):
-    name:str
-    email:str
-    pw:str
-    div_id:int
+    name                    :str
+    email                   :str
+    pw                      :str
+    staff_id                :str
+    div_stream              :str
+    corporate_title         :str
+    corporate_grade         :str
+    date_of_birth           :datetime.date
+    date_first_employment   :datetime.date
+    date_first_uob          :datetime.date
+    date_first_ia           :datetime.date
+    gender                  :str
+    year_audit_non_uob      :int
+    edu_level               :str
+    edu_major               :str
+    edu_category            :str
+    ia_background           :bool
+    ea_background           :bool
+    div_id                  :int
 
 class EmployeeIn(BaseModel):
-    name:Optional[str]
-    email:Optional[str]
-    pw:Optional[str]
-    div_id:Optional[int]
+    name                    :Optional[str]
+    email                   :Optional[str]
+    pw                      :Optional[str]
+    staff_id                :Optional[str]
+    div_stream              :Optional[str]
+    corporate_title         :Optional[str]
+    corporate_grade         :Optional[str]
+    date_of_birth           :Optional[datetime.date]
+    date_first_employment   :Optional[datetime.date]
+    date_first_uob          :Optional[datetime.date]
+    date_first_ia           :Optional[datetime.date]
+    gender                  :Optional[str]
+    year_audit_non_uob      :Optional[int]
+    edu_level               :Optional[str]
+    edu_major               :Optional[str]
+    edu_category            :Optional[str]
+    ia_background           :Optional[bool]
+    ea_background           :Optional[bool]
+    div_id                  :Optional[int]
 
 class ShowEmployee(BaseModel):
     name:str
@@ -40,6 +70,16 @@ class ShowEmployeeOnly(BaseModel):
 
     class Config():
         orm_mode = True
+
+class Certification(BaseModel):
+    cert_name   :str
+    cert_proof  :bool
+    emp_id      :int
+
+class CertificationIn(BaseModel):
+    cert_name   :Optional[str]
+    cert_proof  :Optional[bool]
+    emp_id      :Optional[int]
 
 class Login(BaseModel):
     email: str
