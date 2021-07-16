@@ -48,6 +48,8 @@ class Employee(Base):
 
     emp_certifications = relationship("Certification", back_populates="owner")
 
+    emp_qaip_tl = relationship("QAIP", back_populates="tl")
+
 class Certification(Base):
     __tablename__ = 'certifications'
     id = Column(Integer, primary_key=True, index=True)
@@ -91,7 +93,6 @@ class TrainingBudget(Base):
 
     training_id = Column(Integer, ForeignKey('trainings.id'))
     training = relationship("Training", back_populates="budget")
-
 
 class DebugParent(Base):
     __tablename__ = 'debugparent'
@@ -185,7 +186,7 @@ class Project(Base):
 
 # Budgets
 class MonthlyBudget(Base):
-    __tablename__ = 'monthlybudget'
+    __tablename__ = 'monthlybudgets'
     id                          = Column(Integer, primary_key=True, index=True)
     year                        = Column(Integer)
     month                       = Column(Integer)
@@ -199,7 +200,7 @@ class MonthlyBudget(Base):
     indirect_expense            = Column(Float)
 
 class MonthlyActualBudget(Base):
-    __tablename__ = 'monthlyactualbudget'
+    __tablename__ = 'monthlyactualbudgets'
     id                          = Column(Integer, primary_key=True, index=True)
     year                        = Column(Integer)
     month                       = Column(Integer)
@@ -211,3 +212,53 @@ class MonthlyActualBudget(Base):
     other_transport_travel      = Column(Float)
     other_other                 = Column(Float)
     indirect_expense            = Column(Float)
+
+# QAIP
+class QAIP(Base):
+    __tablename__ = 'qaips'
+    id                  = Column(Integer, primary_key=True, index=True)
+    qaip_type           = Column(String)
+    project_name        = Column(String)
+    qa_result           = Column(Integer)
+
+    qaf_category_clarity        = Column(Boolean)
+    qaf_category_completeness   = Column(Boolean)
+    qaf_category_consistency    = Column(Boolean)
+    qaf_category_others         = Column(Boolean)
+    qaf_stage_planning          = Column(Boolean)
+    qaf_stage_fieldwork         = Column(Boolean)
+    qaf_stage_reporting         = Column(Boolean)
+    qaf_stage_post_audit_act    = Column(Boolean)
+    qaf_deliverables_1a         = Column(Boolean)
+    qaf_deliverables_1b         = Column(Boolean)
+    qaf_deliverables_1c         = Column(Boolean)
+    qaf_deliverables_1d         = Column(Boolean)
+    qaf_deliverables_1e         = Column(Boolean)
+    qaf_deliverables_1f         = Column(Boolean)
+    qaf_deliverables_1g         = Column(Boolean)
+    qaf_deliverables_1h         = Column(Boolean)
+    qaf_deliverables_1i         = Column(Boolean)
+    qaf_deliverables_1j         = Column(Boolean)
+    qaf_deliverables_1k         = Column(Boolean)
+    qaf_deliverables_2          = Column(Boolean)
+    qaf_deliverables_3          = Column(Boolean)
+    qaf_deliverables_4          = Column(Boolean)
+    qaf_deliverables_5          = Column(Boolean)
+    qaf_deliverables_6          = Column(Boolean)
+    qaf_deliverables_7          = Column(Boolean)
+    issue_count                 = Column(Integer)
+    qa_sample                   = Column(Boolean)
+
+    #Team_Leader ID
+    tl_id       = Column(Integer, ForeignKey('employees.id'))
+    tl          = relationship("Employee", back_populates="emp_qaip_tl")
+
+    head_divs   = relationship("QAIPHeadDiv", back_populates="qaip")
+
+class QAIPHeadDiv(Base):
+    __tablename__ = 'qaipheaddivs'
+    id          = Column(Integer, primary_key=True, index=True)
+    div_head    = Column(String)
+
+    qaip_id = Column(Integer, ForeignKey('qaips.id'))
+    qaip    = relationship("QAIP", back_populates="head_divs")

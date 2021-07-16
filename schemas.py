@@ -316,3 +316,81 @@ class MonthlyActualBudgetIn(BaseModel):
     other_other                 :Optional[float]
     indirect_expense            :Optional[float]
 
+# QAIP
+class QAIP(BaseModel):
+    qaip_type                   :str
+    project_name                :str
+    qa_result                   :int
+
+    qaf_category_clarity        :bool
+    qaf_category_completeness   :bool
+    qaf_category_consistency    :bool
+    qaf_category_others         :bool
+    qaf_stage_planning          :bool
+    qaf_stage_fieldwork         :bool
+    qaf_stage_reporting         :bool
+    qaf_stage_post_audit_act    :bool
+    qaf_deliverables_1a         :bool
+    qaf_deliverables_1b         :bool
+    qaf_deliverables_1c         :bool
+    qaf_deliverables_1d         :bool
+    qaf_deliverables_1e         :bool
+    qaf_deliverables_1f         :bool
+    qaf_deliverables_1g         :bool
+    qaf_deliverables_1h         :bool
+    qaf_deliverables_1i         :bool
+    qaf_deliverables_1j         :bool
+    qaf_deliverables_1k         :bool
+    qaf_deliverables_2          :bool
+    qaf_deliverables_3          :bool
+    qaf_deliverables_4          :bool
+    qaf_deliverables_5          :bool
+    qaf_deliverables_6          :bool
+    qaf_deliverables_7          :bool
+    issue_count                 :int
+    qa_sample                   :bool
+
+    tl_id                       :int
+
+class QAIPIn(BaseModel):
+    qaip_type                   :Optional[str]
+    project_name                :Optional[str]
+    qa_result                   :Optional[int]
+
+    qaf_category_clarity        :Optional[bool]
+    qaf_category_completeness   :Optional[bool]
+    qaf_category_consistency    :Optional[bool]
+    qaf_category_others         :Optional[bool]
+    qaf_stage_planning          :Optional[bool]
+    qaf_stage_fieldwork         :Optional[bool]
+    qaf_stage_reporting         :Optional[bool]
+    qaf_stage_post_audit_act    :Optional[bool]
+    qaf_deliverables_1a         :Optional[bool]
+    qaf_deliverables_1b         :Optional[bool]
+    qaf_deliverables_1c         :Optional[bool]
+    qaf_deliverables_1d         :Optional[bool]
+    qaf_deliverables_1e         :Optional[bool]
+    qaf_deliverables_1f         :Optional[bool]
+    qaf_deliverables_1g         :Optional[bool]
+    qaf_deliverables_1h         :Optional[bool]
+    qaf_deliverables_1i         :Optional[bool]
+    qaf_deliverables_1j         :Optional[bool]
+    qaf_deliverables_1k         :Optional[bool]
+    qaf_deliverables_2          :Optional[bool]
+    qaf_deliverables_3          :Optional[bool]
+    qaf_deliverables_4          :Optional[bool]
+    qaf_deliverables_5          :Optional[bool]
+    qaf_deliverables_6          :Optional[bool]
+    qaf_deliverables_7          :Optional[bool]
+    issue_count                 :Optional[int]
+    qa_sample                   :Optional[bool]
+
+    tl_id                       :Optional[int]
+
+class QAIPHeadDiv(BaseModel):
+    div_head: str
+    qaip_id : int
+
+class QAIPHeadDivIn(BaseModel):
+    div_head: Optional[str]
+    qaip_id : Optional[int]
