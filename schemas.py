@@ -88,6 +88,20 @@ class TrainingTargetIn(BaseModel):
     target_days:Optional[float]
     emp_id:Optional[int]
 
+class TrainingBudget(BaseModel):
+    budget          :float
+    realization     :float
+    charged_by_fin  :float
+
+    training_id     :int
+
+class TrainingBudgetIn(BaseModel):
+    budget          :Optional[float]
+    realization     :Optional[float]
+    charged_by_fin  :Optional[float]
+
+    training_id     :Optional[int]
+
 class DebugParent(BaseModel):
     first_name:str
     last_name:str

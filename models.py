@@ -40,6 +40,8 @@ class Training(Base):
 
     emp_id          = Column(Integer, ForeignKey('employees.id'))
     employee        = relationship("Employee", back_populates="emp_trainings") #employee id
+    
+    budget          = relationship("TrainingBudget", back_populates="training")
 
 class TrainingTarget(Base):
     __tablename__ = 'trainingtargets'
@@ -49,6 +51,18 @@ class TrainingTarget(Base):
 
     emp_id = Column(Integer, ForeignKey('employees.id'))
     trainee = relationship("Employee", back_populates="emp_trainingtargets") #employee id
+
+class TrainingBudget(Base):
+    __tablename__ = 'trainingbudgets'
+    id = Column(Integer, primary_key=True, index=True)
+
+    budget          = Column(Float)
+    realization     = Column(Float)
+    charged_by_fin  = Column(Float)
+
+    training_id = Column(Integer, ForeignKey('trainings.id'))
+    training = relationship("Training", back_populates="budget")
+
 
 class DebugParent(Base):
     __tablename__ = 'debugparent'
