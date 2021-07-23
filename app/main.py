@@ -23,7 +23,7 @@ app.add_middleware(
 )
 
 # app.include_router(debug.router)
-app.include_router(csf.router)
+# app.include_router(csf.router)
 app.include_router(qaip.router)
 app.include_router(budget.router)
 app.include_router(project.router)
