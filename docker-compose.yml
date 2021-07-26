@@ -6,4 +6,4 @@ services:
         ports: 
             - 80:80
         volumes: 
-            - .:/app
+            - E:/Intern/UOB/Codes/PPAFastAPI/app/data:/app/data
