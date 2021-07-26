@@ -28,11 +28,11 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
         res[div] = {"news":0, "myUob":0, "buletin":0}
 
     for q in query:
-        if q.social_type_id is 1:
+        if q.social_type_id == 1:
             res[q.div.name]["news"] += 1
-        if q.social_type_id is 2:
+        if q.social_type_id == 2:
             res[q.div.name]["myUob"] += 1
-        if q.social_type_id is 3:
+        if q.social_type_id == 3:
             res[q.div.name]["buletin"] += 1
 
     return res

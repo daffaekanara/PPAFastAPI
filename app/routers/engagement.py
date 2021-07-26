@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
+import datetime
 import schemas, oauth2
 from models import *
 from database import get_db
@@ -10,6 +11,29 @@ router = APIRouter(
     tags=['BU/SU Engagement'],
     prefix="/engagement"
 )
+
+# API
+@router.get('/api/total_by_division/{year}')
+def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    query = db.query(BUSUEngagement).filter(BUSUEngagement.date >= startDate, BUSUEngagement.date <= endDate).all()
+    
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    res = {}
+
+    # Init result dict
+    for div in divs:
+        res[div] = {"regmeet":0, "workshop":0}
+
+    for q in query:
+        if q.eng_type_id == 1:
+            res[q.div.name]["regmeet"] += 1
+        if q.eng_type_id == 2:
+            res[q.div.name]["workshop"] += 1
+
+    return res
 
 # Engagement Type
 @router.get('/type')
