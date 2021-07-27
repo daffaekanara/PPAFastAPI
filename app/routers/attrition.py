@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
+import datetime
 import schemas, oauth2
 from models import *
 from database import get_db
@@ -10,6 +11,38 @@ router = APIRouter(
     tags=['Attrition'],
     prefix="/attrition"
 )
+
+# API
+@router.get('/api/staff_attrition/{year}/{month}')
+def get_total_by_division_by_year(year: int, month: int, db: Session = Depends(get_db)):
+
+    query = db.query(MonthlyAttrition).filter(MonthlyAttrition.year == year, MonthlyAttrition.month == month).all()
+    yearlyQuery = db.query(YearlyAttritionConst).filter(YearlyAttritionConst.year == year).all()
+
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    res = []
+
+    # Init result dict
+    for div in divs:
+        res.append({
+            "headcounts":0,
+            "join":0,
+            "resign":0,
+            "transfer":0, 
+            "division":div
+        })
+
+    for q in yearlyQuery:
+        q_div_index = next((index for (index, d) in enumerate(res) if d["division"] == q.div.name), None)
+        res[q_div_index]["headcounts"]        = q.start_headcount
+
+    for q in query:
+        q_div_index = next((index for (index, d) in enumerate(res) if d["division"] == q.div.name), None)
+
+        res[q_div_index]["join"]        = q.joined_count
+        res[q_div_index]["resign"]      = q.resigned_count
+        res[q_div_index]["transfer"]    = q.transfer_count
+    return res
 
 # Yearly Attrition
 @router.get('/yearly')
