@@ -21,6 +21,26 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
     query = db.query(SocialContrib).filter(SocialContrib.date >= startDate, SocialContrib.date <= endDate).all()
     
     divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    res = []
+
+    # Init result dict
+    for div in divs:
+        res.append({"contribute_sum":0, "divisions":div})
+
+    for q in query:
+        contrib_by_div = next((index for (index, d) in enumerate(res) if d["divisions"] == q.div.name), None)
+        res[contrib_by_div]["contribute_sum"] += 1
+
+    return res
+
+@router.get('/api/total_by_division_type_categorized/{year}')
+def get_total_by_division_by_year_type_categorized(year: int, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    query = db.query(SocialContrib).filter(SocialContrib.date >= startDate, SocialContrib.date <= endDate).all()
+    
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     res = {}
 
     # Init result dict
