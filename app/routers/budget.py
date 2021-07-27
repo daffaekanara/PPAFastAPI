@@ -11,6 +11,77 @@ router = APIRouter(
     prefix="/budget"
 )
 
+# API
+@router.get('/api/budgetdata/{year}/{month}')
+def get_total_by_division_by_year(year: int, month: int, db: Session = Depends(get_db)):
+
+    yearlyQuery = db.query(MonthlyBudget).filter(
+        MonthlyBudget.year == year
+    ).all() # 12 data
+
+    query = db.query(MonthlyActualBudget).filter(
+        MonthlyActualBudget.year == year, 
+        MonthlyActualBudget.month == month
+    ).one()
+
+    # Init result dict
+    cats = [
+        "Staff Expense", 
+        "Revenue Related", 
+        "IT Related", 
+        "Occupancy Related", 
+        "Other Related",
+        "Direct Expense",
+        "Indirect Expense",
+        "Total"
+    ]
+    res = []
+    yearlyBudget = {}
+    actualMonthBudget = {}
+
+    for cat in cats:
+        res.append({
+            "yearly":0,
+            "month_to_year":0,
+            "expense_category":cat
+        })
+
+        yearlyBudget[cat] = 0
+        actualMonthBudget[cat] = 0
+
+    # Process YearlyBudget
+    for y in yearlyQuery:
+        yearlyBudget['Staff Expense']               += y.staff_salaries
+        yearlyBudget['Staff Expense']               += y.staff_training_reg_meeting
+        yearlyBudget['Revenue Related']             += y.revenue_related
+        yearlyBudget['IT Related']                  += y.it_related
+        yearlyBudget['Occupancy Related']           += y.occupancy_related
+        yearlyBudget['Other Related']               += y.other_transport_travel
+        yearlyBudget['Other Related']               += y.other_other
+        yearlyBudget['Direct Expense']              += y.staff_salaries + y.revenue_related + y.it_related + y.occupancy_related + y.other_transport_travel + y.other_other   
+        yearlyBudget['Indirect Expense']            += y.indirect_expense 
+        yearlyBudget['Total']                       += yearlyBudget['Direct Expense'] + yearlyBudget['Indirect Expense']
+        
+    # process MonthlyActualBudget
+    actualMonthBudget['Staff Expense']               = query.staff_salaries
+    actualMonthBudget['Staff Expense']               = query.staff_training_reg_meeting
+    actualMonthBudget['Revenue Related']             = query.revenue_related
+    actualMonthBudget['IT Related']                  = query.it_related
+    actualMonthBudget['Occupancy Related']           = query.occupancy_related
+    actualMonthBudget['Other Related']               = query.other_transport_travel
+    actualMonthBudget['Other Related']               = query.other_other
+    actualMonthBudget['Direct Expense']              = query.staff_salaries + query.revenue_related + query.it_related + query.occupancy_related + query.other_transport_travel + query.other_other   
+    actualMonthBudget['Indirect Expense']            = query.indirect_expense 
+    actualMonthBudget['Total']                       = actualMonthBudget['Direct Expense'] + actualMonthBudget['Indirect Expense']
+
+
+    for cat in cats:
+        i = find_index(res, 'expense_category', cat)
+        res[i]["yearly"]        = yearlyBudget[cat]
+        res[i]["month_to_year"] = actualMonthBudget[cat]
+
+    return res
+
 # Monthly Actual Budget
 @router.get('/monthlyactual')
 def get_all_monthly_actual_budget(db: Session = Depends(get_db)):
@@ -144,3 +215,7 @@ def delete_monthly_budget(id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {'details': 'Deleted'}
+
+
+def find_index(listOfDict, dict_key, value):
+    return next((index for (index, d) in enumerate(listOfDict) if d[dict_key] == value), None)
