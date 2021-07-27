@@ -25,10 +25,10 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
 
     # Init result dict
     for div in divs:
-        res.append({"quarterly_meeting":0, "workshop":0, "divisions":div})
+        res.append({"quarterly_meeting":0, "workshop":0, "division":div})
 
     for q in query:
-        eng_by_div = next((index for (index, d) in enumerate(res) if d["divisions"] == q.div.name), None)
+        eng_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.div.name), None)
 
         if q.eng_type_id == 1:
             res[eng_by_div]["quarterly_meeting"] += 1

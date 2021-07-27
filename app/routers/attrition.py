@@ -44,6 +44,29 @@ def get_total_by_division_by_year(year: int, month: int, db: Session = Depends(g
         res[q_div_index]["transfer"]    = q.transfer_count
     return res
 
+@router.get('/api/rate/{div_name}/{year}/{month}')
+def get_rate_by_division_by_yearmonth(div_name: str, year: int, month: int, db: Session = Depends(get_db)):
+
+    query = db.query(MonthlyAttrition).filter(
+        MonthlyAttrition.div.has(name=div_name),
+        MonthlyAttrition.year == year, 
+        MonthlyAttrition.month == month,
+    ).one()
+
+    yearlyQuery = db.query(YearlyAttritionConst).filter(
+        YearlyAttritionConst.year == year, 
+        YearlyAttritionConst.div.has(name=div_name)
+    ).one()
+
+    attr_sum = query.resigned_count + query.transfer_count
+    attr_rate = attr_sum / yearlyQuery.start_headcount
+
+    return {
+        "rated": attr_rate,
+        "else_rated": 1- attr_rate, 
+        "division":query.div.name
+    }
+
 # Yearly Attrition
 @router.get('/yearly')
 def get_all_yearly_attr(db: Session = Depends(get_db)):

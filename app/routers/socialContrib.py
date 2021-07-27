@@ -25,10 +25,10 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
 
     # Init result dict
     for div in divs:
-        res.append({"contribute_sum":0, "divisions":div})
+        res.append({"contribute_sum":0, "division":div})
 
     for q in query:
-        contrib_by_div = next((index for (index, d) in enumerate(res) if d["divisions"] == q.div.name), None)
+        contrib_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.div.name), None)
         res[contrib_by_div]["contribute_sum"] += 1
 
     return res
