@@ -61,11 +61,10 @@ def get_rate_by_division_by_yearmonth(div_name: str, year: int, month: int, db: 
     attr_sum = query.resigned_count + query.transfer_count
     attr_rate = attr_sum / yearlyQuery.start_headcount
 
-    return {
-        "rated": attr_rate,
-        "else_rated": 1- attr_rate, 
-        "division":query.div.name
-    }
+    return [
+        {"title":"Attrition Rate","rate":attr_rate},
+        {"title":"","rate":1-attr_rate}
+    ]
 
 # Yearly Attrition
 @router.get('/yearly')

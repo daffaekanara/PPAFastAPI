@@ -12,8 +12,8 @@ router = APIRouter(
     prefix="/dashboard"
 )
 
-gen_x_youngest = datetime.date(1980,12,31)
-gen_y_youngest = datetime.date(1996,12,31)
+gen_x_youngest = datetime.date(1975,12,31)
+gen_y_youngest = datetime.date(1989,12,31)
 
 
 # API
