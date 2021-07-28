@@ -12,7 +12,6 @@ router = APIRouter(
 )
 
 # API
-
 @router.get('/api/header_training/{nik}/{year}')
 def get_header_training(nik: int, year: int, db: Session = Depends(get_db)):
     startDate   = datetime.date(year,1,1)
@@ -74,7 +73,5 @@ def get_header_training(nik: int, year: int, db: Session = Depends(get_db)):
     for t in trainings:
         sum_t_days += t.duration_days
     
-    return {
-        'complete_title' : sum_t_days,
-        'complete_data'  : trgt.target_days
-    }
+    return [{"title":"done","total_training":sum_t_days},
+            {"title":"remaining","total_training":trgt.target_days - sum_t_days}]
