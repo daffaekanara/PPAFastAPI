@@ -2,7 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
-import schemas, oauth2
+import schemas, oauth2, utils
 from models import *
 from database import get_db
 
@@ -10,6 +10,50 @@ router = APIRouter(
     tags=['Projects'],
     prefix="/projects"
 )
+# API
+@router.get('/api/total_by_division/{year}')
+def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
+    query = db.query(Project).filter(Project.year == year).all()
+    
+    status = [
+        "Total Projects", 
+        "Completed", 
+        "Reporting", 
+        "Fieldwork", 
+        "Planning",
+        "Timely Report",
+        "DA",
+        "PA"
+    ]
+
+    # Init result dict
+    res = []
+    for s in status:
+        res.append({
+            "WBGM":0, 
+            "RBA":0, 
+            "BRDS":0,
+            "TAD":0,
+            "project_status":s
+        })
+
+    for q in query:
+        # Cek Divisi
+        div_name = q.div.name
+
+        # Process Each Prj Status
+        # res[utils.find_index(res, 'project_status', status[0])]
+        res[0][div_name] += 1
+        res[1][div_name] += 1 and q.status.name == status[1]
+        res[2][div_name] += 1 and q.status.name == status[2]
+        res[3][div_name] += 1 and q.status.name == status[3]
+        res[4][div_name] += 1 and q.status.name == status[4]
+        res[5][div_name] += 1 and q.timely_report
+        res[6][div_name] += 1 and q.used_DA
+        res[7][div_name] += 1 and q.completion_PA        
+        
+
+    return res
 
 # Project Status
 @router.get('/status')
@@ -82,6 +126,8 @@ def create_project(req: schemas.Project, db: Session = Depends(get_db)):
         used_DA         = req.used_DA,
         completion_PA   = req.completion_PA,
         is_carried_over = req.is_carried_over,
+        timely_report   = req.timely_report,
+        year            = req.year,
         status_id       = req.status_id,
         div_id          = req.div_id
     )

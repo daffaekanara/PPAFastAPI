@@ -254,6 +254,8 @@ class Project(BaseModel):
     used_DA         :bool
     completion_PA   :bool
     is_carried_over :bool
+    timely_report   :bool
+    year            :int
 
     status_id       :int
     div_id          :int
@@ -263,6 +265,8 @@ class ProjectIn(BaseModel):
     used_DA         :Optional[bool]
     completion_PA   :Optional[bool]
     is_carried_over :Optional[bool]
+    timely_report   :Optional[bool]
+    year            :Optional[int]
 
     status_id       :Optional[int]
     div_id          :Optional[int]

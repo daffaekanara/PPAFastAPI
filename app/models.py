@@ -181,6 +181,8 @@ class Project(Base):
     used_DA         = Column(Boolean)
     completion_PA   = Column(Boolean)
     is_carried_over = Column(Boolean)
+    timely_report   = Column(Boolean)
+    year            = Column(Integer)
 
     status_id       = Column(Integer, ForeignKey('projectstatus.id'))
     status          = relationship("ProjectStatus", back_populates="status_of_projects")

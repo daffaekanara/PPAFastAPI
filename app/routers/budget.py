@@ -2,7 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
-import schemas, oauth2
+import schemas, oauth2, utils
 from models import *
 from database import get_db
 
@@ -76,7 +76,7 @@ def get_total_by_division_by_year(year: int, month: int, db: Session = Depends(g
 
 
     for cat in cats:
-        i = find_index(res, 'expense_category', cat)
+        i = utils.find_index(res, 'expense_category', cat)
         res[i]["yearly"]        = yearlyBudget[cat]
         res[i]["month_to_year"] = actualMonthBudget[cat]
 
@@ -215,7 +215,3 @@ def delete_monthly_budget(id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {'details': 'Deleted'}
-
-
-def find_index(listOfDict, dict_key, value):
-    return next((index for (index, d) in enumerate(listOfDict) if d[dict_key] == value), None)
