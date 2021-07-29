@@ -40,10 +40,10 @@ def get_header_training(nik: int, year: int, db: Session = Depends(get_db)):
     for t in trainings:
         sum_t_days += t.duration_days
     
-    return {
+    return [{
         'training_done' : sum_t_days,
         'training_all'  : trgt.target_days
-    }
+    }]
 
 @router.get('/api/data_chart_trainings/{nik}/{year}')
 def get_header_training(nik: int, year: int, db: Session = Depends(get_db)):
