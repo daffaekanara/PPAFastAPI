@@ -9,6 +9,7 @@ class Division(Base):
 
     employees_of_div = relationship("Employee", back_populates="part_of_div")
 
+    div_trainBudgets    = relationship("TrainingBudget", back_populates="div")
     div_socialcontribs  = relationship("SocialContrib", back_populates="div")
     div_monthlyAttr     = relationship("MonthlyAttrition", back_populates="div")
     div_yearlyAttr      = relationship("YearlyAttritionConst", back_populates="div")
@@ -73,10 +74,13 @@ class Training(Base):
     duration_days   = Column(Float)
     proof           = Column(Boolean)
 
+    budget          = Column(Float)
+    realization     = Column(Float)
+    charged_by_fin  = Column(Float)
+    remark          = Column(String)
+
     emp_id          = Column(Integer, ForeignKey('employees.id'))
     employee        = relationship("Employee", back_populates="emp_trainings") #employee id
-    
-    budget          = relationship("TrainingBudget", back_populates="training")
 
 class TrainingTarget(Base):
     __tablename__ = 'trainingtargets'
@@ -89,14 +93,12 @@ class TrainingTarget(Base):
 
 class TrainingBudget(Base):
     __tablename__ = 'trainingbudgets'
-    id = Column(Integer, primary_key=True, index=True)
+    id      = Column(Integer, primary_key=True, index=True)
+    year    = Column(Integer)
+    budget  = Column(Float)
 
-    budget          = Column(Float)
-    realization     = Column(Float)
-    charged_by_fin  = Column(Float)
-
-    training_id = Column(Integer, ForeignKey('trainings.id'))
-    training = relationship("Training", back_populates="budget")
+    div_id  = Column(Integer, ForeignKey('divisions.id'))
+    div     = relationship("Division", back_populates="div_trainBudgets")
 
 class DebugParent(Base):
     __tablename__ = 'debugparent'

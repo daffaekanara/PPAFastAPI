@@ -94,26 +94,39 @@ class TokenData(BaseModel):
 
 # Trainings
 class Training(BaseModel):
-    name:str
-    duration_days:float
-    date:datetime.date
-    proof:bool
-    emp_id:int
+    name            :str
+    duration_days   :float
+    date            :datetime.date
+    proof           :bool
+    budget          :float
+    realization     :float
+    charged_by_fin  :float
+    remark          :str
+
+    emp_id          :int
 
 class TrainingIn(BaseModel):
-    name: Optional[str]
-    duration_days: Optional[float]
-    date: Optional[datetime.date]
-    proof: Optional[bool]
-    emp_id: Optional[int]
+    name            :Optional[str]
+    duration_days   :Optional[float]
+    date            :Optional[datetime.date]
+    proof           :Optional[bool]
+    budget          :Optional[float]
+    realization     :Optional[float]
+    charged_by_fin  :Optional[float]
+    remark          :Optional[str]
+    emp_id          :Optional[int]
 
 class ShowTraining(BaseModel):
-    name:str
-    duration_days:float
-    date:datetime.date
-    proof:bool
-    emp_id:int
-    employee: ShowEmployeeOnly
+    name            :str
+    duration_days   :float
+    date            :datetime.date
+    proof           :bool
+    budget          :float
+    realization     :float
+    charged_by_fin  :float
+    remark          :str
+    emp_id          :int
+    employee        :Optional[ShowEmployeeOnly]
     
     class Config():
         orm_mode = True
@@ -129,18 +142,14 @@ class TrainingTargetIn(BaseModel):
     emp_id:Optional[int]
 
 class TrainingBudget(BaseModel):
-    budget          :float
-    realization     :float
-    charged_by_fin  :float
-
-    training_id     :int
+    year    :int
+    budget  :float
+    div_id  :int
 
 class TrainingBudgetIn(BaseModel):
-    budget          :Optional[float]
-    realization     :Optional[float]
-    charged_by_fin  :Optional[float]
-
-    training_id     :Optional[int]
+    year    :Optional[int]
+    budget  :Optional[float]
+    div_id  :Optional[int]
 
 class DebugParent(BaseModel):
     first_name:str
