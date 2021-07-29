@@ -18,6 +18,69 @@ gen_y_youngest = datetime.date(1989,12,31)
 
 
 # API
+@router.get('/api/smr_certification')
+def get_smr_certs(db: Session = Depends(get_db)):
+    # Get Emps
+    emps = db.query(Employee).all()
+
+    # Init res
+    levels = [
+        "SMR Level 1",
+        "SMR Level 2",
+        "SMR Level 3",
+        "SMR Level 4",
+        "SMR Level 5",
+        "SMR In Progress",
+    ]
+    res = []
+    for lvl in levels:
+        res.append({
+            "smr_level"     : lvl,
+            "sum_per_level" : 0
+        })
+
+    for e in emps:
+        for cert in e.emp_certifications:
+            index = utils.find_index(res,"smr_level", cert.cert_name)
+    
+            if index:
+                res[index]["sum_per_level"] += 1 
+    
+    return res
+
+@router.get('/api/pro_certification')
+def get_pro_certs(db: Session = Depends(get_db)):
+    # Get Emps
+    emps = db.query(Employee).all()
+
+    # Init res
+    types = [
+        "CISA",
+        "CEH",
+        "ISO27001",
+        "CHFI",
+        "QIA",
+        "CIA",
+        "CA",
+        "CBIA",
+        "CPA"
+    ]
+    res = []
+    for t in types:
+        res.append({
+            "certification_name": t,
+            "sum_per_name"     : 0
+        })
+
+    for e in emps:
+        for cert in e.emp_certifications:
+            index = utils.find_index(res,"certification_name", cert.cert_name)
+    
+            if index:
+                res[index]["sum_per_name"] += 1 
+    
+    return res
+
 @router.get('/api/age_group/')
 def get_age_group(db: Session = Depends(get_db)):
     # Get All Emps
