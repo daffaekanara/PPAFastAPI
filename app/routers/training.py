@@ -53,14 +53,15 @@ def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
     
     # Get Each Training's Charged and Realized
     for t in trainings:
-        if t.emp_id == 0:
+        if t.emp_id == 0: # Mandatory (Not specific to a employee)
             values[5]["budget"]     += t.budget
             values[5]["realized"]   += t.realization
             values[5]["charged"]    += t.charged_by_fin
         else:
-            i = utils.find_index(values, "div", t.employee.part_of_div.name)
-            values[i]["realized"]   += t.realization
-            values[i]["charged"]    += t.charged_by_fin
+            if 1 <= t.employee.div_id <= 5: # Not Including IAH
+                i = utils.find_index(values, "div", t.employee.part_of_div.name)
+                values[i]["realized"]   += t.realization
+                values[i]["charged"]    += t.charged_by_fin
 
     # Translate to Percentage
     res = []
