@@ -175,18 +175,14 @@ def get_total_audit_exp(db: Session = Depends(get_db)):
             "total_exp"     : 0,
             "year"          : y
         })
-    
-    for e in emps:
-        print()
 
+    for e in emps:
         years   = [0,0,0] #in UOB, outside UOB, total
         keys    = ["in_uob", "outside_uob", "total_exp"]
 
         years[0]    = relativedelta(datetime.date.today(), e.date_first_uob).years
         years[1]    = e.year_audit_non_uob
         years[2]    = years[0] + years[1]
-
-        print()
 
         for index, year in enumerate(years):
             if year < 3:
@@ -198,9 +194,8 @@ def get_total_audit_exp(db: Session = Depends(get_db)):
             elif year < 13:
                 res[utils.find_index(res,"year","10-12")][keys[index]] += 1
             elif year < 16:
-                res[utils.find_index(res,"year","13-5")][keys[index]] += 1
+                res[utils.find_index(res,"year","13-15")][keys[index]] += 1
             else:
                 res[utils.find_index(res,"year","More than 15")][keys[index]] += 1
-
 
     return res
