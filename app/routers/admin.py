@@ -12,6 +12,103 @@ router = APIRouter(
     prefix="/admin"
 )
 
+# BUSU Engagement Table
+@router.get('/busu_data/api/table_data/{year}')
+def get_busu_table(year: int, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    engs = db.query(BUSUEngagement).filter(
+        BUSUEngagement.date >= startDate,
+        BUSUEngagement.date <= endDate
+    ).all()
+
+    res = []
+    
+    for e in engs:
+        res.append({
+            "id"        : str(e.id),
+            "division"  : e.div.name,
+            "WorRM"     : e.eng_type.name,
+            "activity"  : e.activity_name,
+            "date"      : e.date.strftime("%m/%d/%Y")
+        })
+    
+    return res
+
+@router.post('/busu_data/api/table_data/')
+def create_busu_table_entry(req: schemas.BUSUEngagementInHiCoupling, db: Session = Depends(get_db)):
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    eng_types = ["Regular Meeting", "Workshop"]
+
+    div_id = divs.index(req.division)+1
+
+    new_eng = BUSUEngagement(
+        activity_name   = req.activity,
+        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        proof           = False,
+        
+        eng_type_id     = eng_types.index(req.WorRM) + 1,
+
+        div_id          = divs.index(req.division) + 1 
+    )
+
+    db.add(new_eng)
+    db.commit()
+    db.refresh(new_eng)
+
+    return new_eng
+
+@router.patch('/busu_data/api/table_data/{id}')
+def patch_busu_table_entry(id:int, req: schemas.BUSUEngagementInHiCoupling, db: Session = Depends(get_db)):
+    eng = db.query(BUSUEngagement).filter(
+        BUSUEngagement.id == id
+    ) 
+
+    if not eng.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    stored_data = jsonable_encoder(eng.first())
+    stored_model = schemas.BUSUEngagementIn(**stored_data)
+
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    eng_types = ["Regular Meeting", "Workshop"]
+    div_id =  divs.index(req.division) + 1
+
+    dataIn = schemas.BUSUEngagementIn(
+        activity_name   = req.activity,
+        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        proof           = False,
+
+        eng_type_id     = eng_types.index(req.WorRM) + 1,
+
+        div_id          = divs.index(req.division) + 1
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    eng.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/busu_data/api/table_data/{id}')
+def delete_busu_table_entry(id:int, db: Session = Depends(get_db)):
+    eng = db.query(BUSUEngagement).filter(
+        BUSUEngagement.id == id
+    )
+
+    if not eng.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    eng.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
+
 # Attrition Table
 @router.get('/attrition_data/api/table_data/{year}')
 def get_attr_table(year: int, db: Session = Depends(get_db)):

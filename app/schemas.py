@@ -250,6 +250,13 @@ class BUSUEngagementIn(BaseModel):
 
     div_id          : Optional[int]
 
+class BUSUEngagementInHiCoupling(BaseModel):
+    id          : Optional[str]
+    division    : Optional[str]
+    WorRM       : Optional[str]
+    activity    : Optional[str]
+    date        : Optional[str]
+
 # Audit Projects
 class ProjectStatus(BaseModel):
     name: str
