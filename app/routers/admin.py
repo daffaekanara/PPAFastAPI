@@ -111,7 +111,7 @@ def patch_attr_entry(id:int, req: schemas.YearlyAttritionInHiCoupling, db: Sessi
     return updated
 
 @router.delete('/attrition_data/api/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
-def delete_attr_entry(id:int, req: schemas.YearlyAttritionInHiCoupling, db: Session = Depends(get_db)):
+def delete_attr_entry(id:int, db: Session = Depends(get_db)):
     attr = db.query(YearlyAttrition).filter(
         YearlyAttrition.id == id
     )
