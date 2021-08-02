@@ -55,10 +55,32 @@ def get_attr_table(year: int, db: Session = Depends(get_db)):
 
     return res
 
-@router.patch('/attrition_data/api/table_data', status_code=status.HTTP_202_ACCEPTED)
-def patch_attr_entry(req: schemas.YearlyAttritionInHiCoupling, db: Session = Depends(get_db)):
+@router.post('/attrition_data/api/table_data/{year}')
+def create_attr_table_entry(year: int, req: schemas.YearlyAttritionInHiCoupling, db: Session = Depends(get_db)):
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+
+    div_id = divs.index(req.division)+1
+
+    new_attr = YearlyAttrition(
+        year                = year,
+        start_headcount     = req.totalHCNewYear,
+        budget_headcount    = req.totalBudgetHC,
+        joined_count        = req.join,
+        resigned_count      = req.resign,
+        transfer_count      = req.transfer,
+        div_id              = div_id
+    )
+
+    db.add(new_attr)
+    db.commit()
+    db.refresh(new_attr)
+
+    return new_attr
+
+@router.patch('/attrition_data/api/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
+def patch_attr_entry(id:int, req: schemas.YearlyAttritionInHiCoupling, db: Session = Depends(get_db)):
     attr = db.query(YearlyAttrition).filter(
-        YearlyAttrition.id == int(req.id)
+        YearlyAttrition.id == id
     )
 
     if not attr.first():
@@ -88,10 +110,10 @@ def patch_attr_entry(req: schemas.YearlyAttritionInHiCoupling, db: Session = Dep
     db.commit()
     return updated
 
-@router.delete('/attrition_data/api/table_data', status_code=status.HTTP_202_ACCEPTED)
-def delete_attr_entry(req: schemas.YearlyAttritionInHiCoupling, db: Session = Depends(get_db)):
+@router.delete('/attrition_data/api/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
+def delete_attr_entry(id:int, req: schemas.YearlyAttritionInHiCoupling, db: Session = Depends(get_db)):
     attr = db.query(YearlyAttrition).filter(
-        YearlyAttrition.id == int(req.id)
+        YearlyAttrition.id == id
     )
 
     if not attr.first():
