@@ -194,37 +194,36 @@ class ShowSocialContrib(BaseModel):
         orm_mode = True
 
 # Attrition
-class MonthlyAttrition(BaseModel):
-    joined_count    :int
-    resigned_count  :int
-    transfer_count  :int
-    month           :int
-    year            :int
-
-    div_id          :int
-
-class MonthlyAttritionIn(BaseModel):
-    joined_count    :Optional[int]
-    resigned_count  :Optional[int]
-    transfer_count  :Optional[int]
-    month           :Optional[int]
-    year            :Optional[int]
-
-    div_id          :Optional[int]
-
-class YearlyAttritionConst(BaseModel):
+class YearlyAttrition(BaseModel):
     year                :int
     start_headcount     :int
     budget_headcount    :int
-    
+    joined_count        :int
+    resigned_count      :int
+    transfer_count      :int
+
     div_id              :int
 
-class YearlyAttritionConstIn(BaseModel):
+class YearlyAttritionIn(BaseModel):
     year                :Optional[int]
     start_headcount     :Optional[int]
     budget_headcount    :Optional[int]
+    joined_count        :Optional[int]
+    resigned_count      :Optional[int]
+    transfer_count      :Optional[int]
     
     div_id              :Optional[int]
+
+class YearlyAttritionInHiCoupling(BaseModel):
+    id              :Optional[str]
+    division        :Optional[str]
+    totalBudgetHC   :Optional[int]
+    totalHCNewYear  :Optional[int]
+    join            :Optional[int]
+    resign          :Optional[int]
+    transfer        :Optional[int]
+    attritionRate   :Optional[str]
+    CurrentHC       :Optional[int]
 
 # BUSU Engagement
 class EngagementType(BaseModel):

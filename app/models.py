@@ -11,8 +11,7 @@ class Division(Base):
 
     div_trainBudgets    = relationship("TrainingBudget", back_populates="div")
     div_socialcontribs  = relationship("SocialContrib", back_populates="div")
-    div_monthlyAttr     = relationship("MonthlyAttrition", back_populates="div")
-    div_yearlyAttr      = relationship("YearlyAttritionConst", back_populates="div")
+    div_yearlyAttr      = relationship("YearlyAttrition", back_populates="div")
     div_busuengagements = relationship("BUSUEngagement", back_populates="div")
     div_projects        = relationship("Project", back_populates="div")
     # div_csfs_by_prf     = relationship("CSF", back_populates="by_prj_div")
@@ -127,23 +126,15 @@ class SocialType(Base):
     contribs    = relationship("SocialContrib", back_populates="social_type")
 
 # Attrition
-class MonthlyAttrition(Base):
-    __tablename__ = 'monthlyattritions'
-    id              = Column(Integer, primary_key=True, index=True)
-    joined_count    = Column(Integer)
-    resigned_count  = Column(Integer)
-    transfer_count  = Column(Integer)
-    month           = Column(Integer)
-    year            = Column(Integer)
-    div_id  = Column(Integer, ForeignKey('divisions.id'))
-    div     = relationship("Division", back_populates="div_monthlyAttr")
-
-class YearlyAttritionConst(Base):
+class YearlyAttrition(Base):
     __tablename__ = 'yearlyattritions'
     id              = Column(Integer, primary_key=True, index=True)
     year            = Column(Integer)
     start_headcount = Column(Integer)
     budget_headcount= Column(Integer)
+    joined_count    = Column(Integer)
+    resigned_count  = Column(Integer)
+    transfer_count  = Column(Integer)
     div_id  = Column(Integer, ForeignKey('divisions.id'))
     div     = relationship("Division", back_populates="div_yearlyAttr")
 
