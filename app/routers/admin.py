@@ -12,6 +12,40 @@ router = APIRouter(
     prefix="/admin"
 )
 
+# Training
+@router.get('/training_data/api/table_data/{year}')
+def get_training_table(year: int, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+    
+    training = db.query(Training).filter(
+        Training.date >= startDate,
+        Training.date <= endDate
+    ).all()
+
+    res = []
+
+    for t in training:
+        divison = t.employee.part_of_div.name if t.employee else ""
+        emp_name= t.employee.name if t.employee else ""
+
+
+        res.append({
+            "id"                : str(t.id),
+            "division"          : divison,
+            "name"              : emp_name,
+            "trainingTitle"     : t.name,
+            "date"              : t.date.strftime("%m/%d/%Y"),
+            "numberOfDays"      : t.duration_days,
+            "budget"            : t.budget,
+            "costRealization"   : t.realization,
+            "chargedByFinance"  : t.charged_by_fin,
+            "mandatoryFrom"     : t.mandatory_from,
+            "remark"            : t.remark
+        })
+
+    return res
+
 # Audit Project
 @router.get('/audit_project_data/api/table_data/{year}')
 def get_project_table(year: int, db: Session = Depends(get_db)):
@@ -116,7 +150,6 @@ def delete_project_table_entry(id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {'details': 'Deleted'}
-
 
 # Social Contribution
 @router.get('/audit_contribution_data/api/table_data/{year}')
