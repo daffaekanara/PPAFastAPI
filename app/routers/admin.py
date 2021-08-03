@@ -12,6 +12,98 @@ router = APIRouter(
     prefix="/admin"
 )
 
+# Social Contribution
+@router.get('/audit_contribution_data/api/table_data/{year}')
+def get_contrib_table(year: int, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    contribs = db.query(SocialContrib).filter(
+        SocialContrib.date >= startDate,
+        SocialContrib.date <= endDate
+    ).all()
+
+    res = []
+
+    for c in contribs:
+        res.append({
+            "id"        : str(c.id),
+            "division"  : c.div.name,
+            "category"  : c.social_type.name,
+            "title"     : c.topic_name,
+            "date"      : c.date.strftime("%m/%d/%Y")
+        })
+
+    return res
+
+@router.post('/audit_contribution_data/api/table_data')
+def create_contrib_table_entry(req: schemas.SocialContribHiCouplingIn, db: Session = Depends(get_db)):
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    types = ["Audit News", "MyUOB", "Audit Bulletin"]
+
+    div_id = divs.index(req.division)+1
+
+    new_con = SocialContrib(
+        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        topic_name      = req.title,
+        div_id          = divs.index(req.division) + 1,
+        social_type_id  = types.index(req.category) + 1
+    )
+
+    db.add(new_con)
+    db.commit()
+    db.refresh(new_con)
+
+    return new_con
+
+@router.patch('/audit_contribution_data/api/table_data/{id}')
+def patch_contrib_table_entry(id: int,req: schemas.SocialContribHiCouplingIn, db: Session = Depends(get_db)):
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    types = ["Audit News", "MyUOB", "Audit Bulletin"]
+
+    contrib = db.query(SocialContrib).filter(
+        SocialContrib.id == id
+    )
+
+    if not contrib.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+    
+    stored_data = jsonable_encoder(contrib.first())
+    stored_model = schemas.SocialContribIn(**stored_data)
+    
+    div_id = divs.index(req.division)+1
+    social_type_id  =types.index(req.category)+1
+
+    dataIn = schemas.SocialContribIn(
+        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        topic_name      = req.title,
+        div_id          = div_id,
+        social_type_id  = social_type_id
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    contrib.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/audit_contribution_data/api/table_data/{id}')
+def delete_contrib_table_entry(id: int, db: Session = Depends(get_db)):
+    contrib = db.query(SocialContrib).filter(
+        SocialContrib.id == id
+    )
+
+    if not contrib.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+    
+    contrib.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
 # BUSU Engagement Table
 @router.get('/busu_data/api/table_data/{year}')
 def get_busu_table(year: int, db: Session = Depends(get_db)):
@@ -107,7 +199,6 @@ def delete_busu_table_entry(id:int, db: Session = Depends(get_db)):
     db.commit()
 
     return {'details': 'Deleted'}
-
 
 # Attrition Table
 @router.get('/attrition_data/api/table_data/{year}')

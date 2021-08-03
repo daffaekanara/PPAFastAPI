@@ -193,6 +193,12 @@ class ShowSocialContrib(BaseModel):
     class Config():
         orm_mode = True
 
+class SocialContribHiCouplingIn(BaseModel):
+    date        :str
+    title       :str
+    category    :str
+    division    :str
+
 # Attrition
 class YearlyAttrition(BaseModel):
     year                :int
