@@ -77,6 +77,7 @@ class Training(Base):
     realization     = Column(Float)
     charged_by_fin  = Column(Float)
     remark          = Column(String)
+    mandatory_from  = Column(String)
 
     emp_id          = Column(Integer, ForeignKey('employees.id'))
     employee        = relationship("Employee", back_populates="emp_trainings") #employee id

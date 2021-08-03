@@ -102,6 +102,7 @@ class Training(BaseModel):
     realization     :float
     charged_by_fin  :float
     remark          :str
+    mandatory_from  :str
 
     emp_id          :int
 
@@ -114,6 +115,7 @@ class TrainingIn(BaseModel):
     realization     :Optional[float]
     charged_by_fin  :Optional[float]
     remark          :Optional[str]
+    mandatory_from  :Optional[str]
     emp_id          :Optional[int]
 
 class ShowTraining(BaseModel):
@@ -125,6 +127,7 @@ class ShowTraining(BaseModel):
     realization     :float
     charged_by_fin  :float
     remark          :str
+    mandatory_from  :str
     emp_id          :int
     employee        :Optional[ShowEmployeeOnly]
     
@@ -161,7 +164,8 @@ class TrainingInHiCoupling(BaseModel):
     budget              : Optional[int]
     costRealization     : Optional[int]
     chargedByFinance    : Optional[int]
-    mandatoryFrom
+    mandatoryFrom       : Optional[str]
+    remark              : Optional[str]
 
 	# divison             : 'PPA'
 	# name                : 'Stephanie'

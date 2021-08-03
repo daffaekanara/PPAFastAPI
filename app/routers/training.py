@@ -74,9 +74,12 @@ def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
         })
     
     for i, r in enumerate(res):
+        cost_realized   = values[i]["realized"] / values[i]["budget"] * 100
+        charged         = values[i]["charged"] / values[i]["budget"] * 100
+        
         res[i]["budget"]             = 100.0
-        res[i]["cost_realization"]   = values[i]["realized"] / values[i]["budget"] * 100
-        res[i]["charged_by_finance"] = values[i]["charged"] / values[i]["budget"] * 100
+        res[i]["cost_realization"]   = round(cost_realized, 2)
+        res[i]["charged_by_finance"] = round(charged, 2)
         
     return res
 
@@ -128,7 +131,8 @@ def get_training_progress_percentage(year: int, db: Session = Depends(get_db)):
         if values[i]["target_days"] == 0:
             res[i]["percentage"]   = 0.0
         else:
-            res[i]["percentage"]   = values[i]["curr_days"] / values[i]["target_days"] * 100
+            pctg = values[i]["curr_days"] / values[i]["target_days"] * 100
+            res[i]["percentage"]   = round(pctg, 2)
         
 
     return res
@@ -293,6 +297,7 @@ def create(req: schemas.Training, db: Session = Depends(get_db)):
         realization     = req.realization,
         charged_by_fin  = req.charged_by_fin,
         remark          = req.remark,
+        mandatory_from  = req.mandatory_from,
         emp_id=req.emp_id
     )
     
