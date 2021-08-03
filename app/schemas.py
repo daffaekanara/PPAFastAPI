@@ -151,6 +151,29 @@ class TrainingBudgetIn(BaseModel):
     budget  :Optional[float]
     div_id  :Optional[int]
 
+class TrainingInHiCoupling(BaseModel):
+    id                  : Optional[str]
+    divison             : Optional[str]
+    name                : Optional[str]
+    trainingTitle       : Optional[str]
+    date                : Optional[str]
+    numberOfDays        : Optional[int]
+    budget              : Optional[int]
+    costRealization     : Optional[int]
+    chargedByFinance    : Optional[int]
+    mandatoryFrom
+
+	# divison             : 'PPA'
+	# name                : 'Stephanie'
+	# trainingTitle       : 'Beasiswa'
+	# date                : ''
+	# numberOfDays        : ''
+	# budget              : 82000000
+	# costRealization     : 3835500
+	# chargedByFinance    : 38355000
+	# mandatoryFrom       :'HR'
+	# remark              : ''
+
 class DebugParent(BaseModel):
     first_name:str
     last_name:str
@@ -194,10 +217,11 @@ class ShowSocialContrib(BaseModel):
         orm_mode = True
 
 class SocialContribHiCouplingIn(BaseModel):
-    date        :str
-    title       :str
-    category    :str
-    division    :str
+    date        :Optional[str]
+    title       :Optional[str]
+    category    :Optional[str]
+    division    :Optional[str]
+    id          :Optional[str]
 
 # Attrition
 class YearlyAttrition(BaseModel):
@@ -291,6 +315,18 @@ class ProjectIn(BaseModel):
 
     status_id       :Optional[int]
     div_id          :Optional[int]
+
+class ProjectInHiCoupling(BaseModel):
+    id          : Optional[str]
+    auditPlan   : Optional[str]
+    division    : Optional[str]
+    status      : Optional[str]
+    useOfDA     : Optional[bool]
+    year        : Optional[int]
+
+    is_carried_over : Optional[bool]
+    timely_report   : Optional[bool]
+    completion_PA   : Optional[bool]
 
 # Budgets
 class MonthlyBudget(BaseModel):

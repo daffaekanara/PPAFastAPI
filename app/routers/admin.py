@@ -12,6 +12,112 @@ router = APIRouter(
     prefix="/admin"
 )
 
+# Audit Project
+@router.get('/audit_project_data/api/table_data/{year}')
+def get_project_table(year: int, db: Session = Depends(get_db)):
+    projects = db.query(Project).filter(
+        Project.year == year
+    ).all()
+
+    res = []
+
+    for p in projects:
+        res.append({
+            "id"        : str(p.id),
+            "auditPlan" : p.name,
+            "division"  : p.div.name,
+            "status"    : p.status.name,
+            "useOfDA"   : p.used_DA,
+            "year"      : p.year,
+
+
+            "is_carried_over" : p.is_carried_over,
+            "timely_report"   : p.timely_report,
+            "completion_PA"   : p.completion_PA
+        })
+
+    return res
+
+@router.post('/audit_project_data/api/table_data')
+def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
+    divs    = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    statuses= ["Not Started", "Planning", "Fieldwork", "Reporting", "Completed"]
+
+    div_id = divs.index(req.division)+1
+    status_id = statuses.index(req.status)+1
+
+    new_prj = Project(
+        name            = req.auditPlan,
+        used_DA         = req.useOfDA,
+        completion_PA   = req.completion_PA,
+        is_carried_over = req.is_carried_over,
+        timely_report   = req.timely_report,
+        year            = req.year,
+
+        status_id       = status_id,
+        div_id          = div_id,
+    )
+
+    db.add(new_prj)
+    db.commit()
+    db.refresh(new_prj)
+
+    return new_prj
+
+@router.patch('/audit_project_data/api/table_data/{id}')
+def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    statuses= ["Not Started", "Planning", "Fieldwork", "Reporting", "Completed"]
+
+    prj = db.query(Project).filter(
+        Project.id == id
+    )
+
+    if not prj.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+    
+    stored_data = jsonable_encoder(prj.first())
+    stored_model = schemas.ProjectIn(**stored_data)
+    
+    div_id      = divs.index(req.division)+1
+    status_id   = statuses.index(req.status)+1
+
+    dataIn = schemas.ProjectIn(
+        name            = req.auditPlan,
+        used_DA         = req.useOfDA,
+        completion_PA   = req.completion_PA,
+        is_carried_over = req.is_carried_over,
+        timely_report   = req.timely_report,
+        year            = req.year,
+
+        status_id       = status_id,
+        div_id          = div_id
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    prj.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/audit_project_data/api/table_data/{id}')
+def delete_project_table_entry(id: int, db: Session = Depends(get_db)):
+    prj = db.query(Project).filter(
+        Project.id == id
+    )
+
+    if not prj.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+    
+    prj.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
+
 # Social Contribution
 @router.get('/audit_contribution_data/api/table_data/{year}')
 def get_contrib_table(year: int, db: Session = Depends(get_db)):
