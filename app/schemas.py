@@ -158,6 +158,7 @@ class TrainingInHiCoupling(BaseModel):
     id                  : Optional[str]
     divison             : Optional[str]
     name                : Optional[str]
+    nik                 : Optional[str]
     trainingTitle       : Optional[str]
     date                : Optional[str]
     numberOfDays        : Optional[int]

@@ -46,6 +46,97 @@ def get_training_table(year: int, db: Session = Depends(get_db)):
 
     return res
 
+@router.post('/training_data/api/table_data/')
+def create_training_table_entry(req: schemas.TrainingInHiCoupling, db: Session = Depends(get_db)):    
+    emp = db.query(Employee).filter(
+        Employee.staff_id == req.nik
+    )
+
+    if not emp.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    emp_id = emp.first().id
+
+    new_train = Training(
+        name            = req.trainingTitle,
+        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        duration_days   = req.numberOfDays,
+        proof           = False,
+        budget          = req.budget,
+        realization     = req.costRealization,
+        charged_by_fin  = req.chargedByFinance,
+        remark          = req.remark,
+        mandatory_from  = req.mandatoryFrom,
+
+        emp_id          = emp_id
+    )
+
+    db.add(new_train)
+    db.commit()
+    db.refresh(new_train)
+
+    return new_train
+
+@router.patch('/training_data/api/table_data/{id}')
+def patch_training_table_entry(id: int, req: schemas.TrainingInHiCoupling, db: Session = Depends(get_db)):    
+    training = db.query(Training).filter(
+        Training.id == id
+    )
+
+    if not training.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+    
+    stored_data = jsonable_encoder(training.first())
+    stored_model = schemas.TrainingIn(**stored_data)
+    
+    # Get emp_id from NIK
+    emp = db.query(Employee).filter(
+        Employee.staff_id == req.nik
+    )
+    if not emp.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    emp_id = emp.first().id
+
+
+    dataIn = schemas.Training(
+        name            = req.trainingTitle,
+        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        duration_days   = req.numberOfDays,
+        proof           = False,
+
+        budget          = req.budget,
+        realization     = req.costRealization,
+        charged_by_fin  = req.chargedByFinance,
+        remark          = req.remark,
+        mandatory_from  = req.mandatoryFrom,
+
+        emp_id          = emp_id
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    training.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/training_data/api/table_data/{id}')
+def delete_training_table_entry(id: int, db: Session = Depends(get_db)):
+    t = db.query(Training).filter(
+        Training.id == id
+    )
+
+    if not t.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+    
+    t.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
 # Audit Project
 @router.get('/audit_project_data/api/table_data/{year}')
 def get_project_table(year: int, db: Session = Depends(get_db)):
