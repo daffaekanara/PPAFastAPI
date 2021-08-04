@@ -34,6 +34,7 @@ class Employee(BaseModel):
     ia_background           :bool
     ea_background           :bool
     div_id                  :int
+    role_id                 :int
 
 class EmployeeIn(BaseModel):
     name                    :Optional[str]
@@ -55,12 +56,14 @@ class EmployeeIn(BaseModel):
     ia_background           :Optional[bool]
     ea_background           :Optional[bool]
     div_id                  :Optional[int]
+    role_id                 :Optional[int]
 
 class EmployeeInHiCoupling(BaseModel):
     staffID                     : Optional[str]
     staffNIK                    : Optional[str]
     staffName                   : Optional[str]
     email                       : Optional[str]
+    role                        : Optional[str]
     divison                     : Optional[str]
     stream                      : Optional[str]
     corporateTitle              : Optional[str]
@@ -117,6 +120,12 @@ class CertificationIn(BaseModel):
     cert_name   :Optional[str]
     cert_proof  :Optional[bool]
     emp_id      :Optional[int]
+
+class Role(BaseModel):
+    name   :str
+
+class RoleIn(BaseModel):
+    name   :Optional[str]
 
 class Login(BaseModel):
     email: str

@@ -44,6 +44,9 @@ class Employee(Base):
     div_id = Column(Integer, ForeignKey('divisions.id'))
     part_of_div = relationship("Division", back_populates="employees_of_div") # division id
 
+    role_id = Column(Integer, ForeignKey('roles.id'))
+    role = relationship("Role", back_populates="users")
+
     emp_trainings = relationship("Training", back_populates="employee")
 
     emp_trainingtargets = relationship("TrainingTarget", back_populates="trainee")
@@ -63,6 +66,13 @@ class Certification(Base):
 
     emp_id = Column(Integer, ForeignKey('employees.id'))
     owner = relationship("Employee", back_populates="emp_certifications")
+
+class Role(Base):
+    __tablename__ = 'roles'
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String)
+
+    users = relationship("Employee", back_populates="role")
 
 # Training
 class Training(Base):

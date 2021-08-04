@@ -11,6 +11,66 @@ router = APIRouter(
     prefix="/employee"
 )
 
+# Roles
+@router.get('/role')
+def get_all_role(db: Session = Depends(get_db)):
+    roles = db.query(Role).all()
+    return roles
+
+@router.get('/role/{id}')
+def get_single_role(id: int, db: Session = Depends(get_db)):
+    role = db.query(Role).filter(
+        Role.id == id
+    ).first()
+
+    if not role:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Role of ID ({id}) was not found!")
+
+    return role
+
+@router.post('/role', status_code=status.HTTP_201_CREATED)
+def create_role(req: schemas.Role, db: Session = Depends(get_db)):
+    newRole = Role(
+        name = req.name
+    )
+
+    db.add(newRole)
+    db.commit()
+    db.refresh(newRole)
+
+    return newRole
+
+@router.patch('/role/{id}', status_code=status.HTTP_202_ACCEPTED)
+def update_role(id: int, req: schemas.RoleIn, db: Session = Depends(get_db)):
+    query_res = db.query(Role).filter(Role.id == id)
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    stored_data = jsonable_encoder(query_res.first())
+    stored_model = schemas.RoleIn(**stored_data)
+
+    new_data = req.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    query_res.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/role/{id}')
+def delete_role(id: int, db: Session = Depends(get_db)):
+    query_res = db.query(Role).filter(Role.id == id)
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    query_res.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
 # Certification
 @router.get('/cert')
 def get_all_cert(db: Session = Depends(get_db)):

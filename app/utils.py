@@ -12,6 +12,10 @@ def div_str_to_divID(text):
 
     return divs.index(text)+1
 
+def role_str_to_id(text):
+    roles   = ["User", "Power User", "Administrator"]
+    return roles.index(text)+1
+
 def get_year_diff_to_now(start_date):
     today = datetime.date.today()
     return today.year - start_date.year - ((today.month, today.day) < (start_date.month, start_date.day))

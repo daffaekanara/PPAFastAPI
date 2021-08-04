@@ -58,6 +58,7 @@ def get_employee_table(db: Session = Depends(get_db)):
             "staffNIK"                    : e.staff_id,
             "staffName"                   : e.name,
             "email"                       : e.email,
+            "role"                        : e.role.name,
             "divison"                     : e.part_of_div.name,
             "stream"                      : e.div_stream,
             "corporateTitle"              : e.corporate_title,
@@ -95,8 +96,9 @@ def get_employee_table(db: Session = Depends(get_db)):
 
 @router.post('/employee_data/api/table_data')
 def create_employee_table_entry(req: schemas.EmployeeInHiCoupling, db: Session = Depends(get_db)):
-    divs    = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
-    div_id = divs.index(req.divison)+1
+    div_id = utils.div_str_to_divID(req.divison)
+    role_id = utils.role_str_to_id(req.role)
+
     new_emp = Employee(
         name    = req.staffName,
         email   = req.email,
@@ -118,7 +120,8 @@ def create_employee_table_entry(req: schemas.EmployeeInHiCoupling, db: Session =
         ia_background           = req.IABackgground,
         ea_background           = req.EABackground,
 
-        div_id = div_id
+        div_id = div_id,
+        role_id= role_id
     )
 
     db.add(new_emp)
@@ -160,7 +163,8 @@ def patch_employee_table_entry(id: int, req: schemas.EmployeeInHiCoupling, db: S
         ia_background           = req.IABackgground,
         ea_background           = req.EABackground,
 
-        div_id = utils.div_str_to_divID(req.divison)
+        div_id = utils.div_str_to_divID(req.divison),
+        role_id = utils.role_str_to_id(req.role)
     )
 
     new_data = dataIn.dict(exclude_unset=True)
