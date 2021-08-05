@@ -163,7 +163,7 @@ def get_total_audit_exp(db: Session = Depends(get_db)):
         "7-9",
         "10-12",
         "13-15",
-        "More Than 15"
+        "More than 15"
     ]
     res = []
 
