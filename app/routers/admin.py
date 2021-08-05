@@ -13,9 +13,37 @@ router = APIRouter(
 )
 
 # Budget
-@router.get('/budget_data/api/table_data/{year}')
-def get_budget_table(db: Session = Depends(get_db)):
-    pass
+# @router.get('/budget_data/api/table_data/{year}/{month}')
+# def get_budget_table(year: int, month: int, db: Session = Depends(get_db)):
+#     cats = [
+#         "Staff Expense",
+#         "Staff Training & Regional Meeting",
+#         "Revenue Related",
+#         "IT Related",
+#         "Occupancy Related",
+#         "Transport & Travel",
+#         "Others",
+#         "Indirect Expense"
+#     ]
+
+#     i = 1
+#     res = []
+#     for c in cats:
+#         res.append({
+#             "id"                : str(i),
+#             "expenses"          : c,
+#             "budgetYear"        : 0,
+#             "budgetMonth"       : 0,
+#             "actualMonth"       : 0,
+#             "MTD"               : '-',
+#             "YTD"               : '-',
+#             "STDProRate"        : '-',
+#             "overUnderBudget"   : '-',
+#             "variance"          : ''
+#         })
+#         i += 1
+
+#     # Get Yearly Budget
 
 # Employee
 @router.get('/employee_data/api/table_data')
@@ -59,7 +87,7 @@ def get_employee_table(db: Session = Depends(get_db)):
         smr_str = f"Level {smr_lvl}" if smr_lvl else "-"
 
         res.append({
-            "staffID"                     : e.id,
+            "id"                          : e.id,
             "staffNIK"                    : e.staff_id,
             "staffName"                   : e.name,
             "email"                       : e.email,

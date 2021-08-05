@@ -59,7 +59,7 @@ class EmployeeIn(BaseModel):
     role_id                 :Optional[int]
 
 class EmployeeInHiCoupling(BaseModel):
-    staffID                     : Optional[str]
+    id                          : Optional[str]
     staffNIK                    : Optional[str]
     staffName                   : Optional[str]
     email                       : Optional[str]
