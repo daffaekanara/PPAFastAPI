@@ -80,7 +80,7 @@ class Training(Base):
     id              = Column(Integer, primary_key=True, index=True)
     name            = Column(String)
     date            = Column(Date)
-    duration_days   = Column(Float)
+    duration_hours  = Column(Float)
     proof           = Column(Boolean)
 
     budget          = Column(Float)
@@ -96,7 +96,7 @@ class TrainingTarget(Base):
     __tablename__ = 'trainingtargets'
     id = Column(Integer, primary_key=True, index=True)
     year = Column(Integer)
-    target_days = Column(Float)
+    target_hours = Column(Float)
 
     emp_id = Column(Integer, ForeignKey('employees.id'))
     trainee = relationship("Employee", back_populates="emp_trainingtargets") #employee id

@@ -246,7 +246,7 @@ def get_training_table(year: int, db: Session = Depends(get_db)):
             "name"              : emp_name,
             "trainingTitle"     : t.name,
             "date"              : t.date.strftime("%m/%d/%Y"),
-            "numberOfDays"      : t.duration_days,
+            "numberOfHours"     : t.duration_hours,
             "budget"            : t.budget,
             "costRealization"   : t.realization,
             "chargedByFinance"  : t.charged_by_fin,
@@ -270,7 +270,7 @@ def create_training_table_entry(req: schemas.TrainingInHiCoupling, db: Session =
     new_train = Training(
         name            = req.trainingTitle,
         date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
-        duration_days   = req.numberOfDays,
+        duration_hours  = req.numberOfHours,
         proof           = False,
         budget          = req.budget,
         realization     = req.costRealization,
@@ -312,7 +312,7 @@ def patch_training_table_entry(id: int, req: schemas.TrainingInHiCoupling, db: S
     dataIn = schemas.Training(
         name            = req.trainingTitle,
         date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
-        duration_days   = req.numberOfDays,
+        duration_hours  = req.numberOfHours,
         proof           = False,
 
         budget          = req.budget,

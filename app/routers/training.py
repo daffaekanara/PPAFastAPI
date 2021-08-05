@@ -105,19 +105,19 @@ def get_training_progress_percentage(year: int, db: Session = Depends(get_db)):
     for d in divs:
         values.append({
             "div"           : d,
-            "target_days"   : 0,
-            "curr_days"     : 0
+            "target_hours"   : 0,
+            "curr_hours"     : 0
         })
     
     # Get Targets
     for t in targets:
         i = utils.find_index(values, "div", t.trainee.part_of_div.name)
-        values[i]["target_days"] += t.target_days
+        values[i]["target_hours"] += t.target_hours
 
     # Get Currs
     for t in trainings:
         i = utils.find_index(values, "div", t.employee.part_of_div.name)
-        values[i]["curr_days"] += t.duration_days
+        values[i]["curr_hours"] += t.duration_hours
     
     # Translate to Percentage
     res = []
@@ -128,10 +128,10 @@ def get_training_progress_percentage(year: int, db: Session = Depends(get_db)):
         })
     
     for i, r in enumerate(res):
-        if values[i]["target_days"] == 0:
+        if values[i]["target_hours"] == 0:
             res[i]["percentage"]   = 0.0
         else:
-            pctg = values[i]["curr_days"] / values[i]["target_days"] * 100
+            pctg = values[i]["curr_hours"] / values[i]["target_hours"] * 100
             res[i]["percentage"]   = round(pctg, 2)
         
 
@@ -156,7 +156,7 @@ def get_single(id: int, db: Session = Depends(get_db)):
 def create(req: schemas.TrainingTarget, db: Session = Depends(get_db)):
     newTrainTrgt = TrainingTarget(
         year        = req.year,
-        target_days = req.target_days,
+        target_hours= req.target_hours,
         emp_id      = req.emp_id
     )
 
@@ -291,7 +291,7 @@ def create(req: schemas.Training, db: Session = Depends(get_db)):
     newTrain = Training(
         name            = req.name, 
         date            = req.date, 
-        duration_days   = req.duration_days, 
+        duration_hours  = req.duration_hours, 
         proof           = req.proof,
         budget          = req.budget,
         realization     = req.realization,

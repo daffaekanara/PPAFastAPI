@@ -141,7 +141,7 @@ class TokenData(BaseModel):
 # Trainings
 class Training(BaseModel):
     name            :str
-    duration_days   :float
+    duration_hours   :float
     date            :datetime.date
     proof           :bool
     budget          :float
@@ -154,7 +154,7 @@ class Training(BaseModel):
 
 class TrainingIn(BaseModel):
     name            :Optional[str]
-    duration_days   :Optional[float]
+    duration_hours   :Optional[float]
     date            :Optional[datetime.date]
     proof           :Optional[bool]
     budget          :Optional[float]
@@ -166,7 +166,7 @@ class TrainingIn(BaseModel):
 
 class ShowTraining(BaseModel):
     name            :str
-    duration_days   :float
+    duration_hours   :float
     date            :datetime.date
     proof           :bool
     budget          :float
@@ -182,12 +182,12 @@ class ShowTraining(BaseModel):
 
 class TrainingTarget(BaseModel):
     year:int
-    target_days:float
+    target_hours:float
     emp_id:int
 
 class TrainingTargetIn(BaseModel):
     year:Optional[int]
-    target_days:Optional[float]
+    target_hours:Optional[float]
     emp_id:Optional[int]
 
 class TrainingBudget(BaseModel):
@@ -207,7 +207,7 @@ class TrainingInHiCoupling(BaseModel):
     nik                 : Optional[str]
     trainingTitle       : Optional[str]
     date                : Optional[str]
-    numberOfDays        : Optional[int]
+    numberOfHours       : Optional[int]
     budget              : Optional[int]
     costRealization     : Optional[int]
     chargedByFinance    : Optional[int]
@@ -218,7 +218,7 @@ class TrainingInHiCoupling(BaseModel):
 	# name                : 'Stephanie'
 	# trainingTitle       : 'Beasiswa'
 	# date                : ''
-	# numberOfDays        : ''
+	# numberOfHours       : ''
 	# budget              : 82000000
 	# costRealization     : 3835500
 	# chargedByFinance    : 38355000
