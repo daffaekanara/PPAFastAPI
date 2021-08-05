@@ -122,7 +122,8 @@ def get_employee_table(db: Session = Depends(get_db)):
             "CPA"                         : cert_res[9]['value'],
             "CA"                          : cert_res[10]['value'],
             "IABackgground"               : e.ia_background,
-            "EABackground"                : e.ea_background
+            "EABackground"                : e.ea_background,
+            "active"                      : e.active
         })
 
     return res
@@ -152,6 +153,7 @@ def create_employee_table_entry(req: schemas.EmployeeInHiCoupling, db: Session =
         edu_category            = req.educationCategory,
         ia_background           = req.IABackgground,
         ea_background           = req.EABackground,
+        active                  = req.active,
 
         div_id = div_id,
         role_id= role_id
@@ -195,6 +197,7 @@ def patch_employee_table_entry(id: int, req: schemas.EmployeeInHiCoupling, db: S
         edu_category            = req.educationCategory,
         ia_background           = req.IABackgground,
         ea_background           = req.EABackground,
+        active                  = req.active,
 
         div_id = utils.div_str_to_divID(req.divison),
         role_id = utils.role_str_to_id(req.role)

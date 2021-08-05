@@ -39,6 +39,7 @@ class Employee(Base):
     edu_category            = Column(String)
     ia_background           = Column(Boolean)
     ea_background           = Column(Boolean)
+    active                  = Column(Boolean)
 
 
     div_id = Column(Integer, ForeignKey('divisions.id'))

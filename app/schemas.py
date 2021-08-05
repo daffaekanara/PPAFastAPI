@@ -33,6 +33,7 @@ class Employee(BaseModel):
     edu_category            :str
     ia_background           :bool
     ea_background           :bool
+    active                  :bool
     div_id                  :int
     role_id                 :int
 
@@ -55,6 +56,7 @@ class EmployeeIn(BaseModel):
     edu_category            :Optional[str]
     ia_background           :Optional[bool]
     ea_background           :Optional[bool]
+    active                  :Optional[bool]
     div_id                  :Optional[int]
     role_id                 :Optional[int]
 
@@ -95,6 +97,7 @@ class EmployeeInHiCoupling(BaseModel):
     CA                          : Optional[bool]
     IABackgground               : Optional[bool]
     EABackground                : Optional[bool]
+    active                      : Optional[bool]
 
 class ShowEmployee(BaseModel):
     name:str
@@ -213,17 +216,6 @@ class TrainingInHiCoupling(BaseModel):
     chargedByFinance    : Optional[int]
     mandatoryFrom       : Optional[str]
     remark              : Optional[str]
-
-	# divison             : 'PPA'
-	# name                : 'Stephanie'
-	# trainingTitle       : 'Beasiswa'
-	# date                : ''
-	# numberOfHours       : ''
-	# budget              : 82000000
-	# costRealization     : 3835500
-	# chargedByFinance    : 38355000
-	# mandatoryFrom       :'HR'
-	# remark              : ''
 
 class DebugParent(BaseModel):
     first_name:str

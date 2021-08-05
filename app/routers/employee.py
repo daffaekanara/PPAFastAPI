@@ -169,6 +169,7 @@ def create(req: schemas.Employee, db: Session = Depends(get_db)):
         edu_category            = req.edu_category,
         ia_background           = req.ia_background,
         ea_background           = req.ea_background,
+        active                  = req.active,
         div_id                  = req.div_id
     )
 
