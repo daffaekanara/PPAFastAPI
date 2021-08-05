@@ -12,6 +12,11 @@ router = APIRouter(
     prefix="/admin"
 )
 
+# Budget
+@router.get('/budget_data/api/table_data/{year}')
+def get_budget_table(db: Session = Depends(get_db)):
+    pass
+
 # Employee
 @router.get('/employee_data/api/table_data')
 def get_employee_table(db: Session = Depends(get_db)):

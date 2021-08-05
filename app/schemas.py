@@ -415,6 +415,7 @@ class MonthlyActualBudget(BaseModel):
     other_transport_travel      :float
     other_other                 :float
     indirect_expense            :float
+    remark                      :str
 
 class MonthlyActualBudgetIn(BaseModel):
     year                        :Optional[int]
@@ -427,6 +428,19 @@ class MonthlyActualBudgetIn(BaseModel):
     other_transport_travel      :Optional[float]
     other_other                 :Optional[float]
     indirect_expense            :Optional[float]
+    remark                      :Optional[str]
+
+class BudgetInHiCoupling(BaseModel):
+    id              : Optional[str]
+    expenses        : Optional[str]
+    budgetYear      : Optional[float]
+    budgetMonth     : Optional[float]
+    actualMonth     : Optional[float]
+    MTD             : Optional[str]
+    YTD             : Optional[str]
+    STDProRate      : Optional[str]
+    overUnderBudget : Optional[str]
+    variance        : Optional[str]
 
 # QAIP
 class QAIP(BaseModel):

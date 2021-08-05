@@ -109,7 +109,8 @@ def create_monthly_actual_budget(req: schemas.MonthlyActualBudget, db: Session =
         occupancy_related           = req.occupancy_related,
         other_transport_travel      = req.other_transport_travel,
         other_other                 = req.other_other,
-        indirect_expense            = req.indirect_expense
+        indirect_expense            = req.indirect_expense,
+        remark                      = req.remark
     )
 
     db.add(newMonthActualBudget)

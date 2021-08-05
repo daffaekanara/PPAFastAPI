@@ -222,6 +222,7 @@ class MonthlyActualBudget(Base):
     other_transport_travel      = Column(Float)
     other_other                 = Column(Float)
     indirect_expense            = Column(Float)
+    remark                      = Column(String)
 
 # QAIP
 class QAIP(Base):
