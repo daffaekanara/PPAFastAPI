@@ -170,7 +170,8 @@ def create(req: schemas.Employee, db: Session = Depends(get_db)):
         ia_background           = req.ia_background,
         ea_background           = req.ea_background,
         active                  = req.active,
-        div_id                  = req.div_id
+        div_id                  = req.div_id,
+        role_id                 = req.role_id
     )
 
     db.add(newEmp)

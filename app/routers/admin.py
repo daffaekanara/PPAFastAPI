@@ -242,11 +242,13 @@ def get_training_table(year: int, db: Session = Depends(get_db)):
     for t in training:
         divison = t.employee.part_of_div.name if t.employee else ""
         emp_name= t.employee.name if t.employee else ""
+        emp_nik = t.employee.staff_id if t.employee else ""
 
         res.append({
             "id"                : str(t.id),
             "division"          : divison,
             "name"              : emp_name,
+            "nik"               : emp_nik,
             "trainingTitle"     : t.name,
             "date"              : t.date.strftime("%m/%d/%Y"),
             "numberOfHours"     : t.duration_hours,
@@ -306,11 +308,8 @@ def patch_training_table_entry(id: int, req: schemas.TrainingInHiCoupling, db: S
     emp = db.query(Employee).filter(
         Employee.staff_id == req.nik
     )
-    if not emp.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
-
-    emp_id = emp.first().id
-
+        
+    emp_id = emp.first().id if emp.first() else 0
 
     dataIn = schemas.Training(
         name            = req.trainingTitle,
