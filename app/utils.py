@@ -36,3 +36,22 @@ def extract_SMR_level(text):
         return int(text[-1])
     else:
         return None
+
+def calc_single_csf_score(csf):
+    atps = [
+        csf.atp_1, csf.atp_2, csf.atp_3,
+        csf.atp_4, csf.atp_5, csf.atp_6
+    ]
+
+    acs = [
+        csf.ac_1, csf.ac_2, csf.ac_3,
+        csf.ac_4, csf.ac_5, csf.ac_6
+    ]
+
+    paws = [
+        csf.paw_1, csf.paw_2, csf.paw_3
+    ]
+
+    overall_csf = (sum(atps)/len(atps) + sum(acs)/len(acs) + sum(paws)/len(paws)) / 3
+
+    return round(overall_csf,2)
