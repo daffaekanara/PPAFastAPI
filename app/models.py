@@ -14,8 +14,8 @@ class Division(Base):
     div_yearlyAttr      = relationship("YearlyAttrition", back_populates="div")
     div_busuengagements = relationship("BUSUEngagement", back_populates="div")
     div_projects        = relationship("Project", back_populates="div")
-    # div_csfs_by_prf     = relationship("CSF", back_populates="by_prj_div")
-    # div_invdiv_by_prf   = relationship("CSF", back_populates="by_invdiv_div")
+    
+    csfs_by_invdiv  = relationship("CSF", back_populates="by_invdiv_div")
 
 class Employee(Base):
     __tablename__ = 'employees'
@@ -195,6 +195,8 @@ class Project(Base):
     div_id  = Column(Integer, ForeignKey('divisions.id'))
     div     = relationship("Division", back_populates="div_projects")
 
+    csfs = relationship("CSF", back_populates="prj")
+
 # Budgets
 class MonthlyBudget(Base):
     __tablename__ = 'monthlybudgets'
@@ -279,7 +281,6 @@ class QAIPHeadDiv(Base):
 class CSF(Base):
     __tablename__ = 'csfs'
     id                  = Column(Integer, primary_key=True, index=True)
-    audit_project_name  = Column(String)
     client_name         = Column(String)
     client_unit         = Column(String)
     csf_date            = Column(Date)
@@ -299,15 +300,11 @@ class CSF(Base):
     paw_2               = Column(Float)
     paw_3               = Column(Float)
 
+    prj_id  = Column(Integer, ForeignKey('projects.id'))
+    prj     = relationship("Project", back_populates="csfs")
 
-    #tl_emp_id
     tl_id = Column(Integer, ForeignKey('employees.id'))
     tl    = relationship("Employee", back_populates="emp_csf_tl")
 
-    #by_prj_div_id
-    by_prj_div_id = Column(Integer, ForeignKey('divisions.id'))
-    by_prj_div    = relationship("Division", foreign_keys=[by_prj_div_id], backref="div_prj_by_prf")
-
-    #by_invdiv_div_id
     by_invdiv_div_id = Column(Integer, ForeignKey('divisions.id'))
-    by_invdiv_div    = relationship("Division", foreign_keys=[by_invdiv_div_id], backref="div_invdiv_by_prf")
+    by_invdiv_div    = relationship("Division", back_populates="csfs_by_invdiv")

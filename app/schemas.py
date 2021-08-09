@@ -515,7 +515,6 @@ class QAIPHeadDivIn(BaseModel):
 
 # CSF
 class CSF(BaseModel):
-    audit_project_name  :str
     client_name         :str
     client_unit         :str
     csf_date            :datetime.date
@@ -535,12 +534,12 @@ class CSF(BaseModel):
     paw_2               :float
     paw_3               :float
 
+    prj_id              :int
     tl_id               :int
-    by_prj_div_id       :int
+
     by_invdiv_div_id    :int
 
 class CSFIn(BaseModel):
-    audit_project_name  :Optional[str]
     client_name         :Optional[str]
     client_unit         :Optional[str]
     csf_date            :Optional[datetime.date]
@@ -559,7 +558,7 @@ class CSFIn(BaseModel):
     paw_1               :Optional[float]
     paw_2               :Optional[float]
     paw_3               :Optional[float]
-    
+
+    prj_id              :Optional[int]
     tl_id               :Optional[int]
-    by_prj_div_id       :Optional[int]
     by_invdiv_div_id    :Optional[int]

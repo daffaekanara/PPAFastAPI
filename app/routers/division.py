@@ -11,6 +11,25 @@ router = APIRouter(
     prefix="/division"
 )
 
+@router.get('/get_emps')
+def get_employees_by_div(db: Session = Depends(get_db)):
+    divs = db.query(Division).all()
+
+    ds    = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+
+    res = []
+    for d in ds:
+        res.append({
+            'division': d,
+            'employees': []
+        })
+
+    for d in divs:
+        for e in d.employees_of_div:
+            res[d.id - 1]['employees'].append(e.name)
+
+    return res
+
 @router.get('/')
 def get_all(db: Session = Depends(get_db)):
     divs = db.query(Division).all()

@@ -11,7 +11,7 @@ router = APIRouter(
     prefix="/csf"
 )
 
-# QAIP Head Divs
+# CSF
 @router.get('/')
 def get_all(db: Session = Depends(get_db)):
     csf = db.query(CSF).all()
@@ -29,7 +29,6 @@ def get_single(id: int, db: Session = Depends(get_db)):
 @router.post('/', status_code=status.HTTP_201_CREATED)
 def create(req: schemas.CSF, db: Session = Depends(get_db)):
     newType = CSF(
-        audit_project_name  = req.audit_project_name,
         client_name         = req.client_name,
         client_unit         = req.client_unit,
         csf_date            = req.csf_date,
@@ -49,8 +48,8 @@ def create(req: schemas.CSF, db: Session = Depends(get_db)):
         paw_2               = req.paw_2,
         paw_3               = req.paw_3,
 
+        prj_id              = req.prj_id,
         tl_id               = req.tl_id,
-        by_prj_div_id       = req.by_prj_div_id,
         by_invdiv_div_id    = req.by_invdiv_div_id
     )
 
