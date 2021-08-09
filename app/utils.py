@@ -7,6 +7,9 @@ def find_index(listOfDict, dict_key, value):
 def str_to_datetime(text):
     return datetime.datetime.strptime(text, "%m/%d/%Y")
 
+def date_to_str(date: datetime.date):
+    return date.strftime("%m/%d/%Y")
+
 def div_str_to_divID(text):
     divs    = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
 

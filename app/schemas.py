@@ -562,3 +562,32 @@ class CSFIn(BaseModel):
     prj_id              :Optional[int]
     tl_id               :Optional[int]
     by_invdiv_div_id    :Optional[int]
+
+class CSFInHiCoupling(BaseModel):
+	id                  : str
+	division_project    : str
+	auditProject        : str
+	clientName          : str
+	unitJabatan         : str
+	TL                  : str
+	CSFDate             : str
+	atp1                : float
+	atp2                : float
+	atp3                : float
+	atp4                : float
+	atp5                : float
+	atp6                : float
+	atpOverall          : float
+	ac1                 : float
+	ac2                 : float
+	ac3                 : float
+	ac4                 : float
+	ac5                 : float
+	ac6                 : float
+	acOverall           : float
+	paw1                : float
+	paw2                : float
+	paw3                : float
+	pawOverall          : float
+	overall             : float
+	division_by_inv     : str

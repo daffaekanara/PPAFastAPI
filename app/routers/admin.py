@@ -45,6 +45,79 @@ router = APIRouter(
 
 #     # Get Yearly Budget
 
+# CSF
+@router.get('/csf_data/api/table_data/{year}')
+def get_csf_table(year: int, db: Session = Depends(get_db)):
+    prjs = db.query(Project).filter(
+        Project.year == year
+    ).all()
+
+    prj_ids = [p.id for p in prjs]
+
+    csfs = db.query(CSF).filter(
+        CSF.prj_id.in_(prj_ids)
+    ).all()
+
+    res = []
+
+    for c in csfs:
+        sum_atp = c.atp_1 + c.atp_2 + c.atp_3 + c.atp_4 + c.atp_5 + c.atp_6
+        avg_atp = round(sum_atp / 6, 2)
+
+        sum_ac = c.ac_1 + c.ac_2 + c.ac_3 + c.ac_4 + c.ac_5 + c.ac_6
+        avg_ac = round(sum_ac / 6, 2)
+
+        sum_paw = c.paw_1 + c.paw_2 + c.paw_3
+        avg_paw = round(sum_paw / 3, 2)       
+
+        avg = round((avg_ac + avg_atp + avg_paw)/3, 2)
+
+        res.append({
+            'id'                : str(c.id),
+            'division_project'  : c.prj.div.name,
+            'auditProject'      : str(c.prj_id),
+            'clientName'        : c.client_name,
+            'unitJabatan'       : c.client_unit,
+            'TL'                : c.tl.name,
+            'CSFDate'           : utils.date_to_str(c.csf_date),
+            'atp1'              : c.atp_1,
+            'atp2'              : c.atp_2,
+            'atp3'              : c.atp_3,
+            'atp4'              : c.atp_4,
+            'atp5'              : c.atp_5,
+            'atp6'              : c.atp_6,
+            'atpOverall'        : avg_atp,
+            'ac1'               : c.ac_1,
+            'ac2'               : c.ac_2,
+            'ac3'               : c.ac_3,
+            'ac4'               : c.ac_4,
+            'ac5'               : c.ac_5,
+            'ac6'               : c.ac_6,
+            'acOverall'         : avg_ac,
+            'paw1'              : c.paw_1,
+            'paw2'              : c.paw_2,
+            'paw3'              : c.paw_3,
+            'pawOverall'        : avg_paw,
+            'overall'           : avg,
+            'division_by_inv'   : c.by_invdiv_div.name
+        })
+
+    return res
+
+@router.delete('/csf_data/api/table_data/{id}')
+def delete_csf_table_entry(id: int, db: Session = Depends(get_db)):
+    c = db.query(CSF).filter(
+        CSF.id == id
+    )
+
+    if not c.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+    
+    c.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
 # Employee
 @router.get('/employee_data/api/table_data')
 def get_employee_table(db: Session = Depends(get_db)):
@@ -753,3 +826,19 @@ def delete_attr_entry(id:int, db: Session = Depends(get_db)):
     db.commit()
 
     return {'details': 'Deleted'}
+
+# Util
+@router.get('/api/title_project/{year}')
+def get_project_titles(year:int, db: Session = Depends(get_db)):
+    prjs = db.query(Project).filter(
+        Project.year == year
+    )
+
+    res = []
+    for p in prjs:
+        res.append({
+            'id'            : str(p.id),
+            'project_title' : p.name
+        })
+
+    return res
