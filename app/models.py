@@ -198,6 +198,19 @@ class Project(Base):
     csfs = relationship("CSF", back_populates="prj")
 
 # Budgets
+class YearlyBudget(Base):
+    __tablename__ = 'yearlybudgets'
+    id                          = Column(Integer, primary_key=True, index=True)
+    year                        = Column(Integer)
+    staff_salaries              = Column(Float)
+    staff_training_reg_meeting  = Column(Float)
+    revenue_related             = Column(Float)
+    it_related                  = Column(Float)
+    occupancy_related           = Column(Float)
+    other_transport_travel      = Column(Float)
+    other_other                 = Column(Float)
+    indirect_expense            = Column(Float)
+
 class MonthlyBudget(Base):
     __tablename__ = 'monthlybudgets'
     id                          = Column(Integer, primary_key=True, index=True)

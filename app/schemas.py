@@ -380,6 +380,28 @@ class ProjectInHiCoupling(BaseModel):
     completion_PA   : Optional[bool]
 
 # Budgets
+class YearlyBudget(BaseModel):
+    year                        :int
+    staff_salaries              :float
+    staff_training_reg_meeting  :float
+    revenue_related             :float
+    it_related                  :float
+    occupancy_related           :float
+    other_transport_travel      :float
+    other_other                 :float
+    indirect_expense            :float
+
+class YearlyBudgetIn(BaseModel):
+    year                        :Optional[int]
+    staff_salaries              :Optional[float]
+    staff_training_reg_meeting  :Optional[float]
+    revenue_related             :Optional[float]
+    it_related                  :Optional[float]
+    occupancy_related           :Optional[float]
+    other_transport_travel      :Optional[float]
+    other_other                 :Optional[float]
+    indirect_expense            :Optional[float]
+
 class MonthlyBudget(BaseModel):
     year                        :int
     month                       :int

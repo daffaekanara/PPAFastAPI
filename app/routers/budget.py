@@ -216,3 +216,69 @@ def delete_monthly_budget(id: int, db: Session = Depends(get_db)):
     db.commit()
 
     return {'details': 'Deleted'}
+
+# Yearly Budget
+@router.get('/yearly')
+def get_all_yearly_budget(db: Session = Depends(get_db)):
+    eType = db.query(YearlyBudget).all()
+    return eType
+
+@router.get('/yearly/{id}')
+def get_single_yearly_budget(id: int, db: Session = Depends(get_db)):
+    query = db.query(YearlyBudget).filter(YearlyBudget.id == id).first()
+
+    if not query:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"YearlyBudget of ID ({id}) was not found!")
+
+    return query
+
+@router.post('/yearly', status_code=status.HTTP_201_CREATED)
+def create_yearly_budget(req: schemas.YearlyBudget, db: Session = Depends(get_db)):
+    newYearBudget = YearlyBudget(
+        year                        = req.year,
+        staff_salaries              = req.staff_salaries,
+        staff_training_reg_meeting  = req.staff_training_reg_meeting,
+        revenue_related             = req.revenue_related,
+        it_related                  = req.it_related,
+        occupancy_related           = req.occupancy_related,
+        other_transport_travel      = req.other_transport_travel,
+        other_other                 = req.other_other,
+        indirect_expense            = req.indirect_expense
+    )
+
+    db.add(newYearBudget)
+    db.commit()
+    db.refresh(newYearBudget)
+
+    return newYearBudget
+
+@router.patch('/yearly/{id}',  status_code=status.HTTP_202_ACCEPTED)
+def update_yearly_budget(id: int, req: schemas.YearlyBudgetIn, db: Session = Depends(get_db)):
+    query_res = db.query(YearlyBudget).filter(YearlyBudget.id == id)
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    stored_data = jsonable_encoder(query_res.first())
+    stored_model = schemas.YearlyBudgetIn(**stored_data)
+
+    new_data = req.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    query_res.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/yearly/{id}', status_code=status.HTTP_202_ACCEPTED)
+def delete_yearly_budget(id: int, db: Session = Depends(get_db)):
+    query_res = db.query(YearlyBudget).filter(YearlyBudget.id == id)
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    query_res.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}

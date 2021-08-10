@@ -17,12 +17,15 @@ router = APIRouter(
 # def get_budget_table(year: int, month: int, db: Session = Depends(get_db)):
 #     cats = [
 #         "Staff Expense",
+#         "Staff Expense (Salaries)",
 #         "Staff Training & Regional Meeting",
-#         "Revenue Related",
-#         "IT Related",
-#         "Occupancy Related",
+#         "Revenue Related (Communications)",
+#         "IT Related (Softwares)",
+#         "Occupancy Related (Premises)",
+#         "Other Related",
 #         "Transport & Travel",
 #         "Others",
+#         "Direct Expense",
 #         "Indirect Expense"
 #     ]
 
@@ -44,6 +47,9 @@ router = APIRouter(
 #         i += 1
 
 #     # Get Yearly Budget
+#     monthlyBudgets = db.query(MonthlyActualBudget).filter(
+        
+#     )
 
 # CSF
 @router.get('/csf_data/api/table_data/{year}')
