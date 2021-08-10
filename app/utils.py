@@ -12,8 +12,8 @@ def date_to_str(date: datetime.date):
 
 def div_str_to_divID(text):
     divs    = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
-
-    return divs.index(text)+1
+    
+    return divs.index(text)+1 if text in divs else 0
 
 def role_str_to_id(text):
     roles   = ["User", "Power User", "Administrator"]
@@ -58,3 +58,6 @@ def calc_single_csf_score(csf):
     overall_csf = (sum(atps)/len(atps) + sum(acs)/len(acs) + sum(paws)/len(paws)) / 3
 
     return round(overall_csf,2)
+
+def str_to_int_or_None(x):
+    return int(x) if x.isnumeric() else None

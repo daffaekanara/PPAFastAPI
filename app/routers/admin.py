@@ -104,6 +104,118 @@ def get_csf_table(year: int, db: Session = Depends(get_db)):
 
     return res
 
+@router.post('/csf_data/api/table_data', status_code=status.HTTP_201_CREATED)
+def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(get_db)):
+    invdiv_id = utils.div_str_to_divID(req.division_by_inv)
+    
+    if not invdiv_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Div Name not found')
+
+    tl_emp = db.query(Employee).filter(Employee.name == req.TL)
+    tl_id = tl_emp.first().id if tl_emp.first() else 1
+
+    prj_id = utils.str_to_int_or_None(req.auditProject)
+    if not prj_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Audit Project must be an ID')
+    
+    prj = db.query(Project).filter(Project.id == prj_id)
+    if not prj.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Audit Project must be an ID of an existing project')
+    
+    new_csf = CSF(
+        client_name         = req.clientName,
+        client_unit         = req.unitJabatan,
+        csf_date            = utils.str_to_datetime(req.CSFDate),
+        atp_1               = req.atp1,
+        atp_2               = req.atp2,
+        atp_3               = req.atp3,
+        atp_4               = req.atp4,
+        atp_5               = req.atp5,
+        atp_6               = req.atp6,
+        ac_1                = req.ac1,
+        ac_2                = req.ac2,
+        ac_3                = req.ac3,
+        ac_4                = req.ac4,
+        ac_5                = req.ac5,
+        ac_6                = req.ac6,
+        paw_1               = req.paw1,
+        paw_2               = req.paw2,
+        paw_3               = req.paw3,
+
+        prj_id              = prj_id,
+        tl_id               = tl_id,
+        by_invdiv_div_id    = invdiv_id
+    )
+
+    db.add(new_csf)
+    db.commit()
+    db.refresh(new_csf)
+
+    return new_csf
+
+@router.patch('/csf_data/api/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
+def patch_csf_table_entry(id: int, req: schemas.CSFInHiCoupling, db: Session = Depends(get_db)):
+    csf = db.query(CSF).filter(
+        CSF.id == id
+    )
+
+    if not csf.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+    
+    stored_data = jsonable_encoder(csf.first())
+    stored_model = schemas.CSFIn(**stored_data)
+
+    # Data Validation
+    invdiv_id = utils.div_str_to_divID(req.division_by_inv)
+    
+    if not invdiv_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Div Name not found')
+
+    tl_emp = db.query(Employee).filter(Employee.name == req.TL)
+    tl_id = tl_emp.first().id if tl_emp.first() else 1
+
+    prj_id = utils.str_to_int_or_None(req.auditProject)
+    if not prj_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Audit Project must be an ID')
+    
+    prj = db.query(Project).filter(Project.id == prj_id)
+    if not prj.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Audit Project must be an ID of an existing project')
+    
+    dataIn = schemas.CSF(
+        client_name         = req.clientName,
+        client_unit         = req.unitJabatan,
+        csf_date            = utils.str_to_datetime(req.CSFDate),
+        atp_1               = req.atp1,
+        atp_2               = req.atp2,
+        atp_3               = req.atp3,
+        atp_4               = req.atp4,
+        atp_5               = req.atp5,
+        atp_6               = req.atp6,
+        ac_1                = req.ac1,
+        ac_2                = req.ac2,
+        ac_3                = req.ac3,
+        ac_4                = req.ac4,
+        ac_5                = req.ac5,
+        ac_6                = req.ac6,
+        paw_1               = req.paw1,
+        paw_2               = req.paw2,
+        paw_3               = req.paw3,
+
+        prj_id              = prj_id,
+        tl_id               = tl_id,
+        by_invdiv_div_id    = invdiv_id
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    csf.update(stored_data)
+    db.commit()
+    return updated
+
 @router.delete('/csf_data/api/table_data/{id}')
 def delete_csf_table_entry(id: int, db: Session = Depends(get_db)):
     c = db.query(CSF).filter(
