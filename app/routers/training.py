@@ -137,6 +137,35 @@ def get_training_progress_percentage(year: int, db: Session = Depends(get_db)):
 
     return res
 
+@router.post('/api/form', status_code=status.HTTP_201_CREATED)
+def create_training_from_form(req: schemas.TrainingInHiCouplingForm, db: Session = Depends(get_db)):
+    emp = db.query(Employee).filter(
+        Employee.staff_id == req.nik
+    )
+
+    if not emp.first():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of NIK ({req.nik}) was not found!")
+
+    emp_id = emp.first().id
+    
+    newTrain = Training(
+        name            = req.name, 
+        date            = utils.str_to_datetime(req.date), 
+        duration_hours  = req.duration_hours, 
+        proof           = req.proof,
+        budget          = 0,
+        realization     = 0,
+        charged_by_fin  = 0,
+        remark          = req.remarks,
+        mandatory_from  = "",
+        emp_id          = emp_id
+    )
+    
+    db.add(newTrain)
+    db.commit()
+    db.refresh(newTrain)
+    return newTrain
+
 # Training Target
 @router.get('/target')
 def get_all(db: Session = Depends(get_db)):

@@ -167,6 +167,14 @@ class TrainingIn(BaseModel):
     mandatory_from  :Optional[str]
     emp_id          :Optional[int]
 
+class TrainingInHiCouplingForm(BaseModel):
+  name              : Optional[str]
+  date              : Optional[str]
+  proof             : Optional[bool]
+  duration_hours    : Optional[int]
+  remarks           : Optional[str]
+  nik               : Optional[str]
+
 class ShowTraining(BaseModel):
     name            :str
     duration_hours   :float
