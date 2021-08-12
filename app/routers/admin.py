@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import MultipleResultsFound
 import schemas, datetime, utils
 from models import *
 from database import get_db
@@ -13,43 +14,379 @@ router = APIRouter(
 )
 
 # Budget
-# @router.get('/budget_data/api/table_data/{year}/{month}')
-# def get_budget_table(year: int, month: int, db: Session = Depends(get_db)):
-#     cats = [
-#         "Staff Expense",
-#         "Staff Expense (Salaries)",
-#         "Staff Training & Regional Meeting",
-#         "Revenue Related (Communications)",
-#         "IT Related (Softwares)",
-#         "Occupancy Related (Premises)",
-#         "Other Related",
-#         "Transport & Travel",
-#         "Others",
-#         "Direct Expense",
-#         "Indirect Expense"
-#     ]
+@router.get('/budget_data/api/table_data/{year}/{month}')
+def get_budget_table(year: int, month: int, db: Session = Depends(get_db)):
+    cats = [
+        "Staff Expense",
+        "Staff Expense (Salaries)",
+        "Staff Training & Regional Meeting",
+        "Revenue Related (Communications)",
+        "IT Related (Softwares)",
+        "Occupancy Related (Premises)",
+        "Other Related",
+        "Transport & Travel",
+        "Others",
+        "Direct Expense",
+        "Indirect Expense"
+    ]
 
-#     i = 1
-#     res = []
-#     for c in cats:
-#         res.append({
-#             "id"                : str(i),
-#             "expenses"          : c,
-#             "budgetYear"        : 0,
-#             "budgetMonth"       : 0,
-#             "actualMonth"       : 0,
-#             "MTD"               : '-',
-#             "YTD"               : '-',
-#             "STDProRate"        : '-',
-#             "overUnderBudget"   : '-',
-#             "variance"          : ''
-#         })
-#         i += 1
+    i = 1
+    res = []
+    for c in cats:
+        res.append({
+            "id"                : str(i),
+            "expenses"          : c,
+            "budgetYear"        : 0,
+            "budgetMonth"       : 0,
+            "budgetMonthTD"     : 0,
+            "actualMonth"       : 0,
+            "actualMonthTD"     : 0,
+            "MTD"               : '-',
+            "YTD"               : '-',
+            "STDProRate"        : '-',
+            "overUnderBudget"   : '-',
+            "variance"          : ''
+        })
+        i += 1
 
-#     # Get Yearly Budget
-#     monthlyBudgets = db.query(MonthlyActualBudget).filter(
-        
-#     )
+    # Get Actual Budget
+    actualBudget = db.query(MonthlyActualBudget).filter(
+        MonthlyActualBudget.year == year,
+        MonthlyActualBudget.month == month
+    ).first()
+
+    if actualBudget:
+        res[0]["actualMonth"]   = actualBudget.staff_salaries + actualBudget.staff_training_reg_meeting
+        res[1]["actualMonth"]   = actualBudget.staff_salaries
+        res[2]["actualMonth"]   = actualBudget.staff_training_reg_meeting
+        res[3]["actualMonth"]   = actualBudget.revenue_related
+        res[4]["actualMonth"]   = actualBudget.it_related
+        res[5]["actualMonth"]   = actualBudget.occupancy_related
+        res[6]["actualMonth"]   = actualBudget.other_transport_travel + actualBudget.other_other
+        res[7]["actualMonth"]   = actualBudget.other_transport_travel
+        res[8]["actualMonth"]   = actualBudget.other_other
+        res[9]["actualMonth"]   = res[0]["actualMonth"] + res[3]["actualMonth"] + res[4]["actualMonth"] + res[5]["actualMonth"] + res[6]["actualMonth"]
+        res[10]["actualMonth"]  = actualBudget.indirect_expense
+
+    actualBudgets = db.query(MonthlyActualBudget).filter(
+        MonthlyActualBudget.year == year,
+        MonthlyActualBudget.month <= month
+    ).all()
+
+    for a in actualBudgets:
+        res[0]["actualMonthTD"]   += a.staff_salaries + a.staff_training_reg_meeting
+        res[1]["actualMonthTD"]   += a.staff_salaries
+        res[2]["actualMonthTD"]   += a.staff_training_reg_meeting
+
+        res[3]["actualMonthTD"]   += a.revenue_related
+        res[4]["actualMonthTD"]   += a.it_related
+        res[5]["actualMonthTD"]   += a.occupancy_related
+
+        res[6]["actualMonthTD"]   += a.other_transport_travel + a.other_other
+        res[7]["actualMonthTD"]   += a.other_transport_travel
+        res[8]["actualMonthTD"]   += a.other_other
+
+        res[9]["actualMonthTD"]   += res[0]["actualMonthTD"] + res[3]["actualMonthTD"] + res[4]["actualMonthTD"] + res[5]["actualMonthTD"] + res[6]["actualMonthTD"]
+        res[10]["actualMonthTD"]  += a.indirect_expense
+
+    # Get Yearly Budget
+    y = db.query(YearlyBudget).filter(
+        YearlyBudget.year == year
+    ).first()
+
+    if y:
+        res[0]["budgetYear"]   += y.staff_salaries + y.staff_training_reg_meeting
+        res[1]["budgetYear"]   += y.staff_salaries
+        res[2]["budgetYear"]   += y.staff_training_reg_meeting
+
+        res[3]["budgetYear"]   += y.revenue_related
+        res[4]["budgetYear"]   += y.it_related
+        res[5]["budgetYear"]   += y.occupancy_related
+
+        res[6]["budgetYear"]   += y.other_transport_travel + y.other_other
+        res[7]["budgetYear"]   += y.other_transport_travel
+        res[8]["budgetYear"]   += y.other_other
+
+        res[9]["budgetYear"]   += res[0]["budgetYear"] + res[3]["budgetYear"] + res[4]["budgetYear"] + res[5]["budgetYear"] + res[6]["budgetYear"]
+        res[10]["budgetYear"]  += y.indirect_expense
+
+    # Get Monthly Budgets
+    monthlyBudget = db.query(MonthlyBudget).filter(
+        MonthlyBudget.year == year,
+        MonthlyBudget.month == month
+    ).first()
+
+    if monthlyBudget:
+        res[0]["budgetMonth"]   += monthlyBudget.staff_salaries + monthlyBudget.staff_training_reg_meeting
+        res[1]["budgetMonth"]   += monthlyBudget.staff_salaries
+        res[2]["budgetMonth"]   += monthlyBudget.staff_training_reg_meeting
+        res[3]["budgetMonth"]   += monthlyBudget.revenue_related
+        res[4]["budgetMonth"]   += monthlyBudget.it_related
+        res[5]["budgetMonth"]   += monthlyBudget.occupancy_related
+        res[6]["budgetMonth"]   += monthlyBudget.other_transport_travel + monthlyBudget.other_other
+        res[7]["budgetMonth"]   += monthlyBudget.other_transport_travel
+        res[8]["budgetMonth"]   += monthlyBudget.other_other
+        res[9]["budgetMonth"]   += res[0]["budgetMonth"] + res[3]["budgetMonth"] + res[4]["budgetMonth"] + res[5]["budgetMonth"] + res[6]["budgetMonth"]
+        res[10]["budgetMonth"]  += monthlyBudget.indirect_expense
+    
+    monthlyBudgets = db.query(MonthlyBudget).filter(
+        MonthlyBudget.year == year,
+        MonthlyBudget.month <= month
+    ).all()
+
+    for m in monthlyBudgets:
+        res[0]["budgetMonthTD"]   += m.staff_salaries + m.staff_training_reg_meeting
+        res[1]["budgetMonthTD"]   += m.staff_salaries
+        res[2]["budgetMonthTD"]   += m.staff_training_reg_meeting
+        res[3]["budgetMonthTD"]   += m.revenue_related
+        res[4]["budgetMonthTD"]   += m.it_related
+        res[5]["budgetMonthTD"]   += m.occupancy_related
+        res[6]["budgetMonthTD"]   += m.other_transport_travel + m.other_other
+        res[7]["budgetMonthTD"]   += m.other_transport_travel
+        res[8]["budgetMonthTD"]   += m.other_other
+        res[9]["budgetMonthTD"]   += res[0]["budgetMonthTD"] + res[3]["budgetMonthTD"] + res[4]["budgetMonthTD"] + res[5]["budgetMonthTD"] + res[6]["budgetMonthTD"]
+        res[10]["budgetMonthTD"]  += m.indirect_expense
+
+    # Process Statistics
+    for r in res:
+        mtd_rate = r["actualMonthTD"] / r["budgetMonthTD"] if r["budgetMonthTD"] != 0 else None
+        ytd_rate = r["actualMonthTD"] / r["budgetYear"] if r["budgetYear"] != 0 else None
+        std_rate = month / 12
+
+        r["MTD"]               = "-%" if mtd_rate == None else f"{round(mtd_rate * 100)}%"
+        r["YTD"]               = "-%" if ytd_rate == None else f"{round(ytd_rate * 100)}%"
+        r["STDProRate"]        = f"{round(std_rate * 100)}%"
+        r["overUnderBudget"]   = "-%" if ytd_rate == None else f"{round((ytd_rate - std_rate) * 100)}%"
+
+    return res
+
+@router.patch('/budget_data/api/table_data/{year}/{month}', status_code=status.HTTP_202_ACCEPTED)
+def patch_budget_table_entry(year: int, month: int, req: schemas.BudgetTableInHiCoupling, db: Session = Depends(get_db)):
+    cats = [
+        "Staff Expense",
+        "Staff Expense (Salaries)",
+        "Staff Training & Regional Meeting",
+        "Revenue Related (Communications)",
+        "IT Related (Softwares)",
+        "Occupancy Related (Premises)",
+        "Other Related",
+        "Transport & Travel",
+        "Others",
+        "Direct Expense",
+        "Indirect Expense"
+    ]
+
+    formulated_cats = [0, 6, 9]
+
+    # Check Expense Type
+    cat_index = -1
+    if not req.expenses in cats:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Given Expense field ({req.expenses}) is not allowed")
+    elif cats.index(req.expenses) in formulated_cats:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=f"Given Expense field ({req.expenses}) is formulated value (Cannot be modified)")
+    else:
+        cat_index = cats.index(req.expenses)
+
+    # Set Budget Year
+    yearBudget = db.query(YearlyBudget).filter(
+        YearlyBudget.year == year
+    )
+
+    try:
+        yearBudget_model = yearBudget.one_or_none()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Multiple YearlyBudget entries for given year ({year}) were found!")
+
+    if not yearBudget_model: # No YearlyBudget was found
+        # Create a new Yearly Budget
+        payload = {}
+
+        for c in cats:
+            payload[c] = 0
+
+        payload[req.expenses] = req.budgetYear
+
+        newYearBudget = YearlyBudget(
+            year                        = year,
+            staff_salaries              = payload["Staff Expense (Salaries)"],
+            staff_training_reg_meeting  = payload["Staff Training & Regional Meeting"],
+            revenue_related             = payload["Revenue Related (Communications)"],
+            it_related                  = payload["IT Related (Softwares)"],
+            occupancy_related           = payload["Occupancy Related (Premises)"],
+            other_transport_travel      = payload["Transport & Travel"],
+            other_other                 = payload["Others"],
+            indirect_expense            = payload["Indirect Expense"]
+        )
+
+        db.add(newYearBudget)
+        db.commit()
+        db.refresh(newYearBudget)
+    else: # Existing YearlyBudget was found 
+        stored_data = jsonable_encoder(yearBudget_model)
+        stored_model = schemas.YearlyBudgetIn(**stored_data)
+
+        payload = schemas.YearlyBudgetIn()
+
+        if req.expenses == cats[1]:
+            payload.staff_salaries = req.budgetYear
+        elif req.expenses == cats[2]:
+            payload.staff_training_reg_meeting = req.budgetYear
+        elif req.expenses == cats[3]:
+            payload.revenue_related = req.budgetYear
+        elif req.expenses == cats[4]:
+            payload.it_related = req.budgetYear
+        elif req.expenses == cats[5]:
+            payload.occupancy_related = req.budgetYear
+        elif req.expenses == cats[7]:
+            payload.other_transport_travel = req.budgetYear
+        elif req.expenses == cats[8]:
+            payload.other_other = req.budgetYear
+        elif req.expenses == cats[10]:
+            payload.indirect_expense = req.budgetYear
+
+        new_data = payload.dict(exclude_unset=True)
+        updated = stored_model.copy(update=new_data)
+
+        stored_data.update(updated)
+
+        yearBudget.update(stored_data)
+        db.commit()
+
+    # Set Budget Month
+    monthBudget = db.query(MonthlyBudget).filter(
+        MonthlyBudget.year == year,
+        MonthlyBudget.month == month
+    )
+
+    try:
+        monthBudget_model = monthBudget.one_or_none()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Multiple MonthBudget entries for given year/month ({year}/{month}) were found!")
+
+    if not monthBudget_model: # No MonthlyBudget was found
+        # Create a new Yearly Budget
+        payload = {}
+
+        for c in cats:
+            payload[c] = 0
+
+        payload[req.expenses] = req.budgetMonth
+
+        newMonthBudget = MonthlyBudget(
+            year                        = year,
+            month                       = month,
+            staff_salaries              = payload["Staff Expense (Salaries)"],
+            staff_training_reg_meeting  = payload["Staff Training & Regional Meeting"],
+            revenue_related             = payload["Revenue Related (Communications)"],
+            it_related                  = payload["IT Related (Softwares)"],
+            occupancy_related           = payload["Occupancy Related (Premises)"],
+            other_transport_travel      = payload["Transport & Travel"],
+            other_other                 = payload["Others"],
+            indirect_expense            = payload["Indirect Expense"]
+        )
+
+        db.add(newMonthBudget)
+        db.commit()
+        db.refresh(newMonthBudget)
+    else: # Existing MonthlyBudget was found 
+        stored_data = jsonable_encoder(monthBudget_model)
+        stored_model = schemas.MonthlyBudgetIn(**stored_data)
+
+        payload = schemas.MonthlyBudgetIn()
+
+        if req.expenses == cats[1]:
+            payload.staff_salaries = req.budgetYear
+        elif req.expenses == cats[2]:
+            payload.staff_training_reg_meeting = req.budgetYear
+        elif req.expenses == cats[3]:
+            payload.revenue_related = req.budgetYear
+        elif req.expenses == cats[4]:
+            payload.it_related = req.budgetYear
+        elif req.expenses == cats[5]:
+            payload.occupancy_related = req.budgetYear
+        elif req.expenses == cats[7]:
+            payload.other_transport_travel = req.budgetYear
+        elif req.expenses == cats[8]:
+            payload.other_other = req.budgetYear
+        elif req.expenses == cats[10]:
+            payload.indirect_expense = req.budgetYear
+
+        new_data = payload.dict(exclude_unset=True)
+        updated = stored_model.copy(update=new_data)
+
+        stored_data.update(updated)
+
+        monthBudget.update(stored_data)
+        db.commit()
+
+    
+    # Set Actual Month
+    actualMonthBudget = db.query(MonthlyActualBudget).filter(
+        MonthlyActualBudget.year == year,
+        MonthlyActualBudget.month == month
+    )
+
+    try:
+        actualMonthBudget_model = actualMonthBudget.one_or_none()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Multiple ActualMonthBudget entries for given year/month ({year}/{month}) were found!")
+
+    if not actualMonthBudget_model: # No ActualMonthlyBudget was found
+        # Create a new Actual Monthly Budget
+        payload = {}
+
+        for c in cats:
+            payload[c] = 0
+
+        payload[req.expenses] = req.actualMonth
+
+        newActualMonthBudget = MonthlyActualBudget(
+            year                        = year,
+            month                       = month,
+            staff_salaries              = payload["Staff Expense (Salaries)"],
+            staff_training_reg_meeting  = payload["Staff Training & Regional Meeting"],
+            revenue_related             = payload["Revenue Related (Communications)"],
+            it_related                  = payload["IT Related (Softwares)"],
+            occupancy_related           = payload["Occupancy Related (Premises)"],
+            other_transport_travel      = payload["Transport & Travel"],
+            other_other                 = payload["Others"],
+            indirect_expense            = payload["Indirect Expense"],
+            remark                      = ""
+        )
+
+        db.add(newActualMonthBudget)
+        db.commit()
+        db.refresh(newActualMonthBudget)
+    else: # Existing ActualMonthlyBudget was found 
+        stored_data = jsonable_encoder(actualMonthBudget_model)
+        stored_model = schemas.MonthlyActualBudgetIn(**stored_data)
+
+        payload = schemas.MonthlyActualBudgetIn()
+
+        if req.expenses == cats[1]:
+            payload.staff_salaries = req.budgetYear
+        elif req.expenses == cats[2]:
+            payload.staff_training_reg_meeting = req.budgetYear
+        elif req.expenses == cats[3]:
+            payload.revenue_related = req.budgetYear
+        elif req.expenses == cats[4]:
+            payload.it_related = req.budgetYear
+        elif req.expenses == cats[5]:
+            payload.occupancy_related = req.budgetYear
+        elif req.expenses == cats[7]:
+            payload.other_transport_travel = req.budgetYear
+        elif req.expenses == cats[8]:
+            payload.other_other = req.budgetYear
+        elif req.expenses == cats[10]:
+            payload.indirect_expense = req.budgetYear
+
+        new_data = payload.dict(exclude_unset=True)
+        updated = stored_model.copy(update=new_data)
+
+        stored_data.update(updated)
+
+        actualMonthBudget.update(stored_data)
+        db.commit()
 
 # CSF
 @router.get('/csf_data/api/table_data/{year}')

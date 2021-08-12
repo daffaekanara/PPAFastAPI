@@ -452,12 +452,14 @@ class MonthlyActualBudgetIn(BaseModel):
     indirect_expense            :Optional[float]
     remark                      :Optional[str]
 
-class BudgetInHiCoupling(BaseModel):
+class BudgetTableInHiCoupling(BaseModel):
     id              : Optional[str]
-    expenses        : Optional[str]
-    budgetYear      : Optional[float]
-    budgetMonth     : Optional[float]
-    actualMonth     : Optional[float]
+    expenses        : str
+    budgetYear      : float
+    budgetMonth     : float
+    budgetMonthTD   : Optional[float]
+    actualMonth     : float
+    actualMonthTD   : Optional[float]
     MTD             : Optional[str]
     YTD             : Optional[str]
     STDProRate      : Optional[str]
