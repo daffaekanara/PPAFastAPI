@@ -74,8 +74,8 @@ def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
         })
     
     for i, r in enumerate(res):
-        cost_realized   = values[i]["realized"] / values[i]["budget"] * 100
-        charged         = values[i]["charged"] / values[i]["budget"] * 100
+        cost_realized   = values[i]["realized"] / values[i]["budget"] * 100 if values[i]["budget"] != 0 else 0
+        charged         = values[i]["charged"] / values[i]["budget"] * 100 if values[i]["budget"] != 0 else 0
         
         res[i]["budget"]             = 100.0
         res[i]["cost_realization"]   = round(cost_realized, 2)

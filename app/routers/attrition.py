@@ -47,10 +47,10 @@ def get_rate_by_division_by_yearmonth(div_name: str, year: int, db: Session = De
     query = db.query(YearlyAttrition).filter(
         YearlyAttrition.div.has(name=div_name),
         YearlyAttrition.year == year
-    ).one()
+    ).first()
 
-    attr_sum = query.resigned_count + query.transfer_count
-    attr_rate = attr_sum / query.start_headcount
+    attr_sum = query.resigned_count + query.transfer_count if query else 0
+    attr_rate = attr_sum / query.start_headcount if query else 0
 
     return [
         {"title":"Attrition Rate","rate":attr_rate},

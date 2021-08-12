@@ -22,7 +22,7 @@ def get_total_by_division_by_year(year: int, month: int, db: Session = Depends(g
     query = db.query(MonthlyActualBudget).filter(
         MonthlyActualBudget.year == year, 
         MonthlyActualBudget.month == month
-    ).one()
+    ).first()
 
     # Init result dict
     cats = [
@@ -63,15 +63,15 @@ def get_total_by_division_by_year(year: int, month: int, db: Session = Depends(g
         yearlyBudget['Total']                       += yearlyBudget['Direct Expense'] + yearlyBudget['Indirect Expense']
         
     # process MonthlyActualBudget
-    actualMonthBudget['Staff Expense']               = query.staff_salaries
-    actualMonthBudget['Staff Expense']               = query.staff_training_reg_meeting
-    actualMonthBudget['Revenue Related']             = query.revenue_related
-    actualMonthBudget['IT Related']                  = query.it_related
-    actualMonthBudget['Occupancy Related']           = query.occupancy_related
-    actualMonthBudget['Other Related']               = query.other_transport_travel
-    actualMonthBudget['Other Related']               = query.other_other
-    actualMonthBudget['Direct Expense']              = query.staff_salaries + query.revenue_related + query.it_related + query.occupancy_related + query.other_transport_travel + query.other_other   
-    actualMonthBudget['Indirect Expense']            = query.indirect_expense 
+    actualMonthBudget['Staff Expense']               = query.staff_salaries if query else 0
+    actualMonthBudget['Staff Expense']               = query.staff_training_reg_meeting  if query else 0
+    actualMonthBudget['Revenue Related']             = query.revenue_related  if query else 0
+    actualMonthBudget['IT Related']                  = query.it_related  if query else 0
+    actualMonthBudget['Occupancy Related']           = query.occupancy_related  if query else 0
+    actualMonthBudget['Other Related']               = query.other_transport_travel  if query else 0
+    actualMonthBudget['Other Related']               = query.other_other  if query else 0
+    actualMonthBudget['Direct Expense']              = query.staff_salaries + query.revenue_related + query.it_related + query.occupancy_related + query.other_transport_travel + query.other_other if query else 0  
+    actualMonthBudget['Indirect Expense']            = query.indirect_expense if query else 0
     actualMonthBudget['Total']                       = actualMonthBudget['Direct Expense'] + actualMonthBudget['Indirect Expense']
 
 
