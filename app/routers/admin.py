@@ -955,6 +955,7 @@ def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = D
     div_id = divs.index(req.division)+1
     status_id = statuses.index(req.status)+1
 
+    # Create Project
     new_prj = Project(
         name            = req.auditPlan,
         used_DA         = req.useOfDA,
@@ -970,6 +971,46 @@ def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = D
     db.add(new_prj)
     db.commit()
     db.refresh(new_prj)
+
+    # Create Empty QA Result Data
+    newQA = QAIP(
+        prj_id                      = new_prj.id,
+        TL                          = "-",
+        DH                          = "-",
+        qa_type_id                  = 5,
+        qa_grading_result_id        = 4,
+
+        qaf_category_clarity        = False,
+        qaf_category_completeness   = False,
+        qaf_category_consistency    = False,
+        qaf_category_others         = False,
+        qaf_stage_planning          = False,
+        qaf_stage_fieldwork         = False,
+        qaf_stage_reporting         = False,
+        qaf_stage_post_audit_act    = False,
+        qaf_deliverables_1a         = False,
+        qaf_deliverables_1b         = False,
+        qaf_deliverables_1c         = False,
+        qaf_deliverables_1d         = False,
+        qaf_deliverables_1e         = False,
+        qaf_deliverables_1f         = False,
+        qaf_deliverables_1g         = False,
+        qaf_deliverables_1h         = False,
+        qaf_deliverables_1i         = False,
+        qaf_deliverables_1j         = False,
+        qaf_deliverables_1k         = False,
+        qaf_deliverables_2          = False,
+        qaf_deliverables_3          = False,
+        qaf_deliverables_4          = False,
+        qaf_deliverables_5          = False,
+        qaf_deliverables_6          = False,
+        qaf_deliverables_7          = False,
+        qa_sample                   = False
+    )
+
+    db.add(newQA)
+    db.commit()
+    db.refresh(newQA)
 
     return new_prj
 
@@ -1020,7 +1061,13 @@ def delete_project_table_entry(id: int, db: Session = Depends(get_db)):
 
     if not prj.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    if len(prj.first().qaips) != 1:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='More than one QA Result entry associated with this project is found.')
+
     
+    db.delete(prj.first().qaips[0])
+
     prj.delete()
     db.commit()
 
