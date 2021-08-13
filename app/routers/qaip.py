@@ -11,26 +11,25 @@ router = APIRouter(
     prefix="/qaip"
 )
 
-# QAIP Head Divs
-@router.get('/headdivs')
-def get_all_qaipheaddiv(db: Session = Depends(get_db)):
-    qHeadDivs = db.query(QAIPHeadDiv).all()
-    return qHeadDivs
+# QAIP Type
+@router.get('/types')
+def get_all_qa_types(db: Session = Depends(get_db)):
+    qTypes = db.query(QAType).all()
+    return qTypes
 
-@router.get('/headdivs/{id}')
-def get_single_qaipheaddiv(id: int, db: Session = Depends(get_db)):
-    query = db.query(QAIPHeadDiv).filter(QAIPHeadDiv.id == id).first()
+@router.get('/types/{id}')
+def get_single_qa_type(id: int, db: Session = Depends(get_db)):
+    query = db.query(QAType).filter(QAType.id == id).first()
 
     if not query:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"QAIPHeadDiv of ID ({id}) was not found!")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"QAType of ID ({id}) was not found!")
 
     return query
 
-@router.post('/headdivs', status_code=status.HTTP_201_CREATED)
-def create_qaipheaddiv(req: schemas.QAIPHeadDiv, db: Session = Depends(get_db)):
-    newType = QAIPHeadDiv(
-        div_head    = req.div_head,
-        qaip_id     = req.qaip_id
+@router.post('/types', status_code=status.HTTP_201_CREATED)
+def create_qa_type(req: schemas.QAType, db: Session = Depends(get_db)):
+    newType = QAType(
+        name = req.name
     )
 
     db.add(newType)
@@ -39,15 +38,15 @@ def create_qaipheaddiv(req: schemas.QAIPHeadDiv, db: Session = Depends(get_db)):
 
     return newType
 
-@router.patch('/headdivs/{id}',  status_code=status.HTTP_202_ACCEPTED)
-def update_qaipheaddiv(id: int, req: schemas.QAIPHeadDivIn, db: Session = Depends(get_db)):
-    query_res = db.query(QAIPHeadDiv).filter(QAIPHeadDiv.id == id)
+@router.patch('/types/{id}',  status_code=status.HTTP_202_ACCEPTED)
+def update_qa_type(id: int, req: schemas.QATypeIn, db: Session = Depends(get_db)):
+    query_res = db.query(QAType).filter(QAType.id == id)
 
     if not query_res.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
 
     stored_data = jsonable_encoder(query_res.first())
-    stored_model = schemas.QAIPHeadDivIn(**stored_data)
+    stored_model = schemas.QATypeIn(**stored_data)
 
     new_data = req.dict(exclude_unset=True)
     updated = stored_model.copy(update=new_data)
@@ -58,9 +57,73 @@ def update_qaipheaddiv(id: int, req: schemas.QAIPHeadDivIn, db: Session = Depend
     db.commit()
     return updated
 
-@router.delete('/headdivs/{id}', status_code=status.HTTP_202_ACCEPTED)
-def delete_qaipheaddiv(id: int, db: Session = Depends(get_db)):
-    query_res = db.query(QAIPHeadDiv).filter(QAIPHeadDiv.id == id)
+@router.delete('/types/{id}', status_code=status.HTTP_202_ACCEPTED)
+def delete_qa_type(id: int, db: Session = Depends(get_db)):
+    query_res = db.query(QAType).filter(QAType.id == id)
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    query_res.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
+# QAIP Type
+@router.get('/gradingresult')
+def get_all_qa_grading_results(db: Session = Depends(get_db)):
+    qGradRes = db.query(QAGradingResult).all()
+    return qGradRes
+
+@router.get('/gradingresult/{id}')
+def get_single_qa_grading_result(id: int, db: Session = Depends(get_db)):
+    query = db.query(QAGradingResult).filter(
+        QAGradingResult.id == id
+    ).first()
+
+    if not query:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"QAGradingResult of ID ({id}) was not found!")
+
+    return query
+
+@router.post('/gradingresult', status_code=status.HTTP_201_CREATED)
+def create_qa_grading_result(req: schemas.QAGradingResult, db: Session = Depends(get_db)):
+    newType = QAGradingResult(
+        name = req.name
+    )
+
+    db.add(newType)
+    db.commit()
+    db.refresh(newType)
+
+    return newType
+
+@router.patch('/gradingresult/{id}',  status_code=status.HTTP_202_ACCEPTED)
+def update_qa_grading_result(id: int, req: schemas.QATypeIn, db: Session = Depends(get_db)):
+    query_res = db.query(QAGradingResult).filter(
+        QAGradingResult.id == id
+    )
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    stored_data = jsonable_encoder(query_res.first())
+    stored_model = schemas.QAGradingResultIn(**stored_data)
+
+    new_data = req.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    query_res.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/gradingresult/{id}', status_code=status.HTTP_202_ACCEPTED)
+def delete_qa_grading_result(id: int, db: Session = Depends(get_db)):
+    query_res = db.query(QAGradingResult).filter(
+        QAGradingResult.id == id
+    )
 
     if not query_res.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
@@ -87,10 +150,12 @@ def get_single_qaip(id: int, db: Session = Depends(get_db)):
 
 @router.post('/', status_code=status.HTTP_201_CREATED)
 def create_qaip(req: schemas.QAIP, db: Session = Depends(get_db)):
-    newType = QAIP(
-        qaip_type                   = req.qaip_type,
-        project_name                = req.project_name,
-        qa_result                   = req.qa_result,
+    newQA = QAIP(
+        prj_id                      = req.prj_id,
+        TL                          = req.TL,
+        DH                          = req.DH,
+        qa_type_id                  = req.qa_type_id,
+        qa_grading_result_id        = req.qa_grading_result_id,
 
         qaf_category_clarity        = req.qaf_category_clarity,
         qaf_category_completeness   = req.qaf_category_completeness,
@@ -117,17 +182,14 @@ def create_qaip(req: schemas.QAIP, db: Session = Depends(get_db)):
         qaf_deliverables_5          = req.qaf_deliverables_5,
         qaf_deliverables_6          = req.qaf_deliverables_6,
         qaf_deliverables_7          = req.qaf_deliverables_7,
-        issue_count                 = req.issue_count,
-        qa_sample                   = req.qa_sample,
-
-        tl_id                       = req.tl_id
+        qa_sample                   = req.qa_sample
     )
 
-    db.add(newType)
+    db.add(newQA)
     db.commit()
-    db.refresh(newType)
+    db.refresh(newQA)
 
-    return newType
+    return newQA
 
 @router.patch('/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_qaip(id: int, req: schemas.QAIPIn, db: Session = Depends(get_db)):

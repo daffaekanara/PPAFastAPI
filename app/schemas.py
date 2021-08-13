@@ -468,9 +468,13 @@ class BudgetTableInHiCoupling(BaseModel):
 
 # QAIP
 class QAIP(BaseModel):
-    qaip_type                   :str
-    project_name                :str
-    qa_result                   :int
+    prj_id                      :int
+
+    TL                          :str
+    DH                          :str
+
+    qa_type_id                  :int
+    qa_grading_result_id        :int
 
     qaf_category_clarity        :bool
     qaf_category_completeness   :bool
@@ -497,16 +501,17 @@ class QAIP(BaseModel):
     qaf_deliverables_5          :bool
     qaf_deliverables_6          :bool
     qaf_deliverables_7          :bool
-    issue_count                 :int
     qa_sample                   :bool
 
-    tl_id                       :int
-
 class QAIPIn(BaseModel):
-    qaip_type                   :Optional[str]
-    project_name                :Optional[str]
-    qa_result                   :Optional[int]
+    prj_id                      :Optional[int]
 
+    TL                          :Optional[str]
+    DH                          :Optional[str]
+
+    qa_type_id                  :Optional[int]
+    qa_grading_result_id        :Optional[int]
+    
     qaf_category_clarity        :Optional[bool]
     qaf_category_completeness   :Optional[bool]
     qaf_category_consistency    :Optional[bool]
@@ -532,18 +537,19 @@ class QAIPIn(BaseModel):
     qaf_deliverables_5          :Optional[bool]
     qaf_deliverables_6          :Optional[bool]
     qaf_deliverables_7          :Optional[bool]
-    issue_count                 :Optional[int]
     qa_sample                   :Optional[bool]
 
-    tl_id                       :Optional[int]
+class QAType(BaseModel):
+    name    :str
 
-class QAIPHeadDiv(BaseModel):
-    div_head: str
-    qaip_id : int
+class QATypeIn(BaseModel):
+    name    :Optional[str]
 
-class QAIPHeadDivIn(BaseModel):
-    div_head: Optional[str]
-    qaip_id : Optional[int]
+class QAGradingResult(BaseModel):
+    name    :str
+
+class QAGradingResultIn(BaseModel):
+    name    :Optional[str]
 
 # CSF
 class CSF(BaseModel):

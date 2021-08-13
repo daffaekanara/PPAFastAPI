@@ -54,8 +54,6 @@ class Employee(Base):
 
     emp_certifications = relationship("Certification", back_populates="owner")
 
-    emp_qaip_tl = relationship("QAIP", back_populates="tl")
-
     emp_csf_tl  = relationship("CSF", back_populates="tl")
 
 class Certification(Base):
@@ -196,6 +194,7 @@ class Project(Base):
     div     = relationship("Division", back_populates="div_projects")
 
     csfs = relationship("CSF", back_populates="prj")
+    qaips= relationship("QAIP", back_populates="prj")
 
 # Budgets
 class YearlyBudget(Base):
@@ -244,9 +243,18 @@ class MonthlyActualBudget(Base):
 class QAIP(Base):
     __tablename__ = 'qaips'
     id                  = Column(Integer, primary_key=True, index=True)
-    qaip_type           = Column(String)
-    project_name        = Column(String)
-    qa_result           = Column(Integer)
+
+    prj_id              = Column(Integer, ForeignKey('projects.id'))
+    prj                 = relationship("Project", back_populates="qaips")
+
+    TL                  = Column(String)
+    DH                  = Column(String)
+
+    qa_type_id          = Column(Integer, ForeignKey('qatypes.id'))
+    qa_type             = relationship("QAType", back_populates="qaips")
+
+    qa_grading_result_id= Column(Integer, ForeignKey('qagradingresults.id'))
+    qa_grading_result   = relationship("QAGradingResult", back_populates="qaips")
 
     qaf_category_clarity        = Column(Boolean)
     qaf_category_completeness   = Column(Boolean)
@@ -273,22 +281,21 @@ class QAIP(Base):
     qaf_deliverables_5          = Column(Boolean)
     qaf_deliverables_6          = Column(Boolean)
     qaf_deliverables_7          = Column(Boolean)
-    issue_count                 = Column(Integer)
     qa_sample                   = Column(Boolean)
 
-    #Team_Leader ID
-    tl_id       = Column(Integer, ForeignKey('employees.id'))
-    tl          = relationship("Employee", back_populates="emp_qaip_tl")
-
-    head_divs   = relationship("QAIPHeadDiv", back_populates="qaip")
-
-class QAIPHeadDiv(Base):
-    __tablename__ = 'qaipheaddivs'
+class QAType(Base):
+    __tablename__ = 'qatypes'
     id          = Column(Integer, primary_key=True, index=True)
-    div_head    = Column(String)
+    name        = Column(String)
 
-    qaip_id = Column(Integer, ForeignKey('qaips.id'))
-    qaip    = relationship("QAIP", back_populates="head_divs")
+    qaips       = relationship("QAIP", back_populates="qa_type")
+
+class QAGradingResult(Base):
+    __tablename__ = 'qagradingresults'
+    id          = Column(Integer, primary_key=True, index=True)
+    name        = Column(String)
+
+    qaips       = relationship("QAIP", back_populates="qa_grading_result")
 
 # CSF
 class CSF(Base):
