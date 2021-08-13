@@ -1,5 +1,6 @@
 import datetime
 import re
+from decimal import Decimal
 
 def find_index(listOfDict, dict_key, value):
     return next((index for (index, d) in enumerate(listOfDict) if d[dict_key] == value), None)
@@ -61,3 +62,7 @@ def calc_single_csf_score(csf):
 
 def str_to_int_or_None(x):
     return int(x) if x.isnumeric() else None
+
+def remove_exponent(num):
+    num = Decimal(num)
+    return num.to_integral() if num == num.to_integral() else num.normalize()

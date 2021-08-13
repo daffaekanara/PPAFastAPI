@@ -174,9 +174,11 @@ def get_header_training(nik: int, year: int, db: Session = Depends(get_db)):
     for t in trainings:
         sum_t_hours += t.duration_hours
     
+    sum_t_hours = utils.remove_exponent(sum_t_hours/8)
+    trgt_hour   = utils.remove_exponent(trgt.target_hours/8)
+    
     return [{
-        'training_done' : sum_t_hours,
-        'training_all'  : trgt.target_hours
+        'training_done' : f"{sum_t_hours}/{trgt_hour} days"
     }]
 
 @router.get('/api/data_chart_trainings/{nik}/{year}')
@@ -207,5 +209,7 @@ def get_header_training(nik: int, year: int, db: Session = Depends(get_db)):
     for t in trainings:
         sum_t_hours += t.duration_hours
     
-    return [{"title":"done","total_training":sum_t_hours},
-            {"title":"remaining","total_training":trgt.target_hours - sum_t_hours}]
+    t_pctg = round((sum_t_hours/trgt.target_hours)*100)
+
+    return [{"title":"done","total_training":t_pctg},
+            {"title":"remaining","total_training":100 - t_pctg}]
