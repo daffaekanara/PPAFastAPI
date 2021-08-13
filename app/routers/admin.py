@@ -43,20 +43,6 @@ def get_qaip_table(year: int, db: Session = Depends(get_db)):
     
     return res
 
-@router.delete('/qaip_data/api/table_data')
-def delete_qaip_table_entry(req: schemas.QAIPInHiCoupling, db: Session = Depends(get_db)):
-    qaip = db.query(QAIP).filter(
-        QAIP.id == req.id
-    )
-
-    if not qaip.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
-    
-    qaip.delete()
-    db.commit()
-
-    return {'details': 'Deleted'}
-
 @router.patch('/qaip_data/api/form')
 def patch_qaip_entry(req: schemas.QAIPFormInHiCoupling, db: Session = Depends(get_db)):
     qaip = db.query(QAIP).filter(
