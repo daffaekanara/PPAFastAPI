@@ -583,7 +583,7 @@ def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(g
     new_csf = CSF(
         client_name         = req.clientName,
         client_unit         = req.unitJabatan,
-        csf_date            = utils.str_to_datetime(req.CSFDate),
+        csf_date            = utils.tablestr_to_datetime(req.CSFdate),
         atp_1               = req.atp1,
         atp_2               = req.atp2,
         atp_3               = req.atp3,
@@ -643,7 +643,7 @@ def patch_csf_table_entry(id: int, req: schemas.CSFInHiCoupling, db: Session = D
     dataIn = schemas.CSF(
         client_name         = req.clientName,
         client_unit         = req.unitJabatan,
-        csf_date            = utils.str_to_datetime(req.CSFDate),
+        csf_date            = utils.tablestr_to_datetime(req.CSFDate),
         atp_1               = req.atp1,
         atp_2               = req.atp2,
         atp_3               = req.atp3,
@@ -785,10 +785,10 @@ def create_employee_table_entry(req: schemas.EmployeeInHiCoupling, db: Session =
         div_stream              = req.stream,
         corporate_title         = req.corporateTitle,
         corporate_grade         = req.corporateGrade,
-        date_of_birth           = utils.str_to_datetime(req.dateOfBirth),
-        date_first_employment   = utils.str_to_datetime(req.dateStartFirstEmployment),
-        date_first_uob          = utils.str_to_datetime(req.dateJoinUOB),
-        date_first_ia           = utils.str_to_datetime(req.dateJoinIAFunction),
+        date_of_birth           = utils.tablestr_to_datetime(req.dateOfBirth),
+        date_first_employment   = utils.tablestr_to_datetime(req.dateStartFirstEmployment),
+        date_first_uob          = utils.tablestr_to_datetime(req.dateJoinUOB),
+        date_first_ia           = utils.tablestr_to_datetime(req.dateJoinIAFunction),
         gender                  = req.gender,
         year_audit_non_uob      = req.auditNonUOBExp,
         edu_level               = req.educationLevel,
@@ -829,10 +829,10 @@ def patch_employee_table_entry(id: int, req: schemas.EmployeeInHiCoupling, db: S
         div_stream              = req.stream,
         corporate_title         = req.corporateTitle,
         corporate_grade         = req.corporateGrade,
-        date_of_birth           = utils.str_to_datetime(req.dateOfBirth),
-        date_first_employment   = utils.str_to_datetime(req.dateStartFirstEmployment),
-        date_first_uob          = utils.str_to_datetime(req.dateJoinUOB),
-        date_first_ia           = utils.str_to_datetime(req.dateJoinIAFunction),
+        date_of_birth           = utils.tablestr_to_datetime(req.dateOfBirth),
+        date_first_employment   = utils.tablestr_to_datetime(req.dateStartFirstEmployment),
+        date_first_uob          = utils.tablestr_to_datetime(req.dateJoinUOB),
+        date_first_ia           = utils.tablestr_to_datetime(req.dateJoinIAFunction),
         gender                  = req.gender,
         year_audit_non_uob      = req.auditNonUOBExp,
         edu_level               = req.educationLevel,
@@ -917,7 +917,7 @@ def create_training_table_entry(req: schemas.TrainingInHiCoupling, db: Session =
 
     new_train = Training(
         name            = req.trainingTitle,
-        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        date            = utils.tablestr_to_datetime(req.date),
         duration_hours  = req.numberOfHours,
         proof           = False,
         budget          = req.budget,
@@ -956,7 +956,7 @@ def patch_training_table_entry(id: int, req: schemas.TrainingInHiCoupling, db: S
 
     dataIn = schemas.Training(
         name            = req.trainingTitle,
-        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        date            = utils.tablestr_to_datetime(req.date),
         duration_hours  = req.numberOfHours,
         proof           = False,
 
@@ -1269,7 +1269,7 @@ def create_busu_table_entry(req: schemas.BUSUEngagementInHiCoupling, db: Session
 
     new_eng = BUSUEngagement(
         activity_name   = req.activity,
-        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        date            = utils.tablestr_to_datetime(req.date),
         proof           = False,
         
         eng_type_id     = eng_types.index(req.WorRM) + 1,
@@ -1301,7 +1301,7 @@ def patch_busu_table_entry(id:int, req: schemas.BUSUEngagementInHiCoupling, db: 
 
     dataIn = schemas.BUSUEngagementIn(
         activity_name   = req.activity,
-        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        date            = utils.tablestr_to_datetime(req.date),
         proof           = False,
 
         eng_type_id     = eng_types.index(req.WorRM) + 1,
