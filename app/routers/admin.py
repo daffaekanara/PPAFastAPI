@@ -13,6 +13,50 @@ router = APIRouter(
     prefix="/admin"
 )
 
+# QA Result
+@router.get('/qaip_data/api/table_data/{year}')
+def get_qaip_table(year: int, db: Session = Depends(get_db)):
+    qaips = db.query(QAIP).filter(
+        QAIP.prj.has(year=year)
+    ).all()
+
+    res = []
+
+    for q in qaips:
+        cats    = utils.qa_to_category_str(q)
+        stages  = utils.qa_to_stage_str(q)
+        delivs  = utils.qa_to_delivs_str(q)
+
+        res.append({
+            "id"            : str(q.id),
+            "QAType"        : q.qa_type.name,
+            "auditProject"  : q.prj.name,
+            "TL"            : q.TL,
+            "divisionHead"  : q.DH,
+            "result"        : q.qa_grading_result.name,
+            "category"      : ", ".join(cats),
+            "stage"         : ", ".join(stages),
+            "deliverable"   : ", ".join(delivs),
+            "noOfIssues"    : len(delivs),
+            "QASample"      : q.qa_sample
+        })
+    
+    return res
+
+@router.delete('/qaip_data/api/table_data')
+def delete_qaip_table_entry(req: schemas.QAIPInHiCoupling, db: Session = Depends(get_db)):
+    qaip = db.query(QAIP).filter(
+        QAIP.id == req.id
+    )
+
+    if not qaip.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+    
+    qaip.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
 # Budget
 @router.get('/budget_data/api/table_data/{year}/{month}')
 def get_budget_table(year: int, month: int, db: Session = Depends(get_db)):

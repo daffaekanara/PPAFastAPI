@@ -539,6 +539,19 @@ class QAIPIn(BaseModel):
     qaf_deliverables_7          :Optional[bool]
     qa_sample                   :Optional[bool]
 
+class QAIPInHiCoupling(BaseModel):
+	id              : str
+	plan            : str
+	auditProject    : str
+	TL              : str
+	divisionHead    : str
+	result          : str
+	category        : str
+	stage           : str
+	deliverable     : str
+	noOfIssues      : int
+	QASample        : bool
+
 class QAType(BaseModel):
     name    :str
 

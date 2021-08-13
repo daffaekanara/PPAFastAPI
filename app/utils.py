@@ -1,7 +1,53 @@
 import datetime
 import re
 from decimal import Decimal
+from models import QAIP
 
+### QA Result ###
+def qa_to_category_str(x: QAIP):
+    res = []
+
+    x.qaf_category_clarity      and res.append("Clarity")
+    x.qaf_category_completeness and res.append("Completeness")
+    x.qaf_category_consistency  and res.append("Consistency")
+    x.qaf_category_others       and res.append("Others")
+
+    return res
+
+def qa_to_stage_str(x: QAIP):
+    res = []
+
+    x.qaf_stage_planning        and res.append("Planning")
+    x.qaf_stage_fieldwork       and res.append("Fieldwork")
+    x.qaf_stage_reporting       and res.append("Reporting")
+    x.qaf_stage_post_audit_act  and res.append("Post Audit Activity")
+
+    return res
+
+def qa_to_delivs_str(x: QAIP):
+    res = []
+
+    x.qaf_deliverables_1a  and res.append("Auditable Entity Information")
+    x.qaf_deliverables_1b  and res.append("Risk Profiles (RAP/ORP)")
+    x.qaf_deliverables_1c  and res.append("Audit Program")
+    x.qaf_deliverables_1d  and res.append("Audit Sampling Plan")
+    x.qaf_deliverables_1e  and res.append("MGO Rating")
+    x.qaf_deliverables_1f  and res.append("Out of Scope/Reliance Area")
+    x.qaf_deliverables_1g  and res.append("3LoD Reliance")
+    x.qaf_deliverables_1h  and res.append("Risk Hotspot Coverage")
+    x.qaf_deliverables_1i  and res.append("Audit Engagement Information")
+    x.qaf_deliverables_1j  and res.append("Time Allocation")
+    x.qaf_deliverables_1k  and res.append("Approval from DH")
+    x.qaf_deliverables_2   and res.append("Working Paper")
+    x.qaf_deliverables_3   and res.append("Audit Documentation")
+    x.qaf_deliverables_4   and res.append("Checklist for Supervisory Review")
+    x.qaf_deliverables_5   and res.append("Audit Report")
+    x.qaf_deliverables_6   and res.append("Corrective Actions Closure")
+    x.qaf_deliverables_7   and res.append("Others")
+
+    return res
+
+### Untagged ###
 def find_index(listOfDict, dict_key, value):
     return next((index for (index, d) in enumerate(listOfDict) if d[dict_key] == value), None)
 
