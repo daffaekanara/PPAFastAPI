@@ -57,6 +57,77 @@ def delete_qaip_table_entry(req: schemas.QAIPInHiCoupling, db: Session = Depends
 
     return {'details': 'Deleted'}
 
+@router.patch('/qaip_data/api/form')
+def patch_qaip_entry(req: schemas.QAIPFormInHiCoupling, db: Session = Depends(get_db)):
+    qaip = db.query(QAIP).filter(
+        QAIP.prj.has(name=req.projectTitle),
+        QAIP.prj.has(year=req.year)
+    )
+
+    if not qaip.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Project with name ({req.projectTitle}) and year ({req.year}) was not found!')
+
+    qaip = db.query(QAIP).filter(
+        QAIP.id == qaip.first().id
+    )
+
+    qaip_model = qaip.first()
+
+    stored_data = jsonable_encoder(qaip_model)
+    stored_model = schemas.QAIPIn(**stored_data)
+
+    # Data Validation
+    type_id     = utils.qa_type_str_to_id(req.QAType)
+    gradRes_id  = utils.qa_gradingres_str_to_id(req.QAResults)
+
+    if not type_id or not gradRes_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Wrong QAType or QAResults')
+
+    # Patch Entry
+    dataIn = schemas.QAIP(
+        prj_id                      = qaip_model.prj_id,
+        TL                          = req.TL,
+        DH                          = req.DH,
+        qa_type_id                  = type_id,
+        qa_grading_result_id        = gradRes_id,
+
+        qaf_category_clarity        = req.qaf_category_clarity,
+        qaf_category_completeness   = req.qaf_category_completeness,
+        qaf_category_consistency    = req.qaf_category_consistency,
+        qaf_category_others         = req.qaf_category_others,
+        qaf_stage_planning          = req.qaf_stage_planning,
+        qaf_stage_fieldwork         = req.qaf_stage_fieldwork,
+        qaf_stage_reporting         = req.qaf_stage_reporting,
+        qaf_stage_post_audit_act    = req.qaf_stage_post_audit_act,
+        qaf_deliverables_1a         = req.qaf_deliverables_1a,
+        qaf_deliverables_1b         = req.qaf_deliverables_1b,
+        qaf_deliverables_1c         = req.qaf_deliverables_1c,
+        qaf_deliverables_1d         = req.qaf_deliverables_1d,
+        qaf_deliverables_1e         = req.qaf_deliverables_1e,
+        qaf_deliverables_1f         = req.qaf_deliverables_1f,
+        qaf_deliverables_1g         = req.qaf_deliverables_1g,
+        qaf_deliverables_1h         = req.qaf_deliverables_1h,
+        qaf_deliverables_1i         = req.qaf_deliverables_1i,
+        qaf_deliverables_1j         = req.qaf_deliverables_1j,
+        qaf_deliverables_1k         = req.qaf_deliverables_1k,
+        qaf_deliverables_2          = req.qaf_deliverables_2,
+        qaf_deliverables_3          = req.qaf_deliverables_3,
+        qaf_deliverables_4          = req.qaf_deliverables_4,
+        qaf_deliverables_5          = req.qaf_deliverables_5,
+        qaf_deliverables_6          = req.qaf_deliverables_6,
+        qaf_deliverables_7          = req.qaf_deliverables_7,
+        qa_sample                   = req.qa_sample
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    qaip.update(stored_data)
+    db.commit()
+    return updated
+
 # Budget
 @router.get('/budget_data/api/table_data/{year}/{month}')
 def get_budget_table(year: int, month: int, db: Session = Depends(get_db)):

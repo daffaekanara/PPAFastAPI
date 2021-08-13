@@ -552,6 +552,43 @@ class QAIPInHiCoupling(BaseModel):
 	noOfIssues      : int
 	QASample        : bool
 
+class QAIPFormInHiCoupling(BaseModel):
+    projectTitle: str
+    year		: int
+
+    TL			: str
+    DH			: str
+
+    QAType		: str
+    QAResults	: str
+
+    qaf_category_clarity        : bool
+    qaf_category_completeness   : bool
+    qaf_category_consistency    : bool
+    qaf_category_others         : bool
+    qaf_stage_planning          : bool
+    qaf_stage_fieldwork         : bool
+    qaf_stage_reporting         : bool
+    qaf_stage_post_audit_act    : bool
+    qaf_deliverables_1a         : bool
+    qaf_deliverables_1b         : bool
+    qaf_deliverables_1c         : bool
+    qaf_deliverables_1d         : bool
+    qaf_deliverables_1e         : bool
+    qaf_deliverables_1f         : bool
+    qaf_deliverables_1g         : bool
+    qaf_deliverables_1h         : bool
+    qaf_deliverables_1i         : bool
+    qaf_deliverables_1j         : bool
+    qaf_deliverables_1k         : bool
+    qaf_deliverables_2          : bool
+    qaf_deliverables_3          : bool
+    qaf_deliverables_4          : bool
+    qaf_deliverables_5          : bool
+    qaf_deliverables_6          : bool
+    qaf_deliverables_7          : bool
+    qa_sample                   : bool
+
 class QAType(BaseModel):
     name    :str
 

@@ -47,6 +47,25 @@ def qa_to_delivs_str(x: QAIP):
 
     return res
 
+def qa_type_str_to_id(text):
+    types = [
+        "Plan - Regular", 
+        "Plan - Thematic",
+        "Regulatory",
+        "Special Review"
+    ]
+
+    return types.index(text)+1 if text in types else 0
+
+def qa_gradingres_str_to_id(text):
+    res = [
+        "Generally Conforms",
+        "Partially Conforms",
+        "Does Not Conform"
+    ]
+
+    return res.index(text)+1 if text in res else 0
+
 ### Untagged ###
 def find_index(listOfDict, dict_key, value):
     return next((index for (index, d) in enumerate(listOfDict) if d[dict_key] == value), None)
