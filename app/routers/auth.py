@@ -37,5 +37,5 @@ def temp_login(req: schemas.TempLoginForm, db: Session = Depends(database.get_db
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Incorrect password")
 
     return {
-        'token': user.role
+        'token': user.role.name
     }
