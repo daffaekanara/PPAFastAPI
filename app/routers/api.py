@@ -3,18 +3,951 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
+import datetime
+from dateutil.relativedelta import relativedelta
 import schemas, datetime, utils
 from models import *
 from database import get_db
 
+gen_x_youngest = datetime.date(1975,12,31)
+gen_y_youngest = datetime.date(1989,12,31)
+
 # API
 router = APIRouter(
-    tags=['Admin'],
-    prefix="/admin"
+    tags=['API'],
+    prefix="/api"
 )
 
+### Dashboard ###
+
+@router.get('/dashboard/smr_certification')
+def get_smr_certs(db: Session = Depends(get_db)):
+    # Get Emps
+    emps = db.query(Employee).all()
+
+    # Init res
+    levels = [
+        "SMR Level 1",
+        "SMR Level 2",
+        "SMR Level 3",
+        "SMR Level 4",
+        "SMR Level 5",
+        "SMR In Progress",
+    ]
+    res = []
+    for lvl in levels:
+        res.append({
+            "smr_level"     : lvl,
+            "sum_per_level" : 0
+        })
+
+    for e in emps:
+        for cert in e.emp_certifications:
+            index = utils.find_index(res,"smr_level", cert.cert_name)
+    
+            if index:
+                res[index]["sum_per_level"] += 1 
+    
+    return res
+
+@router.get('/dashboard/pro_certification')
+def get_pro_certs(db: Session = Depends(get_db)):
+    # Get Emps
+    emps = db.query(Employee).all()
+
+    # Init res
+    types = [
+        "CISA",
+        "CEH",
+        "ISO27001",
+        "CHFI",
+        "QIA",
+        "CIA",
+        "CA",
+        "CBIA",
+        "CPA"
+    ]
+    res = []
+    for t in types:
+        res.append({
+            "certification_name": t,
+            "sum_per_name"     : 0
+        })
+
+    for e in emps:
+        for cert in e.emp_certifications:
+            index = utils.find_index(res,"certification_name", cert.cert_name)
+    
+            if index:
+                res[index]["sum_per_name"] += 1 
+    
+    return res
+
+@router.get('/dashboard/age_group')
+def get_age_group(db: Session = Depends(get_db)):
+    # Get All Emps
+    emps = db.query(Employee).all()
+
+    gens = ["Gen-X", "Gen-Y", "Gen-Z"]
+    res = []
+
+    # Init result dict
+    for gen in gens:
+        res.append({
+            "male_sum"  : 0,
+            "female_sum": 0,
+            "gen_name"  : gen
+        })
+    
+    for e in emps:
+        if e.date_of_birth <= gen_x_youngest: # Gen X
+            if e.gender == 'M':
+                res[0]['male_sum'] += 1
+            elif e.gender == 'F':
+                res[0]['female_sum'] += 1
+        elif e.date_of_birth <= gen_y_youngest: # Gen Y
+            if e.gender == 'M':
+                res[1]['male_sum'] += 1
+            elif e.gender == 'F':
+                res[1]['female_sum'] += 1
+        else:
+            if e.gender == 'M':
+                res[2]['male_sum'] += 1
+            elif e.gender == 'F':
+                res[2]['female_sum'] += 1
+
+    return res
+
+@router.get('/dashboard/education_level')
+def get_edu_level(db: Session = Depends(get_db)):
+    # Get All Emps
+    emps = db.query(Employee).all()
+
+    titles = ["Management/Economy", "Information Technology", "Others"]
+    res = []
+
+    # Init result dict
+    for title in titles:
+        res.append({
+            "bachelor_sum"  : 0,
+            "master_sum"    : 0,
+            "major_title"   : title
+        })
+    
+    for e in emps:
+        if e.edu_category == "Information Technology":
+            if e.edu_level == "Bachelor":
+                res[1]['bachelor_sum'] += 1
+            elif e.edu_level == "Master":
+                res[1]['master_sum'] += 1
+        elif e.edu_category == "Management/Economy":
+            if e.edu_level == "Bachelor":
+                res[0]['bachelor_sum'] += 1
+            elif e.edu_level == "Master":
+                res[0]['master_sum'] += 1
+        elif e.edu_category == "Others":
+            if e.edu_level == "Bachelor":
+                res[2]['bachelor_sum'] += 1
+            elif e.edu_level == "Master":
+                res[2]['master_sum'] += 1
+
+    return res
+
+@router.get('/dashboard/audit_exp')
+def get_total_audit_exp(db: Session = Depends(get_db)):
+    # Get All Emps
+    emps = db.query(Employee).all()
+
+    # in_uob, outside_uob, total_exp, year
+    year_cats = [
+        "Less than 3", 
+        "3-6", 
+        "7-9",
+        "10-12",
+        "13-15",
+        "More than 15"
+    ]
+    res = []
+
+    # Init result dict
+    for y in year_cats:
+        res.append({
+            "in_uob"        : 0,
+            "outside_uob"   : 0,
+            "total_exp"     : 0,
+            "year"          : y
+        })
+
+    for e in emps:
+        years   = [0,0,0] #in UOB, outside UOB, total
+        keys    = ["in_uob", "outside_uob", "total_exp"]
+
+        years[0]    = relativedelta(datetime.date.today(), e.date_first_uob).years
+        years[1]    = e.year_audit_non_uob
+        years[2]    = years[0] + years[1]
+
+        for index, year in enumerate(years):
+            if year < 3:
+                res[utils.find_index(res,"year","Less than 3")][keys[index]] += 1
+            elif year < 7:
+                res[utils.find_index(res,"year","3-6")][keys[index]] += 1
+            elif year < 10:
+                res[utils.find_index(res,"year","7-9")][keys[index]] += 1
+            elif year < 13:
+                res[utils.find_index(res,"year","10-12")][keys[index]] += 1
+            elif year < 16:
+                res[utils.find_index(res,"year","13-15")][keys[index]] += 1
+            else:
+                res[utils.find_index(res,"year","More than 15")][keys[index]] += 1
+
+    return res
+
+
+### Profile ###
+
+@router.get('/profile/about/table_data/{nik}')
+def get_employee_table(nik: str, db: Session = Depends(get_db)):
+    e = db.query(Employee).filter(
+        Employee.staff_id == nik
+    ).first()
+
+    if not e:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of NIK ({nik}) was not found!")
+
+    res = []
+
+    as_of_now       = datetime.date.today().strftime("%m/%d/%Y")
+    age             = utils.get_year_diff_to_now(e.date_of_birth)
+    gen             = utils.get_gen(e.date_of_birth)
+    auditUOBYears   = utils.get_year_diff_to_now(e.date_first_uob)
+
+    # Process Certs
+    certs = [
+        "SMR", "CISA", "CEH", "ISO", "CHFI", 
+        "IDEA", "QualifiedIA", "CBIA", "CIA", "CPA", "CA", "Others"]
+
+    cert_res = []
+
+    for c in certs:
+        cert_res.append({
+            'title': c,
+            'value': 0
+        })
+
+    for c in e.emp_certifications:
+        # SMR (Levels)
+        smr_level = utils.extract_SMR_level(c.cert_name)
+        
+        if smr_level: # SMR
+            cert_res[0]['value'] = smr_level
+        elif c.cert_name in certs:
+            index = utils.find_index(cert_res, 'title', c.cert_name)
+            cert_res[index]['value'] = 1
+        else:
+            cert_res[-1]["value"] += 1
+
+    smr_lvl = cert_res[0]['value']
+    smr_str = f"Level {smr_lvl}" if smr_lvl else "-"
+
+    res.append({
+        "id"                          : e.id,
+        "staffNIK"                    : e.staff_id,
+        "staffName"                   : e.name,
+        "email"                       : e.email,
+        "role"                        : e.role.name,
+        "divison"                     : e.part_of_div.name,
+        "stream"                      : e.div_stream,
+        "corporateTitle"              : e.corporate_title,
+        "corporateGrade"              : e.corporate_grade,
+        "dateOfBirth"                 : e.date_of_birth.strftime("%m/%d/%Y"),
+        "dateStartFirstEmployment"    : e.date_first_employment.strftime("%m/%d/%Y"),
+        "dateJoinUOB"                 : e.date_first_uob.strftime("%m/%d/%Y"),
+        "dateJoinIAFunction"          : e.date_first_ia.strftime("%m/%d/%Y"),
+        "asOfNow"                     : as_of_now,
+        "age"                         : age,
+        "gen"                         : gen,
+        "gender"                      : e.gender,
+        "auditUOBExp"                 : auditUOBYears,
+        "auditNonUOBExp"              : e.year_audit_non_uob,
+        "totalAuditExp"               : e.year_audit_non_uob + auditUOBYears,
+        "educationLevel"              : e.edu_level,
+        "educationMajor"              : e.edu_major,
+        "educationCategory"           : e.edu_category,
+        "RMGCertification"            : smr_str,
+        "CISA"                        : cert_res[1]['value'],
+        "CEH"                         : cert_res[2]['value'],
+        "ISO"                         : cert_res[3]['value'],
+        "CHFI"                        : cert_res[4]['value'],
+        "IDEA"                        : cert_res[5]['value'],
+        "QualifiedIA"                 : cert_res[6]['value'],
+        "CBIA"                        : cert_res[7]['value'],
+        "CIA"                         : cert_res[8]['value'],
+        "CPA"                         : cert_res[9]['value'],
+        "CA"                          : cert_res[10]['value'],
+        "IABackgground"               : e.ia_background,
+        "EABackground"                : e.ea_background,
+        "active"                      : e.active
+    })
+
+    return res
+
+@router.patch('/profile/about/table_data/{nik}')
+def patch_employee_table_entry(nik: str, req: schemas.EmployeeInHiCoupling, db: Session = Depends(get_db)):
+    emp = db.query(Employee).filter(
+        Employee.staff_id == nik
+    )
+
+    if not emp.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+    
+    stored_data = jsonable_encoder(emp.first())
+    stored_model = schemas.EmployeeIn(**stored_data)
+
+    dataIn = schemas.Employee(
+        name    = req.staffName,
+        email   = req.email,
+        pw      = emp.first().pw,
+
+        staff_id                = req.staffNIK,
+        div_stream              = req.stream,
+        corporate_title         = req.corporateTitle,
+        corporate_grade         = req.corporateGrade,
+        date_of_birth           = utils.str_to_datetime(req.dateOfBirth),
+        date_first_employment   = utils.str_to_datetime(req.dateStartFirstEmployment),
+        date_first_uob          = utils.str_to_datetime(req.dateJoinUOB),
+        date_first_ia           = utils.str_to_datetime(req.dateJoinIAFunction),
+        gender                  = req.gender,
+        year_audit_non_uob      = req.auditNonUOBExp,
+        edu_level               = req.educationLevel,
+        edu_major               = req.educationMajor,
+        edu_category            = req.educationCategory,
+        ia_background           = req.IABackgground,
+        ea_background           = req.EABackground,
+        active                  = req.active,
+
+        div_id = utils.div_str_to_divID(req.divison),
+        role_id = utils.role_str_to_id(req.role)
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    emp.update(stored_data)
+    db.commit()
+    return updated
+
+@router.get('/profile/header_training/{nik}/{year}')
+def get_header_training(nik: int, year: int, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    # Get Emp_id
+    emp = db.query(Employee).filter(
+        Employee.staff_id == str(nik)
+    ).one()
+
+    # Get Training Target
+    trgt = db.query(TrainingTarget).filter(
+        TrainingTarget.emp_id == emp.id,
+        TrainingTarget.year == year
+    ).one()
+
+    # Get Sum of Training Days
+    trainings = db.query(Training).filter(
+        Training.emp_id == emp.id,
+        Training.date >= startDate,
+        Training.date <= endDate        
+    ).all()
+
+    sum_t_hours = 0
+
+    for t in trainings:
+        sum_t_hours += t.duration_hours
+    
+    sum_t_hours = utils.remove_exponent(sum_t_hours/8)
+    trgt_hour   = utils.remove_exponent(trgt.target_hours/8)
+    
+    return [{
+        'training_done' : f"{sum_t_hours}/{trgt_hour} days"
+    }]
+
+@router.get('/profile/data_chart_trainings/{nik}/{year}')
+def get_header_training(nik: int, year: int, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    # Get Emp_id
+    emp = db.query(Employee).filter(
+        Employee.staff_id == str(nik)
+    ).one()
+
+    # Get Training Target
+    trgt = db.query(TrainingTarget).filter(
+        TrainingTarget.emp_id == emp.id,
+        TrainingTarget.year == year
+    ).one()
+
+    # Get Sum of Training Days
+    trainings = db.query(Training).filter(
+        Training.emp_id == emp.id,
+        Training.date >= startDate,
+        Training.date <= endDate        
+    ).all()
+
+    sum_t_hours = 0
+
+    for t in trainings:
+        sum_t_hours += t.duration_hours
+    
+    t_pctg = round((sum_t_hours/trgt.target_hours)*100)
+
+    return [{"title":"done","total_training":t_pctg},
+            {"title":"remaining","total_training":100 - t_pctg}]
+
+### Budgets ###
+
+@router.get('/budget/budgetdata/{year}/{month}')
+def get_total_by_division_by_year(year: int, month: int, db: Session = Depends(get_db)):
+
+    yearlyQuery = db.query(MonthlyBudget).filter(
+        MonthlyBudget.year == year
+    ).all() # 12 data
+
+    query = db.query(MonthlyActualBudget).filter(
+        MonthlyActualBudget.year == year, 
+        MonthlyActualBudget.month == month
+    ).first()
+
+    # Init result dict
+    cats = [
+        "Staff Expense", 
+        "Revenue Related", 
+        "IT Related", 
+        "Occupancy Related", 
+        "Other Related",
+        "Direct Expense",
+        "Indirect Expense",
+        "Total"
+    ]
+    res = []
+    yearlyBudget = {}
+    actualMonthBudget = {}
+
+    for cat in cats:
+        res.append({
+            "yearly":0,
+            "month_to_year":0,
+            "expense_category":cat
+        })
+
+        yearlyBudget[cat] = 0
+        actualMonthBudget[cat] = 0
+
+    # Process YearlyBudget
+    for y in yearlyQuery:
+        yearlyBudget['Staff Expense']               += y.staff_salaries
+        yearlyBudget['Staff Expense']               += y.staff_training_reg_meeting
+        yearlyBudget['Revenue Related']             += y.revenue_related
+        yearlyBudget['IT Related']                  += y.it_related
+        yearlyBudget['Occupancy Related']           += y.occupancy_related
+        yearlyBudget['Other Related']               += y.other_transport_travel
+        yearlyBudget['Other Related']               += y.other_other
+        yearlyBudget['Direct Expense']              += y.staff_salaries + y.revenue_related + y.it_related + y.occupancy_related + y.other_transport_travel + y.other_other   
+        yearlyBudget['Indirect Expense']            += y.indirect_expense 
+        yearlyBudget['Total']                       += yearlyBudget['Direct Expense'] + yearlyBudget['Indirect Expense']
+        
+    # process MonthlyActualBudget
+    actualMonthBudget['Staff Expense']               = query.staff_salaries if query else 0
+    actualMonthBudget['Staff Expense']               = query.staff_training_reg_meeting  if query else 0
+    actualMonthBudget['Revenue Related']             = query.revenue_related  if query else 0
+    actualMonthBudget['IT Related']                  = query.it_related  if query else 0
+    actualMonthBudget['Occupancy Related']           = query.occupancy_related  if query else 0
+    actualMonthBudget['Other Related']               = query.other_transport_travel  if query else 0
+    actualMonthBudget['Other Related']               = query.other_other  if query else 0
+    actualMonthBudget['Direct Expense']              = query.staff_salaries + query.revenue_related + query.it_related + query.occupancy_related + query.other_transport_travel + query.other_other if query else 0  
+    actualMonthBudget['Indirect Expense']            = query.indirect_expense if query else 0
+    actualMonthBudget['Total']                       = actualMonthBudget['Direct Expense'] + actualMonthBudget['Indirect Expense']
+
+
+    for cat in cats:
+        i = utils.find_index(res, 'expense_category', cat)
+        res[i]["yearly"]        = yearlyBudget[cat]
+        res[i]["month_to_year"] = actualMonthBudget[cat]
+
+    return res
+
+### Audit Project ###
+
+@router.get('/projects/total_by_division/{year}')
+def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
+    query = db.query(Project).filter(Project.year == year).all()
+    
+    status = [
+        "Total Projects", 
+        "Completed", 
+        "Reporting", 
+        "Fieldwork", 
+        "Planning",
+        "Timely Report",
+        "DA",
+        "PA"
+    ]
+
+    # Init result dict
+    res = []
+    for s in status:
+        res.append({
+            "WBGM":0, 
+            "RBA":0, 
+            "BRDS":0,
+            "TAD":0,
+            "project_status":s
+        })
+
+    for q in query:
+        # Cek Divisi
+        div_name = q.div.name
+
+        # Process Each Prj Status
+        # res[utils.find_index(res, 'project_status', status[0])]
+        res[0][div_name] += 1
+        res[1][div_name] += 1 and q.status.name == status[1]
+        res[2][div_name] += 1 and q.status.name == status[2]
+        res[3][div_name] += 1 and q.status.name == status[3]
+        res[4][div_name] += 1 and q.status.name == status[4]
+        res[5][div_name] += 1 and q.timely_report
+        res[6][div_name] += 1 and q.used_DA
+        res[7][div_name] += 1 and q.completion_PA        
+        
+
+    return res
+
+### Social Contrib ###
+
+@router.get('/socialcontrib/total_by_division/{year}')
+def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    query = db.query(SocialContrib).filter(SocialContrib.date >= startDate, SocialContrib.date <= endDate).all()
+    
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    res = []
+
+    # Init result dict
+    for div in divs:
+        res.append({"contribute_sum":0, "division":div})
+
+    for q in query:
+        contrib_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.div.name), None)
+        res[contrib_by_div]["contribute_sum"] += 1
+
+    return res
+
+@router.get('/socialcontrib/total_by_division_type_categorized/{year}')
+def get_total_by_division_by_year_type_categorized(year: int, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    query = db.query(SocialContrib).filter(SocialContrib.date >= startDate, SocialContrib.date <= endDate).all()
+    
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    res = {}
+
+    # Init result dict
+    for div in divs:
+        res[div] = {"news":0, "myUob":0, "buletin":0}
+
+    for q in query:
+        if q.social_type_id == 1:
+            res[q.div.name]["news"] += 1
+        if q.social_type_id == 2:
+            res[q.div.name]["myUob"] += 1
+        if q.social_type_id == 3:
+            res[q.div.name]["buletin"] += 1
+
+    return res
+
+### Training ###
+
+@router.get('/training/budget_percentange/{year}')
+def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    yearlyBudgets = db.query(TrainingBudget).filter(
+        TrainingBudget.year == year
+    ).all()
+
+    mandatories = db.query(Training).filter(
+        Training.date >= startDate,
+        Training.date <= endDate,
+        Training.emp_id == 0
+    ).all()
+
+    trainings = db.query(Training).filter(
+        Training.date >= startDate,
+        Training.date <= endDate
+    ).all()
+
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA", "Mandatory/Inhouse"]
+
+    # Init values dict
+    values = []
+    for d in divs:
+        values.append({
+            "div"       : d,
+            "budget"    : 0,
+            "realized"  : 0,
+            "charged"   : 0
+        })
+
+    # Get Divisions Yearly Training Budget
+    for y in yearlyBudgets:
+        if 0 < y.div_id < 6:
+            i = utils.find_index(values, "div", y.div.name)
+            values[i]["budget"] = y.budget
+    
+    # Get Each Training's Charged and Realized
+    for t in trainings:
+        if t.emp_id == 0: # Mandatory (Not specific to a employee)
+            values[5]["budget"]     += t.budget
+            values[5]["realized"]   += t.realization
+            values[5]["charged"]    += t.charged_by_fin
+        else:
+            if 1 <= t.employee.div_id <= 5: # Not Including IAH
+                i = utils.find_index(values, "div", t.employee.part_of_div.name)
+                values[i]["realized"]   += t.realization
+                values[i]["charged"]    += t.charged_by_fin
+
+    # Translate to Percentage
+    res = []
+    for d in divs:
+        res.append({
+            "budget"            : 0,
+            "cost_realization"  : 0,
+            "charged_by_finance": 0,
+            "divisions_and_mandatory": d
+        })
+    
+    for i, r in enumerate(res):
+        cost_realized   = values[i]["realized"] / values[i]["budget"] * 100 if values[i]["budget"] != 0 else 0
+        charged         = values[i]["charged"] / values[i]["budget"] * 100 if values[i]["budget"] != 0 else 0
+        
+        res[i]["budget"]             = 100.0
+        res[i]["cost_realization"]   = round(cost_realized, 2)
+        res[i]["charged_by_finance"] = round(charged, 2)
+        
+    return res
+
+@router.get('/training/progress_percentange/{year}')
+def get_training_progress_percentage(year: int, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    targets = db.query(TrainingTarget).filter(
+        TrainingTarget.year == year
+    ).all()
+
+    trainings = db.query(Training).filter(
+        Training.date >= startDate,
+        Training.date <= endDate,
+        Training.emp_id > 0
+    ).all()
+
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA", "IAH"]
+
+    # Init values dict
+    values = []
+    for d in divs:
+        values.append({
+            "div"           : d,
+            "target_hours"   : 0,
+            "curr_hours"     : 0
+        })
+    
+    # Get Targets
+    for t in targets:
+        i = utils.find_index(values, "div", t.trainee.part_of_div.name)
+        values[i]["target_hours"] += t.target_hours
+
+    # Get Currs
+    for t in trainings:
+        i = utils.find_index(values, "div", t.employee.part_of_div.name)
+        values[i]["curr_hours"] += t.duration_hours
+    
+    # Translate to Percentage
+    res = []
+    for d in divs:
+        res.append({
+            "percentage" : 0,
+            "divisions": d
+        })
+    
+    for i, r in enumerate(res):
+        if values[i]["target_hours"] == 0:
+            res[i]["percentage"]   = 0.0
+        else:
+            pctg = values[i]["curr_hours"] / values[i]["target_hours"] * 100
+            res[i]["percentage"]   = round(pctg, 2)
+        
+
+    return res
+
+@router.post('/training/form', status_code=status.HTTP_201_CREATED)
+def create_training_from_form(req: schemas.TrainingInHiCouplingForm, db: Session = Depends(get_db)):
+    emp = db.query(Employee).filter(
+        Employee.staff_id == req.nik
+    )
+
+    if not emp.first():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of NIK ({req.nik}) was not found!")
+
+    emp_id = emp.first().id
+    
+    newTrain = Training(
+        name            = req.name, 
+        date            = utils.str_to_datetime(req.date), 
+        duration_hours  = req.duration_hours, 
+        proof           = req.proof,
+        budget          = 0,
+        realization     = 0,
+        charged_by_fin  = 0,
+        remark          = req.remarks,
+        mandatory_from  = "",
+        emp_id          = emp_id
+    )
+    
+    db.add(newTrain)
+    db.commit()
+    db.refresh(newTrain)
+    return newTrain
+
+### CSF ###
+
+@router.get('/csf/client_survey/{year}')
+def get_csf_bar_chart_data(year: int, db: Session = Depends(get_db)):
+    divs    = ["WBGM", "RBA", "BRDS", "TAD"]
+    
+    # Get All CSF where Project's year is {year}
+    csfs = db.query(CSF).filter(
+        CSF.prj.has(year=year)
+    ).all()
+
+    # Init result dict
+    res = []
+    for d in divs:
+        res.append({
+            "division"      : d, 
+            "by_division"   : 0, 
+            "by_project"    : 0
+        })
+
+    # Calc byProject Score
+    for d in divs:
+        prj_ids = []
+        list_of_prj_scores = []
+
+        # Find Unique Project IDs of a div
+        for c in csfs:
+            if c.prj.div.name == d:
+                if c.prj_id not in prj_ids:
+                    prj_ids.append(c.prj_id)
+
+        # Calc each project overall score
+        for prj_id in prj_ids:
+            list_of_csf_scores = []
+            
+            # Get project's feedback scores
+            for c in csfs:
+                if c.prj_id == prj_id:
+                    score = utils.calc_single_csf_score(c)
+                    list_of_csf_scores.append(score)
+            
+            # Project Overall Score
+            if list_of_csf_scores:
+                score = sum(list_of_csf_scores) / len(list_of_csf_scores)
+                list_of_prj_scores.append(round(score,2))
+
+        if list_of_prj_scores:
+            score = sum(list_of_prj_scores) / len(list_of_prj_scores)
+
+            index = utils.find_index(res, "division", d)
+            res[index]["by_project"] = round(score, 2)
+  
+    # Calc byInvDiv Score
+    for d in divs:
+        prj_ids = []
+        list_of_prj_scores = []
+
+        # Find Unique Project IDs of a div
+        for c in csfs:
+            if c.by_invdiv_div.name == d:
+                if c.prj_id not in prj_ids:
+                    prj_ids.append(c.prj_id)
+
+        # Calc each project overall score
+        for prj_id in prj_ids:
+            list_of_csf_scores = []
+            
+            # Get project's feedback scores
+            for c in csfs:
+                if c.prj_id == prj_id and c.by_invdiv_div.name == d:
+                    score = utils.calc_single_csf_score(c)
+                    list_of_csf_scores.append(score)
+            
+            # Project Overall Score
+            if list_of_csf_scores:
+                score = sum(list_of_csf_scores) / len(list_of_csf_scores)
+                list_of_prj_scores.append(round(score,2))
+
+        if list_of_prj_scores:
+            score = sum(list_of_prj_scores) / len(list_of_prj_scores)
+
+            index = utils.find_index(res, "division", d)
+            res[index]["by_division"] = round(score, 2)
+
+    return res
+
+@router.get('/csf/overall_csf/{year}')
+def get_csf_donut_data(year: int, db: Session = Depends(get_db)):
+    divs    = ["WBGM", "RBA", "BRDS", "TAD"]
+    
+    # Get All CSF where Project's year is {year}
+    csfs = db.query(CSF).filter(
+        CSF.prj.has(year=year)
+    ).all()
+
+    scores = []
+
+    # Calc byInvDiv Score
+    for d in divs:
+        prj_ids = []
+        list_of_prj_scores = []
+
+        # Find Unique Project IDs of a div
+        for c in csfs:
+            if c.by_invdiv_div.name == d:
+                if c.prj_id not in prj_ids:
+                    prj_ids.append(c.prj_id)
+
+        # Calc each project overall score
+        for prj_id in prj_ids:
+            list_of_csf_scores = []
+            
+            # Get project's feedback scores
+            for c in csfs:
+                if c.prj_id == prj_id and c.by_invdiv_div.name == d:
+                    score = utils.calc_single_csf_score(c)
+                    list_of_csf_scores.append(score)
+            
+            # Project Overall Score
+            if list_of_csf_scores:
+                score = sum(list_of_csf_scores) / len(list_of_csf_scores)
+                list_of_prj_scores.append(round(score,2))
+
+        if list_of_prj_scores:
+            score = sum(list_of_prj_scores) / len(list_of_prj_scores)
+            scores.append(round(score, 2))
+        else:
+            scores.append(0)
+  
+    avg = sum(scores) / len(scores)
+
+    res = [
+        {
+            "title" : "score",
+	        "rate"  : round(avg, 2)
+        },
+        {
+            "title" : "",
+	        "rate"  : round(4-avg, 2)
+        }
+    ]
+
+    return res
+
+### BUSU Engagement ###
+
+@router.get('/engagement/total_by_division/{year}')
+def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    query = db.query(BUSUEngagement).filter(
+        BUSUEngagement.date >= startDate,
+        BUSUEngagement.date <= endDate
+    ).all()
+    
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    res = []
+
+    # Init result dict
+    for div in divs:
+        res.append({"quarterly_meeting":0, "workshop":0, "division":div})
+
+    for q in query:
+        eng_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.div.name), None)
+
+        if q.eng_type_id == 1:
+            res[eng_by_div]["quarterly_meeting"] += 1
+        if q.eng_type_id == 2:
+            res[eng_by_div]["workshop"] += 1
+
+    return res
+
+### Attrition ###
+
+@router.get('/attrition/staff_attrition/{year}')
+def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
+
+    query = db.query(YearlyAttrition).filter(YearlyAttrition.year == year).all()
+
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    res = []
+
+    # Init result dict
+    for div in divs:
+        res.append({
+            "headcounts":0,
+            "join":0,
+            "resign":0,
+            "transfer":0, 
+            "division":div
+        })
+
+    for q in query:
+        q_div_index = utils.find_index(res, "division", q.div.name)
+
+        res[q_div_index]["headcounts"]  = q.start_headcount
+        res[q_div_index]["join"]        = q.joined_count
+        res[q_div_index]["resign"]      = q.resigned_count
+        res[q_div_index]["transfer"]    = q.transfer_count
+
+    return res
+
+@router.get('/attrition/rate/{div_name}/{year}')
+def get_rate_by_division_by_yearmonth(div_name: str, year: int, db: Session = Depends(get_db)):
+
+    query = db.query(YearlyAttrition).filter(
+        YearlyAttrition.div.has(name=div_name),
+        YearlyAttrition.year == year
+    ).first()
+
+    attr_sum = query.resigned_count + query.transfer_count if query else 0
+    attr_rate = attr_sum / query.start_headcount if query else 0
+
+    return [
+        {"title":"Attrition Rate","rate":attr_rate},
+        {"title":"","rate":1-attr_rate}
+    ]
+
+### Admin ###
+
 # QA Result
-@router.get('/qaip_data/api/table_data/{year}')
+@router.get('/admin/qaip_data/table_data/{year}')
 def get_qaip_table(year: int, db: Session = Depends(get_db)):
     qaips = db.query(QAIP).filter(
         QAIP.prj.has(year=year)
@@ -43,7 +976,7 @@ def get_qaip_table(year: int, db: Session = Depends(get_db)):
     
     return res
 
-@router.patch('/qaip_data/api/form')
+@router.patch('/admin/qaip_data/form')
 def patch_qaip_entry(req: schemas.QAIPFormInHiCoupling, db: Session = Depends(get_db)):
     qaip = db.query(QAIP).filter(
         QAIP.prj.has(name=req.projectTitle),
@@ -115,7 +1048,7 @@ def patch_qaip_entry(req: schemas.QAIPFormInHiCoupling, db: Session = Depends(ge
     return updated
 
 # Budget
-@router.get('/budget_data/api/table_data/{year}/{month}')
+@router.get('/admin/budget_data/table_data/{year}/{month}')
 def get_budget_table(year: int, month: int, db: Session = Depends(get_db)):
     cats = [
         "Staff Expense",
@@ -261,7 +1194,7 @@ def get_budget_table(year: int, month: int, db: Session = Depends(get_db)):
 
     return res
 
-@router.patch('/budget_data/api/table_data/{year}/{month}', status_code=status.HTTP_202_ACCEPTED)
+@router.patch('/admin/budget_data/table_data/{year}/{month}', status_code=status.HTTP_202_ACCEPTED)
 def patch_budget_table_entry(year: int, month: int, req: schemas.BudgetTableInHiCoupling, db: Session = Depends(get_db)):
     cats = [
         "Staff Expense",
@@ -490,7 +1423,7 @@ def patch_budget_table_entry(year: int, month: int, req: schemas.BudgetTableInHi
         db.commit()
 
 # CSF
-@router.get('/csf_data/api/table_data/{year}')
+@router.get('/admin/csf_data/table_data/{year}')
 def get_csf_table(year: int, db: Session = Depends(get_db)):
     prjs = db.query(Project).filter(
         Project.year == year
@@ -548,7 +1481,7 @@ def get_csf_table(year: int, db: Session = Depends(get_db)):
 
     return res
 
-@router.post('/csf_data/api/table_data', status_code=status.HTTP_201_CREATED)
+@router.post('/admin/csf_data/table_data', status_code=status.HTTP_201_CREATED)
 def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(get_db)):
     invdiv_id = utils.div_str_to_divID(req.division_by_inv)
     
@@ -597,7 +1530,7 @@ def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(g
 
     return new_csf
 
-@router.patch('/csf_data/api/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
+@router.patch('/admin/csf_data/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
 def patch_csf_table_entry(id: int, req: schemas.CSFInHiCoupling, db: Session = Depends(get_db)):
     csf = db.query(CSF).filter(
         CSF.id == id
@@ -660,7 +1593,7 @@ def patch_csf_table_entry(id: int, req: schemas.CSFInHiCoupling, db: Session = D
     db.commit()
     return updated
 
-@router.delete('/csf_data/api/table_data/{id}')
+@router.delete('/admin/csf_data/table_data/{id}')
 def delete_csf_table_entry(id: int, db: Session = Depends(get_db)):
     c = db.query(CSF).filter(
         CSF.id == id
@@ -675,7 +1608,7 @@ def delete_csf_table_entry(id: int, db: Session = Depends(get_db)):
     return {'details': 'Deleted'}
 
 # Employee
-@router.get('/employee_data/api/table_data')
+@router.get('/admin/employee_data/table_data')
 def get_employee_table(db: Session = Depends(get_db)):
     emps = db.query(Employee).all()
 
@@ -757,7 +1690,7 @@ def get_employee_table(db: Session = Depends(get_db)):
 
     return res
 
-@router.post('/employee_data/api/table_data')
+@router.post('/admin/employee_data/table_data')
 def create_employee_table_entry(req: schemas.EmployeeInHiCoupling, db: Session = Depends(get_db)):
     div_id = utils.div_str_to_divID(req.divison)
     role_id = utils.role_str_to_id(req.role)
@@ -794,7 +1727,7 @@ def create_employee_table_entry(req: schemas.EmployeeInHiCoupling, db: Session =
 
     return new_emp
 
-@router.patch('/employee_data/api/table_data/{id}')
+@router.patch('/admin/employee_data/table_data/{id}')
 def patch_employee_table_entry(id: int, req: schemas.EmployeeInHiCoupling, db: Session = Depends(get_db)):
     emp = db.query(Employee).filter(
         Employee.id == req.staffID
@@ -841,7 +1774,7 @@ def patch_employee_table_entry(id: int, req: schemas.EmployeeInHiCoupling, db: S
     db.commit()
     return updated
 
-@router.delete('/employee_data/api/table_data/{id}')
+@router.delete('/admin/employee_data/table_data/{id}')
 def delete_employee_table_entry(id: int, db: Session = Depends(get_db)):
     e = db.query(Employee).filter(
         Employee.id == id
@@ -856,7 +1789,7 @@ def delete_employee_table_entry(id: int, db: Session = Depends(get_db)):
     return {'details': 'Deleted'}
 
 # Training
-@router.get('/training_data/api/table_data/{year}')
+@router.get('/admin/training_data/table_data/{year}')
 def get_training_table(year: int, db: Session = Depends(get_db)):
     startDate   = datetime.date(year,1,1)
     endDate     = datetime.date(year,12,31)
@@ -890,7 +1823,7 @@ def get_training_table(year: int, db: Session = Depends(get_db)):
 
     return res
 
-@router.post('/training_data/api/table_data/')
+@router.post('/admin/training_data/table_data/')
 def create_training_table_entry(req: schemas.TrainingInHiCoupling, db: Session = Depends(get_db)):    
     emp = db.query(Employee).filter(
         Employee.staff_id == req.nik
@@ -921,7 +1854,7 @@ def create_training_table_entry(req: schemas.TrainingInHiCoupling, db: Session =
 
     return new_train
 
-@router.patch('/training_data/api/table_data/{id}')
+@router.patch('/admin/training_data/table_data/{id}')
 def patch_training_table_entry(id: int, req: schemas.TrainingInHiCoupling, db: Session = Depends(get_db)):    
     training = db.query(Training).filter(
         Training.id == id
@@ -964,7 +1897,7 @@ def patch_training_table_entry(id: int, req: schemas.TrainingInHiCoupling, db: S
     db.commit()
     return updated
 
-@router.delete('/training_data/api/table_data/{id}')
+@router.delete('/admin/training_data/table_data/{id}')
 def delete_training_table_entry(id: int, db: Session = Depends(get_db)):
     t = db.query(Training).filter(
         Training.id == id
@@ -979,7 +1912,7 @@ def delete_training_table_entry(id: int, db: Session = Depends(get_db)):
     return {'details': 'Deleted'}
 
 # Audit Project
-@router.get('/audit_project_data/api/table_data/{year}')
+@router.get('/admin/audit_project_data/table_data/{year}')
 def get_project_table(year: int, db: Session = Depends(get_db)):
     projects = db.query(Project).filter(
         Project.year == year
@@ -1004,7 +1937,7 @@ def get_project_table(year: int, db: Session = Depends(get_db)):
 
     return res
 
-@router.post('/audit_project_data/api/table_data')
+@router.post('/admin/audit_project_data/table_data')
 def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
     divs    = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     statuses= ["Not Started", "Planning", "Fieldwork", "Reporting", "Completed"]
@@ -1071,7 +2004,7 @@ def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = D
 
     return new_prj
 
-@router.patch('/audit_project_data/api/table_data/{id}')
+@router.patch('/admin/audit_project_data/table_data/{id}')
 def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
     divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     statuses= ["Not Started", "Planning", "Fieldwork", "Reporting", "Completed"]
@@ -1110,7 +2043,7 @@ def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Sess
     db.commit()
     return updated
 
-@router.delete('/audit_project_data/api/table_data/{id}')
+@router.delete('/admin/audit_project_data/table_data/{id}')
 def delete_project_table_entry(id: int, db: Session = Depends(get_db)):
     prj = db.query(Project).filter(
         Project.id == id
@@ -1131,7 +2064,7 @@ def delete_project_table_entry(id: int, db: Session = Depends(get_db)):
     return {'details': 'Deleted'}
 
 # Social Contribution
-@router.get('/audit_contribution_data/api/table_data/{year}')
+@router.get('/admin/audit_contribution_data/table_data/{year}')
 def get_contrib_table(year: int, db: Session = Depends(get_db)):
     startDate   = datetime.date(year,1,1)
     endDate     = datetime.date(year,12,31)
@@ -1154,7 +2087,7 @@ def get_contrib_table(year: int, db: Session = Depends(get_db)):
 
     return res
 
-@router.post('/audit_contribution_data/api/table_data')
+@router.post('/admin/audit_contribution_data/table_data')
 def create_contrib_table_entry(req: schemas.SocialContribHiCouplingIn, db: Session = Depends(get_db)):
     divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     types = ["Audit News", "MyUOB", "Audit Bulletin"]
@@ -1174,7 +2107,7 @@ def create_contrib_table_entry(req: schemas.SocialContribHiCouplingIn, db: Sessi
 
     return new_con
 
-@router.patch('/audit_contribution_data/api/table_data/{id}')
+@router.patch('/admin/audit_contribution_data/table_data/{id}')
 def patch_contrib_table_entry(id: int,req: schemas.SocialContribHiCouplingIn, db: Session = Depends(get_db)):
     divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     types = ["Audit News", "MyUOB", "Audit Bulletin"]
@@ -1208,7 +2141,7 @@ def patch_contrib_table_entry(id: int,req: schemas.SocialContribHiCouplingIn, db
     db.commit()
     return updated
 
-@router.delete('/audit_contribution_data/api/table_data/{id}')
+@router.delete('/admin/audit_contribution_data/table_data/{id}')
 def delete_contrib_table_entry(id: int, db: Session = Depends(get_db)):
     contrib = db.query(SocialContrib).filter(
         SocialContrib.id == id
@@ -1223,7 +2156,7 @@ def delete_contrib_table_entry(id: int, db: Session = Depends(get_db)):
     return {'details': 'Deleted'}
 
 # BUSU Engagement Table
-@router.get('/busu_data/api/table_data/{year}')
+@router.get('/admin/busu_data/table_data/{year}')
 def get_busu_table(year: int, db: Session = Depends(get_db)):
     startDate   = datetime.date(year,1,1)
     endDate     = datetime.date(year,12,31)
@@ -1246,7 +2179,7 @@ def get_busu_table(year: int, db: Session = Depends(get_db)):
     
     return res
 
-@router.post('/busu_data/api/table_data/')
+@router.post('/admin/busu_data/table_data/')
 def create_busu_table_entry(req: schemas.BUSUEngagementInHiCoupling, db: Session = Depends(get_db)):
     divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     eng_types = ["Regular Meeting", "Workshop"]
@@ -1269,7 +2202,7 @@ def create_busu_table_entry(req: schemas.BUSUEngagementInHiCoupling, db: Session
 
     return new_eng
 
-@router.patch('/busu_data/api/table_data/{id}')
+@router.patch('/admin/busu_data/table_data/{id}')
 def patch_busu_table_entry(id:int, req: schemas.BUSUEngagementInHiCoupling, db: Session = Depends(get_db)):
     eng = db.query(BUSUEngagement).filter(
         BUSUEngagement.id == id
@@ -1304,7 +2237,7 @@ def patch_busu_table_entry(id:int, req: schemas.BUSUEngagementInHiCoupling, db: 
     db.commit()
     return updated
 
-@router.delete('/busu_data/api/table_data/{id}')
+@router.delete('/admin/busu_data/table_data/{id}')
 def delete_busu_table_entry(id:int, db: Session = Depends(get_db)):
     eng = db.query(BUSUEngagement).filter(
         BUSUEngagement.id == id
@@ -1319,7 +2252,7 @@ def delete_busu_table_entry(id:int, db: Session = Depends(get_db)):
     return {'details': 'Deleted'}
 
 # Attrition Table
-@router.get('/attrition_data/api/table_data/{year}')
+@router.get('/admin/attrition_data/table_data/{year}')
 def get_attr_table(year: int, db: Session = Depends(get_db)):
     attrs = db.query(YearlyAttrition).filter(
         YearlyAttrition.year == year
@@ -1361,7 +2294,7 @@ def get_attr_table(year: int, db: Session = Depends(get_db)):
 
     return res
 
-@router.post('/attrition_data/api/table_data/{year}')
+@router.post('/admin/attrition_data/table_data/{year}')
 def create_attr_table_entry(year: int, req: schemas.YearlyAttritionInHiCoupling, db: Session = Depends(get_db)):
     divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
 
@@ -1383,7 +2316,7 @@ def create_attr_table_entry(year: int, req: schemas.YearlyAttritionInHiCoupling,
 
     return new_attr
 
-@router.patch('/attrition_data/api/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
+@router.patch('/admin/attrition_data/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
 def patch_attr_entry(id:int, req: schemas.YearlyAttritionInHiCoupling, db: Session = Depends(get_db)):
     attr = db.query(YearlyAttrition).filter(
         YearlyAttrition.id == id
@@ -1416,7 +2349,7 @@ def patch_attr_entry(id:int, req: schemas.YearlyAttritionInHiCoupling, db: Sessi
     db.commit()
     return updated
 
-@router.delete('/attrition_data/api/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
+@router.delete('/admin/attrition_data/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
 def delete_attr_entry(id:int, db: Session = Depends(get_db)):
     attr = db.query(YearlyAttrition).filter(
         YearlyAttrition.id == id
@@ -1430,8 +2363,8 @@ def delete_attr_entry(id:int, db: Session = Depends(get_db)):
 
     return {'details': 'Deleted'}
 
-# Util
-@router.get('/api/title_project/{year}')
+### Utils ###
+@router.get('/utils/title_project/{year}')
 def get_project_titles(year:int, db: Session = Depends(get_db)):
     prjs = db.query(Project).filter(
         Project.year == year

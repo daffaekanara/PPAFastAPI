@@ -12,51 +12,6 @@ router = APIRouter(
     prefix="/socialcontrib"
 )
 
-# API
-@router.get('/api/total_by_division/{year}')
-def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
-    startDate   = datetime.date(year,1,1)
-    endDate     = datetime.date(year,12,31)
-
-    query = db.query(SocialContrib).filter(SocialContrib.date >= startDate, SocialContrib.date <= endDate).all()
-    
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
-    res = []
-
-    # Init result dict
-    for div in divs:
-        res.append({"contribute_sum":0, "division":div})
-
-    for q in query:
-        contrib_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.div.name), None)
-        res[contrib_by_div]["contribute_sum"] += 1
-
-    return res
-
-@router.get('/api/total_by_division_type_categorized/{year}')
-def get_total_by_division_by_year_type_categorized(year: int, db: Session = Depends(get_db)):
-    startDate   = datetime.date(year,1,1)
-    endDate     = datetime.date(year,12,31)
-
-    query = db.query(SocialContrib).filter(SocialContrib.date >= startDate, SocialContrib.date <= endDate).all()
-    
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
-    res = {}
-
-    # Init result dict
-    for div in divs:
-        res[div] = {"news":0, "myUob":0, "buletin":0}
-
-    for q in query:
-        if q.social_type_id == 1:
-            res[q.div.name]["news"] += 1
-        if q.social_type_id == 2:
-            res[q.div.name]["myUob"] += 1
-        if q.social_type_id == 3:
-            res[q.div.name]["buletin"] += 1
-
-    return res
-
 # SocialType
 @router.get('/type')
 def get_all_social_type(db: Session = Depends(get_db)):

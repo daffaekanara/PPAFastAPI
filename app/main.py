@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import models
-from routers import division, employee, auth, training, debug, qaip, csf, profile, admin
-from routers import socialContrib, attrition, engagement, project, budget, dashboard
+from routers import division, employee, auth, training, debug, qaip, csf
+from routers import socialContrib, attrition, engagement, project, budget, api
 from database import engine
 
 models.Base.metadata.create_all(engine)
@@ -23,9 +23,7 @@ app.add_middleware(
 )
 
 # app.include_router(debug.router)
-app.include_router(admin.router)
-app.include_router(dashboard.router)
-app.include_router(profile.router)
+app.include_router(api.router)
 app.include_router(csf.router)
 app.include_router(qaip.router)
 app.include_router(budget.router)

@@ -12,51 +12,6 @@ router = APIRouter(
     prefix="/attrition"
 )
 
-# API
-@router.get('/api/staff_attrition/{year}')
-def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
-
-    query = db.query(YearlyAttrition).filter(YearlyAttrition.year == year).all()
-
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
-    res = []
-
-    # Init result dict
-    for div in divs:
-        res.append({
-            "headcounts":0,
-            "join":0,
-            "resign":0,
-            "transfer":0, 
-            "division":div
-        })
-
-    for q in query:
-        q_div_index = utils.find_index(res, "division", q.div.name)
-
-        res[q_div_index]["headcounts"]  = q.start_headcount
-        res[q_div_index]["join"]        = q.joined_count
-        res[q_div_index]["resign"]      = q.resigned_count
-        res[q_div_index]["transfer"]    = q.transfer_count
-
-    return res
-
-@router.get('/api/rate/{div_name}/{year}')
-def get_rate_by_division_by_yearmonth(div_name: str, year: int, db: Session = Depends(get_db)):
-
-    query = db.query(YearlyAttrition).filter(
-        YearlyAttrition.div.has(name=div_name),
-        YearlyAttrition.year == year
-    ).first()
-
-    attr_sum = query.resigned_count + query.transfer_count if query else 0
-    attr_rate = attr_sum / query.start_headcount if query else 0
-
-    return [
-        {"title":"Attrition Rate","rate":attr_rate},
-        {"title":"","rate":1-attr_rate}
-    ]
-
 # Yearly Attrition
 @router.get('/yearly')
 def get_all_yearly_attr(db: Session = Depends(get_db)):
