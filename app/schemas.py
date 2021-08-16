@@ -2,6 +2,10 @@ from typing import List, Optional
 from pydantic import BaseModel
 import datetime
 
+class TempLoginForm(BaseModel):
+    email: str
+    password: str
+
 class Division(BaseModel):
     name:str
 
