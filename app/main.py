@@ -23,6 +23,7 @@ app.add_middleware(
 )
 
 # app.include_router(debug.router)
+app.include_router(auth.router)
 app.include_router(api.router)
 app.include_router(csf.router)
 app.include_router(qaip.router)
@@ -34,7 +35,6 @@ app.include_router(socialContrib.router)
 app.include_router(training.router)
 app.include_router(division.router)
 app.include_router(employee.router)
-app.include_router(auth.router)
 
 
 @app.get('/')
