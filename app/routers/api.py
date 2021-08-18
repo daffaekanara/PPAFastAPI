@@ -1,9 +1,12 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.datastructures import UploadFile
 from fastapi.encoders import jsonable_encoder
+from fastapi.param_functions import File
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
 import datetime
+import shutil
 from dateutil.relativedelta import relativedelta
 import schemas, datetime, utils
 from models import *
@@ -17,6 +20,17 @@ router = APIRouter(
     tags=['API'],
     prefix="/api"
 )
+
+### File Test
+@router.post('/file')
+def post_file(file: UploadFile = File(...)):
+    data = file.file.read()
+
+    f = open(f'data/{file.filename}', 'wb')
+    f.write(data)
+    f.close()
+
+    return {"filename": file.filename}
 
 ### Dashboard ###
 
