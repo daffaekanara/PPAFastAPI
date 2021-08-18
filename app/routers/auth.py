@@ -44,7 +44,7 @@ def login_v1(req: schemas.TempLoginForm, db: Session = Depends(database.get_db))
     # Generate JWT Token
     access_token = JWTtoken.create_access_token(data=token_payload)
 
-    return {"access_token": access_token, "token-type": "bearer"}
+    return {"token": access_token, "token-type": "bearer"}
 
 @router.post('/auth')
 def temp_login(req: schemas.TempLoginForm, db: Session = Depends(database.get_db)):
