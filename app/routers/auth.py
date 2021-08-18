@@ -38,7 +38,8 @@ def login_v1(req: schemas.TempLoginForm, db: Session = Depends(database.get_db))
         "nik"   : user.staff_id,
         "email" : user.email,
         "name"  : user.name,
-        "role"  : user.role.name
+        "role"  : user.role.name,
+        "div"   : user.part_of_div.name
     }
 
     # Generate JWT Token
