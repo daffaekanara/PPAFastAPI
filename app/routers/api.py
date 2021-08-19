@@ -1678,12 +1678,19 @@ def get_employee_table(db: Session = Depends(get_db)):
                 'value': 0
             })
 
+        max_smr = 0
+
         for c in e.emp_certifications:
             # SMR (Levels)
             smr_level = utils.extract_SMR_level(c.cert_name)
             
             if smr_level: # SMR
-                cert_res[0]['value'] = smr_level
+                if c.cert_proof:
+                    if smr_level > max_smr:
+                        cert_res[0]['value'] = smr_level
+                        max_smr = smr_level
+            elif c.cert_name == "SMR In Progress":
+                cert_res[0]['value'] = "In Progress"
             elif c.cert_name in certs:
                 index = utils.find_index(cert_res, 'title', c.cert_name)
                 cert_res[index]['value'] = 1
@@ -1691,7 +1698,13 @@ def get_employee_table(db: Session = Depends(get_db)):
                 cert_res[-1]["value"] += 1
 
         smr_lvl = cert_res[0]['value']
-        smr_str = f"Level {smr_lvl}" if smr_lvl else "-"
+
+        if smr_lvl == "In Progress":
+            smr_str = smr_lvl
+        elif smr_lvl:
+            smr_str = f"Level {smr_lvl}"
+        else:
+            smr_str = "-"
 
         res.append({
             "id"                          : e.id,
@@ -1775,7 +1788,7 @@ def create_employee_table_entry(req: schemas.EmployeeInHiCoupling, db: Session =
 @router.patch('/admin/employee_data/table_data/{id}')
 def patch_employee_table_entry(id: int, req: schemas.EmployeeInHiCoupling, db: Session = Depends(get_db)):
     emp = db.query(Employee).filter(
-        Employee.id == req.staffID
+        Employee.id == id
     )
 
     if not emp.first():
@@ -1817,6 +1830,40 @@ def patch_employee_table_entry(id: int, req: schemas.EmployeeInHiCoupling, db: S
 
     emp.update(stored_data)
     db.commit()
+
+    # Handle SMR In Progress Edits
+    # 1. "-"
+    # 2. "In Progress"
+    emp = db.query(Employee).filter(
+        Employee.id == id
+    ).first()
+
+    if req.RMGCertification == "In Progress":
+        # Check level SMR si Emp
+        max_smr_level   = 0
+        has_progress    = False
+
+        for c in emp.emp_certifications:
+            smr_level = utils.extract_SMR_level(c.cert_name)
+            if smr_level:
+                if smr_level > max_smr_level:
+                    max_smr_level = smr_level
+            elif c.cert_name == "SMR In Progress":
+                has_progress = True
+
+        # Need to create SMR In Progress?
+        if not has_progress and max_smr_level == 0:
+            # Create SMR In Progress
+            new_cert = Certification(
+                cert_name   = "SMR In Progress",
+                cert_proof  = "",
+                emp_id      = emp.id
+            )
+
+            db.add(new_cert)
+            db.commit()
+            db.refresh(new_cert)
+
     return updated
 
 @router.delete('/admin/employee_data/table_data/{id}')
