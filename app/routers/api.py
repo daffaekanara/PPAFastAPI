@@ -24,8 +24,8 @@ router = APIRouter(
 
 ### File Test
 @router.post('/admin/employee_data/cert/{cert_name}/{nik}')
-def post_file(cert_name: str, nik: str, attachment_proof: UploadFile = File(...), db: Session = Depends(get_db)):
-    data = attachment_proof.file.read()
+def post_file(cert_name: str, nik: str, cert_file: UploadFile = File(...), db: Session = Depends(get_db)):
+    data = cert_file.file.read()
 
     # Check NIK
     emp = db.query(Employee).filter(
@@ -37,7 +37,7 @@ def post_file(cert_name: str, nik: str, attachment_proof: UploadFile = File(...)
 
     emp_id = emp.first().id
 
-    x = fio.write_cert(cert_name, emp_id, data, attachment_proof.filename)
+    x = fio.write_cert(cert_name, emp_id, data, cert_file.filename)
 
     return {"filename": x}
 
