@@ -74,7 +74,11 @@ def str_to_datetime(text):
     return datetime.datetime.strptime(text, "%m/%d/%Y")
 
 def tablestr_to_datetime(text):
-    return datetime.datetime.strptime(text, "%d.%m.%Y")
+    try:
+        return datetime.datetime.strptime(text, "%m/%d/%Y")
+    except ValueError:
+        text = text[0:10]
+        return datetime.datetime.strptime(text, "%Y-%m-%d")
 
 def date_to_str(date: datetime.date):
     return date.strftime("%m/%d/%Y")
