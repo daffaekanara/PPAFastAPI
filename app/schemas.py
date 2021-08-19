@@ -120,12 +120,12 @@ class ShowEmployeeOnly(BaseModel):
 
 class Certification(BaseModel):
     cert_name   :str
-    cert_proof  :bool
+    cert_proof  :str
     emp_id      :int
 
 class CertificationIn(BaseModel):
     cert_name   :Optional[str]
-    cert_proof  :Optional[bool]
+    cert_proof  :Optional[str]
     emp_id      :Optional[int]
 
 class Role(BaseModel):

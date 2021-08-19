@@ -61,7 +61,7 @@ class Certification(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     cert_name   = Column(String)
-    cert_proof  = Column(Boolean)
+    cert_proof  = Column(String)
 
     emp_id = Column(Integer, ForeignKey('employees.id'))
     owner = relationship("Employee", back_populates="emp_certifications")
