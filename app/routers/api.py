@@ -33,7 +33,7 @@ def post_file(cert_name: str, nik: str, attachment_proof: UploadFile = File(...)
     )
 
     if not emp.first():
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of NIK ({req.nik}) was not found!")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of NIK ({nik}) was not found!")
 
     emp_id = emp.first().id
 
