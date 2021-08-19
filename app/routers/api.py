@@ -8,6 +8,7 @@ from sqlalchemy.exc import MultipleResultsFound
 import datetime
 import shutil
 from dateutil.relativedelta import relativedelta
+from fileio import fileio_module as fio
 import schemas, datetime, utils
 from models import *
 from database import get_db
@@ -22,15 +23,45 @@ router = APIRouter(
 )
 
 ### File Test
-@router.post('/file')
-def post_file(file: UploadFile = File(...)):
-    data = file.file.read()
+@router.post('/admin/employee_data/cert/{cert_name}/{nik}')
+def post_file(cert_name: str, nik: str, attachment_proof: UploadFile = File(...), db: Session = Depends(get_db)):
+    data = attachment_proof.file.read()
 
-    f = open(f'data/{file.filename}', 'wb')
+    # Check NIK
+    emp = db.query(Employee).filter(
+        Employee.staff_id == nik
+    )
+
+    if not emp.first():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of NIK ({req.nik}) was not found!")
+
+    emp_id = emp.first().id
+
+    x = fio.write_cert(cert_name, emp_id, data, attachment_proof.filename)
+
+    return {"filename": x}
+
+@router.post('/file')
+def post_file(attachment_proof: UploadFile = File(...)):
+    data = attachment_proof.file.read()
+
+    f = open(f'data/{attachment_proof.filename}', 'wb')
     f.write(data)
     f.close()
 
-    return {"filename": file.filename}
+    return {"filename": attachment_proof.filename}
+
+@router.post('/admin/budget_data/excel_parse')
+def post_excel_file_budget(file: UploadFile = File(...)):
+    data = file.file.read()
+
+    # TODO Make sure dir exists
+
+    f = open(f'data/files/budget/{file.filename}', 'wb')
+    f.write(data)
+    f.close()
+
+    return
 
 ### Dashboard ###
 
