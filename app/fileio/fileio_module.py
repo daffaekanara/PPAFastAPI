@@ -12,8 +12,15 @@ def write_cert(cert_name, emp_id, data, filename):
 
     new_fname = f"{cert_name}.{filename.split('.')[-1]}"
 
-    full_filepath = os.path.join(dir_name, new_fname)
+    # Check if cert with same name exist
+    for (idirpath, dirnames, filenames) in os.walk(dir_name):
+        for fname in filenames:
+            if fname.split('.')[0] == new_fname.split('.')[0]:
+                os.remove(os.path.join(dir_name, fname))
+        break # Only walk first level dir
 
+    # Write Cert
+    full_filepath = os.path.join(dir_name, new_fname)
     f = open(full_filepath, 'wb')
     f.write(data)
     f.close()
