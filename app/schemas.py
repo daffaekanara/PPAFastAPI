@@ -683,3 +683,11 @@ class CSFInHiCoupling(BaseModel):
 	pawOverall          : float
 	overall             : float
 	division_by_inv     : str
+
+class ServerState(BaseModel):
+    name          : str
+    value         : bool
+
+class ServerStateIn(BaseModel):
+    name          : Optional[str]
+    value         : Optional[bool]

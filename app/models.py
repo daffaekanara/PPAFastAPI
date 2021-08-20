@@ -328,3 +328,10 @@ class CSF(Base):
 
     by_invdiv_div_id = Column(Integer, ForeignKey('divisions.id'))
     by_invdiv_div    = relationship("Division", back_populates="csfs_by_invdiv")
+
+# States
+class ServerState(Base):
+    __tablename__ = 'serverstate'
+    id      = Column(Integer, primary_key=True, index=True)
+    name    = Column(String)
+    value   = Column(Boolean)

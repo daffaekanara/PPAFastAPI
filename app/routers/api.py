@@ -6,7 +6,7 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.param_functions import File
 from sqlalchemy import exc
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import MultipleResultsFound
+from sqlalchemy.exc import MultipleResultsFound, NoResultFound 
 import datetime
 import shutil
 from dateutil.relativedelta import relativedelta
@@ -1060,6 +1060,61 @@ def get_rate_by_division_by_yearmonth(div_name: str, year: int, db: Session = De
     ]
 
 ### Admin ###
+
+# Maintenance
+@router.get('/admin/maintenance')
+def get_maintenance_status(db: Session = Depends(get_db)):
+    state_name = "Maintenance"
+    mState_query = db.query(ServerState).filter(
+        ServerState.name == state_name
+    )
+
+    try:
+        mState = mState_query.one_or_none()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Found multiple state with name ({state_name})")
+
+    if mState:
+        return {'is_maintenance_mode': mState.value}
+    else:
+        newState = ServerState(
+            name    = state_name,
+            value   = False
+        )
+
+        db.add(newState)
+        db.commit()
+        db.refresh(newState)
+
+        return {'is_maintenance_mode': newState.value}
+
+@router.post('/admin/maintenance')
+def toggle_maintenance_status(db: Session = Depends(get_db)):
+    state_name = "Maintenance"
+
+    mState_query = db.query(ServerState).filter(
+        ServerState.name == state_name
+    )
+
+    try:
+        mState = mState_query.one_or_none()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Found multiple state with name ({state_name})")
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Found no states with name ({state_name})")
+
+    stored_data = jsonable_encoder(mState)
+    stored_model = schemas.ServerStateIn(**stored_data)
+
+    new_data = {'value': not mState.value}
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    mState_query.update(stored_data)
+    db.commit()
+    
+    return {'is_maintenance_mode': new_data['value']}
 
 # QA Result
 @router.get('/admin/qaip_data/table_data/{year}')
