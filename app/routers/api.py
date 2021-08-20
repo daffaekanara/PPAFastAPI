@@ -22,7 +22,8 @@ router = APIRouter(
     prefix="/api"
 )
 
-### File Test
+### File ###
+
 @router.post('/admin/employee_data/cert/{cert_name}/{nik}')
 def post_file(cert_name: str, nik: str, cert_file: UploadFile = File(...), db: Session = Depends(get_db)):
     data = cert_file.file.read()
@@ -35,11 +36,48 @@ def post_file(cert_name: str, nik: str, cert_file: UploadFile = File(...), db: S
     if not emp.first():
         raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of NIK ({nik}) was not found!")
 
-    emp_id = emp.first().id
+    emp = emp.first()
+    emp_id = emp.id
 
-    x = fio.write_cert(cert_name, emp_id, data, cert_file.filename)
+    filepath = fio.write_cert(cert_name, emp_id, data, cert_file.filename)
 
-    return {"filename": x}
+    # Check if cert_name is RMG_x
+    if "SMR_" in cert_name:
+        smr_lvl = cert_name[-1]
+        cert_db_name = f"SMR Level {smr_lvl}"
+    else:
+        cert_db_name = cert_name
+
+    # Update DB
+    existing_cert = None
+    for c in emp.emp_certifications:
+        if c.cert_name == cert_db_name:
+            existing_cert = c
+            break
+    
+    if existing_cert: # Update cert_proof
+        query = db.query(Certification).filter(
+            Certification.id == existing_cert.id
+        )
+        stored_data = jsonable_encoder(existing_cert)
+        stored_model = schemas.CertificationIn(**stored_data)
+        new_data = {"cert_proof": filepath}
+        updated = stored_model.copy(update=new_data)
+        stored_data.update(updated)
+        query.update(stored_data)
+        db.commit()
+    else: # Create New Cert
+        newCert = Certification(
+            cert_name   = cert_db_name,
+            cert_proof  = filepath,
+            emp_id      = emp_id
+        )
+
+        db.add(newCert)
+        db.commit()
+        db.refresh(newCert)
+
+    return {"filename": filepath}
 
 @router.post('/file')
 def post_file(attachment_proof: UploadFile = File(...)):
@@ -268,7 +306,7 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
 
     # Process Certs
     certs = [
-        "SMR", "CISA", "CEH", "ISO", "CHFI", 
+        "SMR", "CISA", "CEH", "ISO27001", "CHFI", 
         "IDEA", "QualifiedIA", "CBIA", "CIA", "CPA", "CA", "Others"]
 
     cert_res = []
@@ -321,7 +359,7 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
         "RMGCertification"            : smr_str,
         "CISA"                        : cert_res[1]['value'],
         "CEH"                         : cert_res[2]['value'],
-        "ISO"                         : cert_res[3]['value'],
+        "ISO27001"                    : cert_res[3]['value'],
         "CHFI"                        : cert_res[4]['value'],
         "IDEA"                        : cert_res[5]['value'],
         "QualifiedIA"                 : cert_res[6]['value'],
@@ -1667,7 +1705,7 @@ def get_employee_table(db: Session = Depends(get_db)):
 
         # Process Certs
         certs = [
-            "SMR", "CISA", "CEH", "ISO", "CHFI", 
+            "SMR", "CISA", "CEH", "ISO27001", "CHFI", 
             "IDEA", "QualifiedIA", "CBIA", "CIA", "CPA", "CA", "Others"]
 
         cert_res = []
@@ -1733,7 +1771,7 @@ def get_employee_table(db: Session = Depends(get_db)):
             "RMGCertification"            : smr_str,
             "CISA"                        : cert_res[1]['value'],
             "CEH"                         : cert_res[2]['value'],
-            "ISO"                         : cert_res[3]['value'],
+            "ISO27001"                    : cert_res[3]['value'],
             "CHFI"                        : cert_res[4]['value'],
             "IDEA"                        : cert_res[5]['value'],
             "QualifiedIA"                 : cert_res[6]['value'],

@@ -1,4 +1,6 @@
 import os
+import shutil
+import pathlib
 
 DATA_FOLDER     = 'data'
 
@@ -26,3 +28,7 @@ def write_cert(cert_name, emp_id, data, filename):
     f.close()
 
     return full_filepath
+
+def delete_cert_files_dir():
+    dir_name = pathlib.Path(f"{DATA_FOLDER}/{FILES_FOLDER}/{CERTS_FOLDER}")
+    shutil.rmtree(dir_name)

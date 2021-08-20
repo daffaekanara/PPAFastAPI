@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 import schemas, hashing
 from models import *
 from database import get_db
+from fileio import fileio_module as fio
 
 router = APIRouter(
     tags=['Employee'],
@@ -118,6 +119,26 @@ def update_cert(id: int, req: schemas.CertificationIn, db: Session = Depends(get
     query_res.update(stored_data)
     db.commit()
     return updated
+
+@router.delete('/cert/cert_proof')
+def delete_cert_proof(db: Session = Depends(get_db)):
+    certs = db.query(Certification).all()
+
+    for c in certs:
+        query = db.query(Certification).filter(
+            Certification.id == c.id
+        )
+        stored_data = jsonable_encoder(query.first())
+        stored_model = schemas.CertificationIn(**stored_data)
+        new_data = {"cert_proof": ""}
+        updated = stored_model.copy(update=new_data)
+        stored_data.update(updated)
+        query.update(stored_data)
+        db.commit()
+    
+    fio.delete_cert_files_dir()
+
+    return {'details': 'All cert_proof deleted'}
 
 @router.delete('/cert/{id}')
 def delete_cert(id: int, db: Session = Depends(get_db)):
