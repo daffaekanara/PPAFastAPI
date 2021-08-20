@@ -1,16 +1,12 @@
-from routers.budget import create_yearly_budget
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.datastructures import UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.param_functions import File
-from sqlalchemy import exc
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound 
 import datetime
-import shutil
 from dateutil.relativedelta import relativedelta
-from sqlalchemy.orm.interfaces import MapperOption
 from fileio import fileio_module as fio
 import schemas, datetime, utils
 from models import *
@@ -840,6 +836,68 @@ def create_training_from_form(req: schemas.TrainingInHiCouplingForm, db: Session
     db.refresh(newTrain)
     return newTrain
 
+# Table
+@router.get('/training/table/{nik}/{year}')
+def get_training_table(nik: str, year: int, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+    
+    # Check NIK
+    emp_query = db.query(Employee).filter(
+        Employee.staff_id == nik
+    )
+
+    try:
+        emp = emp_query.one()
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Employee of NIK ({nik} was not found!)")
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Multiple Employee of NIK ({nik} was found!)")
+
+    training = db.query(Training).filter(
+        Training.date >= startDate,
+        Training.date <= endDate,
+        Training.emp_id == emp.id
+    ).all()
+
+    res = []
+
+    for t in training:
+        divison = t.employee.part_of_div.name if t.employee else ""
+        emp_name= t.employee.name if t.employee else ""
+        emp_nik = t.employee.staff_id if t.employee else ""
+
+        res.append({
+            "id"                : str(t.id),
+            "division"          : divison,
+            "name"              : emp_name,
+            "nik"               : emp_nik,
+            "trainingTitle"     : t.name,
+            "date"              : t.date.strftime("%m/%d/%Y"),
+            "numberOfHours"     : t.duration_hours,
+            "budget"            : t.budget,
+            "costRealization"   : t.realization,
+            "chargedByFinance"  : t.charged_by_fin,
+            "mandatoryFrom"     : t.mandatory_from,
+            "remark"            : t.remark
+        })
+
+    return res
+
+@router.delete('/training/table/{id}')
+def delete_training_table_entry(id: int, db: Session = Depends(get_db)):
+    t = db.query(Training).filter(
+        Training.id == id
+    )
+
+    if not t.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+    
+    t.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
 ### CSF ###
 
 @router.get('/csf/client_survey/{year}')
@@ -1113,7 +1171,7 @@ def toggle_maintenance_status(db: Session = Depends(get_db)):
 
     mState_query.update(stored_data)
     db.commit()
-    
+
     return {'is_maintenance_mode': new_data['value']}
 
 # QA Result
