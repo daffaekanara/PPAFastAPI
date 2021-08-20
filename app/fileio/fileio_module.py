@@ -1,6 +1,7 @@
 import os
 import shutil
 import pathlib
+from datetime import datetime
 
 DATA_FOLDER     = 'data'
 
@@ -28,6 +29,24 @@ def write_cert(cert_name, emp_id, data, filename):
     f.close()
 
     return full_filepath
+
+def write_mrpt(data, filename):
+    dir_name = os.path.join(DATA_FOLDER, FILES_FOLDER, BUDGET_FOLDER)
+    os.makedirs(dir_name, exist_ok=True)
+
+    now_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    new_fname = f"MRPT_{now_str}.xlsx"
+
+    # Write MRPT
+    full_filepath = os.path.join(dir_name, new_fname)
+    f = open(full_filepath, 'wb')
+    f.write(data)
+    f.close()
+
+    return full_filepath
+
+def delete_file(filepath):
+    os.remove(filepath)
 
 def delete_cert_files_dir():
     dir_name = pathlib.Path(f"{DATA_FOLDER}/{FILES_FOLDER}/{CERTS_FOLDER}")

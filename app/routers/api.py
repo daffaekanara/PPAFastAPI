@@ -1,17 +1,21 @@
+from routers.budget import create_yearly_budget
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.datastructures import UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.param_functions import File
+from sqlalchemy import exc
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound
 import datetime
 import shutil
 from dateutil.relativedelta import relativedelta
+from sqlalchemy.orm.interfaces import MapperOption
 from fileio import fileio_module as fio
 import schemas, datetime, utils
 from models import *
 from database import get_db
+from MrptParser import parser_module as pm
 
 gen_x_youngest = datetime.date(1975,12,31)
 gen_y_youngest = datetime.date(1989,12,31)
@@ -23,6 +27,34 @@ router = APIRouter(
 )
 
 ### File ###
+
+@router.post('/admin/budget_data/mrpt_file')
+def post_mrpt_file(mrpt: UploadFile = File(...), db: Session = Depends(get_db)):
+    # Check if .xlsx
+    if not ".xlsx" in mrpt.filename:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Sent file ({mrpt.filename}) isnt of '.xlsx' format!")
+
+    # Parse Excel
+    data = mrpt.file.read()
+    filepath = fio.write_mrpt(data, mrpt.filename)
+    actuals, mBudgets, yBudget = pm.parse_excel_to_budgets(filepath)
+    fio.delete_file(filepath)
+
+    # Process Monthly Actuals
+    for a in actuals:
+        # print(f"mActuals: {a['year']}/{a['month']}")
+        create_or_update_mActual(a, db)
+    
+    # Process Monthly Budget
+    for m in mBudgets:
+        # print(f"mBudgets: {m['year']}/{m['month']}")
+        create_or_update_mBudget(m, db)
+    
+    # Process Yearly Budget
+    # print(f"yBudget: {yBudget['year']}")
+    create_or_update_yBudget(yBudget, db)
+    
+    return {'details': 'All budgets updated!'}
 
 @router.post('/admin/employee_data/cert/{cert_name}/{nik}')
 def post_file(cert_name: str, nik: str, cert_file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -2508,3 +2540,121 @@ def get_project_titles(year:int, db: Session = Depends(get_db)):
         })
 
     return res
+
+def create_or_update_mActual(data, db: Session):
+    actual_query = db.query(MonthlyActualBudget).filter(
+        MonthlyActualBudget.year == data['year'],
+        MonthlyActualBudget.month == data['month']
+    )
+
+    try:
+        actual_db = actual_query.one_or_none()
+    except MultipleResultsFound:
+        raise MultipleResultsFound(f"Multiple mActual with year/month({data['year']}/{data['month']})")
+
+    if actual_db: # Exists
+        # Update
+        stored_data = jsonable_encoder(actual_db)
+        stored_model = schemas.MonthlyActualBudgetIn(**stored_data)
+        
+        updated = stored_model.copy(update=data)
+        stored_data.update(updated)
+        actual_query.update(stored_data)
+        db.commit()
+    else:
+        # Create
+        newMonthActualBudget = MonthlyActualBudget(
+            year                        = data['year'],
+            month                       = data['month'],
+            staff_salaries              = data['staff_salaries'],
+            staff_training_reg_meeting  = data['staff_training_reg_meeting'],
+            revenue_related             = data['revenue_related'],
+            it_related                  = data['it_related'],
+            occupancy_related           = data['occupancy_related'],
+            other_transport_travel      = data['other_transport_travel'],
+            other_other                 = data['other_other'],
+            indirect_expense            = data['indirect_expense'],
+            remark                      = ""
+        )
+
+        db.add(newMonthActualBudget)
+        db.commit()
+        db.refresh(newMonthActualBudget)
+
+def create_or_update_mBudget(data, db: Session):
+    budget_query = db.query(MonthlyBudget).filter(
+        MonthlyBudget.year == data['year'],
+        MonthlyBudget.month == data['month']
+    )
+
+    try:
+        budget_db = budget_query.one_or_none()
+    except MultipleResultsFound:
+        raise MultipleResultsFound(f"Multiple mBudget with year/month({data['year']}/{data['month']})")
+
+    if budget_db:
+        # Update
+        stored_data = jsonable_encoder(budget_db)
+        stored_model = schemas.MonthlyBudgetIn(**stored_data)
+        
+        updated = stored_model.copy(update=data)
+        stored_data.update(updated)
+        budget_query.update(stored_data)
+        db.commit()
+    else:
+        # Create
+        newMonthlyBudget = MonthlyBudget(
+            year                        = data['year'],
+            month                       = data['month'],
+            staff_salaries              = data['staff_salaries'],
+            staff_training_reg_meeting  = data['staff_training_reg_meeting'],
+            revenue_related             = data['revenue_related'],
+            it_related                  = data['it_related'],
+            occupancy_related           = data['occupancy_related'],
+            other_transport_travel      = data['other_transport_travel'],
+            other_other                 = data['other_other'],
+            indirect_expense            = data['indirect_expense']
+        )
+
+        db.add(newMonthlyBudget)
+        db.commit()
+        db.refresh(newMonthlyBudget)
+
+def create_or_update_yBudget(data, db: Session):
+    del data['month']
+
+    budget_query = db.query(YearlyBudget).filter(
+        YearlyBudget.year == data['year']
+    )
+
+    try:
+        budget_db = budget_query.one_or_none()
+    except MultipleResultsFound:
+        raise MultipleResultsFound(f"Multiple yBudget with year({data['year']})")
+
+    if budget_db:
+        # Update
+        stored_data = jsonable_encoder(budget_db)
+        stored_model = schemas.YearlyBudgetIn(**stored_data)
+        
+        updated = stored_model.copy(update=data)
+        stored_data.update(updated)
+        budget_query.update(stored_data)
+        db.commit()
+    else:
+        # Create
+        newYearlyBudget = YearlyBudget(
+            year                        = data['year'],
+            staff_salaries              = data['staff_salaries'],
+            staff_training_reg_meeting  = data['staff_training_reg_meeting'],
+            revenue_related             = data['revenue_related'],
+            it_related                  = data['it_related'],
+            occupancy_related           = data['occupancy_related'],
+            other_transport_travel      = data['other_transport_travel'],
+            other_other                 = data['other_other'],
+            indirect_expense            = data['indirect_expense']
+        )
+
+        db.add(newYearlyBudget)
+        db.commit()
+        db.refresh(newYearlyBudget)
