@@ -138,6 +138,10 @@ class Login(BaseModel):
     email: str
     password: str
 
+class PasswordChangeIn(BaseModel):
+    old_pw: str
+    new_pw: str
+
 class Token(BaseModel):
     access_token: str
     token_type: str

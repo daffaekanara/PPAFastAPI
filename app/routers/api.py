@@ -8,7 +8,7 @@ from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 import datetime
 from dateutil.relativedelta import relativedelta
 from fileio import fileio_module as fio
-import schemas, datetime, utils
+import schemas, datetime, utils, hashing
 from models import *
 from database import get_db
 from MrptParser import parser_module as pm
@@ -516,6 +516,35 @@ def get_header_training(nik: int, year: int, db: Session = Depends(get_db)):
 
     return [{"title":"done","total_training":t_pctg},
             {"title":"remaining","total_training":100 - t_pctg}]
+
+@router.post('/profile/change_password/{id}')
+def change_password(id: int, req: schemas.PasswordChangeIn, db: Session = Depends(get_db)):
+    # Check old_pw
+    emp_query = db.query(Employee).filter(
+        Employee.id == id
+    )
+
+    if not emp_query.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Emp ID not found')
+
+    emp = emp_query.first()
+
+    if not hashing.verify_bcrypt(emp.pw, req.old_pw):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Old Password do not match')
+
+    # Update new_pw
+    stored_data = jsonable_encoder(emp)
+    stored_model = schemas.EmployeeIn(**stored_data)
+
+    new_data = {'pw': hashing.bcrypt(req.new_pw)}
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    emp_query.update(stored_data)
+    db.commit()
+
+    return {'detail':'Password Change Success!'}
 
 ### Budgets ###
 
