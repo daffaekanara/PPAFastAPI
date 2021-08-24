@@ -69,7 +69,7 @@ def update(id: int, req: schemas.AnnouncementIn, db: Session = Depends(get_db)):
 @router.delete('/announcement/{id}', status_code=status.HTTP_202_ACCEPTED)
 def delete(id: int, db: Session = Depends(get_db)):
     query_res = db.query(Annoucement).filter(
-        TrainingTarget.id == id
+        Annoucement.id == id
     )
 
     if not query_res.first():

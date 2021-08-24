@@ -711,6 +711,21 @@ def get_total_by_division_by_year_type_categorized(year: int, db: Session = Depe
     return res
 
 ### Training ###
+@router.get('/training/annoucement')
+def get_training_annoucement(db: Session = Depends(get_db)):
+    ann_query = db.query(Annoucement).filter(
+        Annoucement.type_name == "Training"
+    )
+
+    try:
+        ann = ann_query.one_or_none()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Multiple Annoucement of type 'Training' was found!)")
+
+    if not ann:
+        return None
+    else:
+        return {'title': ann.title, 'body': ann.body}
 
 @router.get('/training/budget_percentange/{year}')
 def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
@@ -2093,6 +2108,43 @@ def delete_employee_table_entry(id: int, db: Session = Depends(get_db)):
     return {'details': 'Deleted'}
 
 # Training
+@router.post('/admin/training_announcement_form')
+def post_training_annoucement(req: schemas.AnnouncementCreate, db: Session = Depends(get_db)):
+    #Check Existing
+    ann_query = db.query(Annoucement).filter(
+        Annoucement.type_name == "Training"
+    )
+
+    try:
+        ann = ann_query.one_or_none()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Multiple Training Annoucement was found')
+
+    if not ann:
+        newAnnoucement = Annoucement(
+            type_name   = "Training",
+            title       = req.title,
+            body        = req.body
+        )
+
+        db.add(newAnnoucement)
+        db.commit()
+        db.refresh(newAnnoucement)
+
+        return newAnnoucement
+    else:
+        stored_data = jsonable_encoder(ann)
+        stored_model = schemas.AnnouncementIn(**stored_data)
+
+        new_data = req.dict(exclude_unset=True)
+        updated = stored_model.copy(update=new_data)
+
+        stored_data.update(updated)
+
+        ann_query.update(stored_data)
+        db.commit()
+        return updated
+        
 @router.get('/admin/training_data/table_data/{year}')
 def get_training_table(year: int, db: Session = Depends(get_db)):
     startDate   = datetime.date(year,1,1)
