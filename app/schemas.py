@@ -149,6 +149,19 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
 
+class Announcement(BaseModel):
+    type_name       : str
+    title           : str
+    body            : str
+
+class AnnouncementCreate(BaseModel):
+    title           : str
+    body            : str
+
+class AnnouncementIn(BaseModel):
+    title           : Optional[str]
+    body            : Optional[str]
+
 # Trainings
 class Training(BaseModel):
     name            :str

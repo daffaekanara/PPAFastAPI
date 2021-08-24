@@ -73,6 +73,13 @@ class Role(Base):
 
     users = relationship("Employee", back_populates="role")
 
+class Annoucement(Base):
+    __tablename__ = 'annoucements'
+    id              = Column(Integer, primary_key=True, index=True)
+    type_name       = Column(String)
+    title           = Column(String)
+    body            = Column(String)
+
 # Training
 class Training(Base):
     __tablename__ = 'trainings'

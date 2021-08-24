@@ -2,6 +2,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import MultipleResultsFound, NoResultFound 
 import datetime
 import schemas, oauth2, utils
 from models import *
@@ -11,6 +12,74 @@ router = APIRouter(
     tags=['Training'],
     prefix="/training"
 )
+# Training Announcement
+@router.get('/announcement')
+def get_all(db: Session = Depends(get_db)):
+    annoucements = db.query(Annoucement).filter(
+        Annoucement.type_name == "Training"
+    ).all()
+    return annoucements
+
+@router.get('/announcement/{id}')
+def get_single(id: int, db: Session = Depends(get_db)):
+    query = db.query(Annoucement).filter(
+        Annoucement.id == id
+    ).first()
+
+    if not query:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Annoucement of ID ({id}) was not found!")
+
+    return query
+
+@router.post('/announcement', status_code=status.HTTP_201_CREATED)
+def create(req: schemas.AnnouncementCreate, db: Session = Depends(get_db)):
+    newAnnoucement = Annoucement(
+        type_name   = "Training",
+        title       = req.title,
+        body        = req.body
+    )
+
+    db.add(newAnnoucement)
+    db.commit()
+    db.refresh(newAnnoucement)
+
+    return newAnnoucement
+
+@router.patch('/announcement/{id}',  status_code=status.HTTP_202_ACCEPTED)
+def update(id: int, req: schemas.AnnouncementIn, db: Session = Depends(get_db)):
+    query_res = db.query(Annoucement).filter(
+        Annoucement.id == id
+    )
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    stored_data = jsonable_encoder(query_res.first())
+    stored_model = schemas.AnnouncementIn(**stored_data)
+
+    new_data = req.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    query_res.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/announcement/{id}', status_code=status.HTTP_202_ACCEPTED)
+def delete(id: int, db: Session = Depends(get_db)):
+    query_res = db.query(Annoucement).filter(
+        TrainingTarget.id == id
+    )
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    query_res.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
 
 # Training Target
 @router.get('/target')
