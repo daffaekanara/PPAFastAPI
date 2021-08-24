@@ -35,7 +35,6 @@ def get_single(id: int, db: Session = Depends(get_db)):
 def create(req: schemas.AnnouncementCreate, db: Session = Depends(get_db)):
     newAnnoucement = Annoucement(
         type_name   = "Training",
-        title       = req.title,
         body        = req.body
     )
 
@@ -46,7 +45,7 @@ def create(req: schemas.AnnouncementCreate, db: Session = Depends(get_db)):
     return newAnnoucement
 
 @router.patch('/announcement/{id}',  status_code=status.HTTP_202_ACCEPTED)
-def update(id: int, req: schemas.AnnouncementIn, db: Session = Depends(get_db)):
+def update(id: int, req: schemas.AnnouncementCreate, db: Session = Depends(get_db)):
     query_res = db.query(Annoucement).filter(
         Annoucement.id == id
     )
@@ -55,7 +54,7 @@ def update(id: int, req: schemas.AnnouncementIn, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
 
     stored_data = jsonable_encoder(query_res.first())
-    stored_model = schemas.AnnouncementIn(**stored_data)
+    stored_model = schemas.AnnouncementCreate(**stored_data)
 
     new_data = req.dict(exclude_unset=True)
     updated = stored_model.copy(update=new_data)

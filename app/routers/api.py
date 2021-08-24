@@ -725,7 +725,7 @@ def get_training_annoucement(db: Session = Depends(get_db)):
     if not ann:
         return None
     else:
-        return {'title': ann.title, 'body': ann.body}
+        return {'body': ann.body}
 
 @router.get('/training/budget_percentange/{year}')
 def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
@@ -2123,7 +2123,6 @@ def post_training_annoucement(req: schemas.AnnouncementCreate, db: Session = Dep
     if not ann:
         newAnnoucement = Annoucement(
             type_name   = "Training",
-            title       = req.title,
             body        = req.body
         )
 
