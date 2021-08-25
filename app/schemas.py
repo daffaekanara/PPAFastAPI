@@ -161,7 +161,7 @@ class Training(BaseModel):
     name            :str
     duration_hours   :float
     date            :datetime.date
-    proof           :bool
+    proof           :str
     budget          :float
     realization     :float
     charged_by_fin  :float
@@ -174,7 +174,7 @@ class TrainingIn(BaseModel):
     name            :Optional[str]
     duration_hours   :Optional[float]
     date            :Optional[datetime.date]
-    proof           :Optional[bool]
+    proof           :Optional[str]
     budget          :Optional[float]
     realization     :Optional[float]
     charged_by_fin  :Optional[float]
@@ -185,7 +185,6 @@ class TrainingIn(BaseModel):
 class TrainingInHiCouplingForm(BaseModel):
   name              : Optional[str]
   date              : Optional[str]
-  proof             : Optional[bool]
   duration_hours    : Optional[int]
   remarks           : Optional[str]
   nik               : Optional[str]
@@ -194,7 +193,7 @@ class ShowTraining(BaseModel):
     name            :str
     duration_hours   :float
     date            :datetime.date
-    proof           :bool
+    proof           :str
     budget          :float
     realization     :float
     charged_by_fin  :float

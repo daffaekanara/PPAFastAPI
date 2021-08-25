@@ -24,6 +24,48 @@ router = APIRouter(
 
 ### File ###
 
+@router.post('/training/proof/{nik}/{training_id}')
+def post_training_proof_file(nik: str, training_id: int, attachment_proof: UploadFile = File(...), db: Session = Depends(get_db)):
+    data = attachment_proof.file.read()
+
+    # Check NIK
+    emp = db.query(Employee).filter(
+        Employee.staff_id == nik
+    )
+    if not emp.first():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of NIK ({nik}) was not found!")
+
+    emp = emp.first()
+    emp_id = emp.id
+
+    # Check training_id
+    train_query = db.query(Training).filter(
+        Training.id == training_id
+    )
+
+    try:
+        train = train_query.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Training of ID ({training_id}) was not found!")
+
+    if not train.emp_id == emp_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Training of ID ({training_id}) belongs to emp of id ({train.emp_id}), not ({emp_id})!")
+
+
+    filepath = fio.write_training_proof(training_id, emp_id, data, attachment_proof.filename)
+
+    # Update DB
+    stored_data = jsonable_encoder(train)
+    stored_model = schemas.TrainingIn(**stored_data)
+    new_data = {"proof": filepath}
+    updated = stored_model.copy(update=new_data)
+    stored_data.update(updated)
+    train_query.update(stored_data)
+    db.commit()
+
+    return {"filename": filepath}
+
+
 @router.post('/admin/budget_data/mrpt_file')
 def post_mrpt_file(mrpt: UploadFile = File(...), db: Session = Depends(get_db)):
     # Check if .xlsx
@@ -879,7 +921,7 @@ def create_training_from_form(req: schemas.TrainingInHiCouplingForm, db: Session
         name            = req.name, 
         date            = utils.str_to_datetime(req.date), 
         duration_hours  = req.duration_hours, 
-        proof           = req.proof,
+        proof           = "",
         budget          = 0,
         realization     = 0,
         charged_by_fin  = 0,
@@ -2206,7 +2248,7 @@ def create_training_table_entry(req: schemas.TrainingInHiCoupling, db: Session =
         name            = req.trainingTitle,
         date            = utils.tablestr_to_datetime(req.date),
         duration_hours  = req.numberOfHours,
-        proof           = False,
+        proof           = "",
         budget          = req.budget,
         realization     = req.costRealization,
         charged_by_fin  = req.chargedByFinance,
@@ -2245,7 +2287,7 @@ def patch_training_table_entry(id: int, req: schemas.TrainingInHiCoupling, db: S
         name            = req.trainingTitle,
         date            = utils.tablestr_to_datetime(req.date),
         duration_hours  = req.numberOfHours,
-        proof           = False,
+        proof           = stored_data["proof"],
 
         budget          = req.budget,
         realization     = req.costRealization,

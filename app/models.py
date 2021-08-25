@@ -86,7 +86,7 @@ class Training(Base):
     name            = Column(String)
     date            = Column(Date)
     duration_hours  = Column(Float)
-    proof           = Column(Boolean)
+    proof           = Column(String)
 
     budget          = Column(Float)
     realization     = Column(Float)
