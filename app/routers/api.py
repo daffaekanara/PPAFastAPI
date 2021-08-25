@@ -345,12 +345,19 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
             'value': 0
         })
 
+    max_smr = 0
+
     for c in e.emp_certifications:
         # SMR (Levels)
         smr_level = utils.extract_SMR_level(c.cert_name)
         
         if smr_level: # SMR
-            cert_res[0]['value'] = smr_level
+            if c.cert_proof:
+                if smr_level > max_smr:
+                    cert_res[0]['value'] = smr_level
+                    max_smr = smr_level
+        elif c.cert_name == "SMR In Progress":
+            cert_res[0]['value'] = "In Progress"
         elif c.cert_name in certs:
             index = utils.find_index(cert_res, 'title', c.cert_name)
             cert_res[index]['value'] = 1
@@ -358,7 +365,13 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
             cert_res[-1]["value"] += 1
 
     smr_lvl = cert_res[0]['value']
-    smr_str = f"Level {smr_lvl}" if smr_lvl else "-"
+
+    if smr_lvl == "In Progress":
+        smr_str = smr_lvl
+    elif smr_lvl:
+        smr_str = f"Level {smr_lvl}"
+    else:
+        smr_str = "-"
 
     res.append({
         "id"                          : e.id,
