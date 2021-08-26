@@ -766,7 +766,7 @@ def get_total_by_division_by_year_type_categorized(year: int, db: Session = Depe
     return res
 
 ### Training ###
-@router.get('/training/annoucement')
+@router.get('/training/announcement')
 def get_training_annoucement(db: Session = Depends(get_db)):
     ann_query = db.query(Annoucement).filter(
         Annoucement.type_name == "Training"
@@ -775,7 +775,7 @@ def get_training_annoucement(db: Session = Depends(get_db)):
     try:
         ann = ann_query.one_or_none()
     except MultipleResultsFound:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Multiple Annoucement of type 'Training' was found!)")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Multiple Announcements of type 'Training' was found!)")
 
     if not ann:
         return None
@@ -2325,7 +2325,7 @@ def post_training_annoucement(req: schemas.AnnouncementCreate, db: Session = Dep
     try:
         ann = ann_query.one_or_none()
     except MultipleResultsFound:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Multiple Training Annoucement was found')
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Multiple Training Announcement was found')
 
     if not ann:
         newAnnoucement = Annoucement(
@@ -2340,7 +2340,7 @@ def post_training_annoucement(req: schemas.AnnouncementCreate, db: Session = Dep
         return newAnnoucement
     else:
         stored_data = jsonable_encoder(ann)
-        stored_model = schemas.AnnouncementIn(**stored_data)
+        stored_model = schemas.AnnouncementCreate(**stored_data)
 
         new_data = req.dict(exclude_unset=True)
         updated = stored_model.copy(update=new_data)
