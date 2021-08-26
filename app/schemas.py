@@ -375,7 +375,7 @@ class Project(BaseModel):
 class ProjectIn(BaseModel):
     name            :Optional[str]
     used_DA         :Optional[bool]
-    completion_PA   :Optional[bool]
+    completion_PA   :Optional[str]
     is_carried_over :Optional[bool]
     timely_report   :Optional[bool]
     year            :Optional[int]
@@ -388,6 +388,10 @@ class ProjectInHiCoupling(BaseModel):
     id          : Optional[str]
     auditPlan   : Optional[str]
     division    : Optional[str]
+
+    tl_name     : Optional[str]
+    tl_nik      : Optional[str]
+
     status      : Optional[str]
     useOfDA     : Optional[bool]
     year        : Optional[int]

@@ -2487,14 +2487,15 @@ def get_project_table(year: int, db: Session = Depends(get_db)):
             "id"        : str(p.id),
             "auditPlan" : p.name,
             "division"  : p.div.name,
+            "tl_name"   : p.tl.name,
+            "tl_nik"    : p.tl.staff_id,
             "status"    : p.status.name,
             "useOfDA"   : p.used_DA,
             "year"      : p.year,
 
-
             "is_carried_over" : p.is_carried_over,
             "timely_report"   : p.timely_report,
-            "completion_PA"   : p.completion_PA
+            "completion_PA"   : len(p.completion_PA) > 0
         })
 
     return res
@@ -2507,17 +2508,30 @@ def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = D
     div_id = divs.index(req.division)+1
     status_id = statuses.index(req.status)+1
 
+    # Check NIK
+    emp_q = db.query(Employee).filter(
+        Employee.staff_id == req.tl_nik
+    )
+
+    try:
+        emp = emp_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({req.nik}) was found!')
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({req.nik}) was found!')
+
     # Create Project
     new_prj = Project(
         name            = req.auditPlan,
         used_DA         = req.useOfDA,
-        completion_PA   = req.completion_PA,
+        completion_PA   = "",
         is_carried_over = req.is_carried_over,
         timely_report   = req.timely_report,
         year            = req.year,
 
         status_id       = status_id,
         div_id          = div_id,
+        tl_id           = emp.id
     )
 
     db.add(new_prj)
@@ -2584,16 +2598,29 @@ def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Sess
     div_id      = divs.index(req.division)+1
     status_id   = statuses.index(req.status)+1
 
+    # Check NIK
+    emp_q = db.query(Employee).filter(
+        Employee.staff_id == req.tl_nik
+    )
+
+    try:
+        emp = emp_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({req.nik}) was found!')
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({req.nik}) was found!')
+
+
     dataIn = schemas.ProjectIn(
         name            = req.auditPlan,
         used_DA         = req.useOfDA,
-        completion_PA   = req.completion_PA,
         is_carried_over = req.is_carried_over,
         timely_report   = req.timely_report,
         year            = req.year,
 
         status_id       = status_id,
-        div_id          = div_id
+        div_id          = div_id,
+        tl_id           = emp.id 
     )
 
     new_data = dataIn.dict(exclude_unset=True)
