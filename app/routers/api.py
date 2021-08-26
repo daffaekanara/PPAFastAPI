@@ -675,6 +675,83 @@ def get_total_by_division_by_year(year: int, month: int, db: Session = Depends(g
 
 ### Audit Project ###
 
+# EditStatusProject Table
+@router.get('/projects/edit_project_table/{nik}/{year}')
+def get_project_table(nik: str, year: int, db: Session = Depends(get_db)):
+    # Check NIK
+    emp_q = db.query(Employee).filter(
+        Employee.staff_id == nik
+    )
+
+    try:
+        emp = emp_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({nik}) was found!')
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({nik}) was found!')
+
+    projects = db.query(Project).filter(
+        Project.year == year,
+        Project.tl.has(id=emp.id)
+    ).all()
+
+    res = []
+
+    for p in projects:
+        res.append({
+            "id"        : str(p.id),
+            "auditPlan" : p.name,
+            "division"  : p.div.name,
+            "status"    : p.status.name,
+            "useOfDA"   : p.used_DA,
+            "year"      : p.year,
+
+            "is_carried_over" : p.is_carried_over,
+            "timely_report"   : p.timely_report,
+            "completion_PA"   : len(p.completion_PA) > 0
+        })
+
+    return res
+
+@router.patch('/projects/edit_project_table/{id}')
+def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    statuses= ["Not Started", "Planning", "Fieldwork", "Reporting", "Completed"]
+
+    prj = db.query(Project).filter(
+        Project.id == id
+    )
+
+    if not prj.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+    
+    stored_data = jsonable_encoder(prj.first())
+    stored_model = schemas.ProjectIn(**stored_data)
+    
+    div_id      = divs.index(req.division)+1
+    status_id   = statuses.index(req.status)+1
+
+    dataIn = schemas.ProjectIn(
+        name            = req.auditPlan,
+        used_DA         = req.useOfDA,
+        is_carried_over = req.is_carried_over,
+        timely_report   = req.timely_report,
+        year            = req.year,
+
+        status_id       = status_id,
+        div_id          = div_id
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    prj.update(stored_data)
+    db.commit()
+    return updated
+
+# Chart
 @router.get('/projects/total_by_division/{year}')
 def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
     query = db.query(Project).filter(Project.year == year).all()
