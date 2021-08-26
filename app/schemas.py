@@ -330,20 +330,20 @@ class EngagementTypeIn(BaseModel):
 class BUSUEngagement(BaseModel):
     activity_name   : str
     date            : datetime.date
-    proof           : bool
+    proof           : str
 
     eng_type_id     : int
 
-    div_id          : int
+    creator_id      : int
 
 class BUSUEngagementIn(BaseModel):
     activity_name   : Optional[str]
     date            : Optional[datetime.date]
-    proof           : Optional[bool]
+    proof           : Optional[str]
 
     eng_type_id     : Optional[int]
 
-    div_id          : Optional[int]
+    creator_id      : Optional[int]
 
 class BUSUEngagementInHiCoupling(BaseModel):
     id          : Optional[str]

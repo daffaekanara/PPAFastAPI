@@ -12,7 +12,6 @@ class Division(Base):
     div_trainBudgets    = relationship("TrainingBudget", back_populates="div")
     div_socialcontribs  = relationship("SocialContrib", back_populates="div")
     div_yearlyAttr      = relationship("YearlyAttrition", back_populates="div")
-    div_busuengagements = relationship("BUSUEngagement", back_populates="div")
     div_projects        = relationship("Project", back_populates="div")
     
     csfs_by_invdiv  = relationship("CSF", back_populates="by_invdiv_div")
@@ -55,6 +54,8 @@ class Employee(Base):
     emp_certifications = relationship("Certification", back_populates="owner")
 
     emp_csf_tl  = relationship("CSF", back_populates="tl")
+
+    emp_busu_engs = relationship("BUSUEngagement", back_populates="creator")
 
 class Certification(Base):
     __tablename__ = 'certifications'
@@ -167,13 +168,13 @@ class BUSUEngagement(Base):
     id              = Column(Integer, primary_key=True, index=True)
     activity_name   = Column(String)
     date            = Column(Date)
-    proof           = Column(Boolean)
+    proof           = Column(String)
 
     eng_type_id     = Column(Integer, ForeignKey('engagementtypes.id'))
     eng_type        = relationship("EngagementType", back_populates="engagements")
 
-    div_id  = Column(Integer, ForeignKey('divisions.id'))
-    div     = relationship("Division", back_populates="div_busuengagements")
+    creator_id  = Column(Integer, ForeignKey('employees.id'))
+    creator     = relationship("Employee", back_populates="emp_busu_engs")
 
 # Audit Projects
 class ProjectStatus(Base):

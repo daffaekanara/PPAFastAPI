@@ -94,7 +94,7 @@ def create_engagement(req: schemas.BUSUEngagement, db: Session = Depends(get_db)
 
         eng_type_id     = req.eng_type_id,
 
-        div_id          = req.div_id
+        creator_id      = req.creator_id
     )
 
     db.add(newEng)
