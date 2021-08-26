@@ -2963,6 +2963,35 @@ def get_project_titles(year:int, db: Session = Depends(get_db)):
 
     return res
 
+@router.get('/utils/project_by_nik/{year}/{nik}')
+def get_project_by_NIK(year:int, nik: str, db: Session = Depends(get_db)):
+    # Check NIK
+    emp_q = db.query(Employee).filter(
+        Employee.staff_id == nik
+    )
+
+    try:
+        emp = emp_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({nik}) was found!')
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({nik}) was found!')
+
+    # Get Projects
+    prjs = db.query(Project).filter(
+        Project.year == year,
+        Project.tl.has(id=emp.id)
+    )
+
+    res = []
+    for p in prjs:
+        res.append({
+            'id'            : str(p.id),
+            'project_title' : p.name
+        })
+
+    return res
+
 def create_or_update_mActual(data, db: Session):
     actual_query = db.query(MonthlyActualBudget).filter(
         MonthlyActualBudget.year == data['year'],
