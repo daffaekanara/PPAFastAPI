@@ -347,6 +347,7 @@ class BUSUEngagementIn(BaseModel):
 
 class BUSUEngagementInHiCoupling(BaseModel):
     id          : Optional[str]
+    nik         : Optional[str]
     division    : Optional[str]
     WorRM       : Optional[str]
     activity    : Optional[str]

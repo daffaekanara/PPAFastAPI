@@ -1143,6 +1143,158 @@ def get_csf_donut_data(year: int, db: Session = Depends(get_db)):
 
 ### BUSU Engagement ###
 
+# Input Table
+@router.get('/engagement/input_table/{nik}/{year}')
+def get_busu_input_table(nik: str, year: int, db: Session = Depends(get_db)):
+    # Check NIK
+    emp_q = db.query(Employee).filter(
+        Employee.staff_id == nik
+    )
+
+    try:
+        emp = emp_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({nik}) was found!')
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({nik}) was found!')
+
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    engs = db.query(BUSUEngagement).filter(
+        BUSUEngagement.date >= startDate,
+        BUSUEngagement.date <= endDate,
+        BUSUEngagement.creator_id == emp.id
+    ).all()
+
+    res = []
+    
+    for e in engs:
+        res.append({
+            "id"        : str(e.id),
+            "division"  : e.creator.part_of_div.name,
+            "WorRM"     : e.eng_type.name,
+            "activity"  : e.activity_name,
+            "date"      : e.date.strftime("%m/%d/%Y")
+        })
+    
+    return res
+
+@router.post('/engagement/input_table/{nik}')
+def create_busu_input_table_entry(nik: str, req: schemas.BUSUEngagementInHiCoupling, db: Session = Depends(get_db)):
+    eng_types = ["Regular Meeting", "Workshop"]
+
+    # Check NIK
+    emp_q = db.query(Employee).filter(
+        Employee.staff_id == nik
+    )
+
+    try:
+        emp = emp_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({req.nik}) was found!')
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({req.nik}) was found!')
+
+    new_eng = BUSUEngagement(
+        activity_name   = req.activity,
+        date            = utils.tablestr_to_datetime(req.date),
+        proof           = "",
+        
+        eng_type_id     = eng_types.index(req.WorRM) + 1,
+
+        creator_id      = emp.id
+    )
+
+    db.add(new_eng)
+    db.commit()
+    db.refresh(new_eng)
+
+    return new_eng
+
+@router.patch('/engagement/input_table/{id}')
+def patch_busu_input_table_entry(id:int, req: schemas.BUSUEngagementInHiCoupling, db: Session = Depends(get_db)):
+    eng = db.query(BUSUEngagement).filter(
+        BUSUEngagement.id == id
+    ) 
+
+    if not eng.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+
+    stored_data = jsonable_encoder(eng.first())
+    stored_model = schemas.BUSUEngagementIn(**stored_data)
+
+    eng_types = ["Regular Meeting", "Workshop"]
+
+    dataIn = schemas.BUSUEngagementIn(
+        activity_name   = req.activity,
+        date            = utils.tablestr_to_datetime(req.date),
+        proof           = "",
+
+        eng_type_id     = eng_types.index(req.WorRM) + 1
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    eng.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/engagement/input_table/{id}')
+def delete_busu_input_table_entry(id:int, db: Session = Depends(get_db)):
+    eng = db.query(BUSUEngagement).filter(
+        BUSUEngagement.id == id
+    )
+
+    if not eng.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    eng.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
+# View Table
+@router.get('/engagement/user_div_table/{nik}/{year}')
+def get_view_busu_table(nik: str, year: int, db: Session = Depends(get_db)):
+    # Check NIK
+    emp_q = db.query(Employee).filter(
+        Employee.staff_id == nik
+    )
+
+    try:
+        emp = emp_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({nik}) was found!')
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({nik}) was found!')
+
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    engs = db.query(BUSUEngagement).filter(
+        BUSUEngagement.date >= startDate,
+        BUSUEngagement.date <= endDate,
+        BUSUEngagement.creator.has(div_id= emp.div_id)
+    ).all()
+
+    res = []
+
+    for e in engs:
+        res.append({
+            "id"        : str(e.id),
+            "division"  : e.creator.part_of_div.name,
+            "WorRM"     : e.eng_type.name,
+            "activity"  : e.activity_name,
+            "date"      : e.date.strftime("%m/%d/%Y")
+        })
+    
+    return res
+
 @router.get('/engagement/total_by_division/{year}')
 def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
     startDate   = datetime.date(year,1,1)
@@ -1161,7 +1313,7 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
         res.append({"quarterly_meeting":0, "workshop":0, "division":div})
 
     for q in query:
-        eng_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.div.name), None)
+        eng_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.creator.part_of_div.name), None)
 
         if q.eng_type_id == 1:
             res[eng_by_div]["quarterly_meeting"] += 1
@@ -2581,7 +2733,8 @@ def get_busu_table(year: int, db: Session = Depends(get_db)):
     for e in engs:
         res.append({
             "id"        : str(e.id),
-            "division"  : e.div.name,
+            "nik"       : e.creator.staff_id,
+            "division"  : e.creator.part_of_div.name,
             "WorRM"     : e.eng_type.name,
             "activity"  : e.activity_name,
             "date"      : e.date.strftime("%m/%d/%Y")
@@ -2594,16 +2747,26 @@ def create_busu_table_entry(req: schemas.BUSUEngagementInHiCoupling, db: Session
     divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     eng_types = ["Regular Meeting", "Workshop"]
 
-    div_id = divs.index(req.division)+1
+    # Check NIK
+    emp_q = db.query(Employee).filter(
+        Employee.staff_id == req.nik
+    )
+
+    try:
+        emp = emp_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({req.nik}) was found!')
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({req.nik}) was found!')
 
     new_eng = BUSUEngagement(
         activity_name   = req.activity,
         date            = utils.tablestr_to_datetime(req.date),
-        proof           = False,
+        proof           = "",
         
         eng_type_id     = eng_types.index(req.WorRM) + 1,
 
-        div_id          = divs.index(req.division) + 1 
+        creator_id      = emp.id
     )
 
     db.add(new_eng)
@@ -2621,21 +2784,32 @@ def patch_busu_table_entry(id:int, req: schemas.BUSUEngagementInHiCoupling, db: 
     if not eng.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
 
+    # Check NIK
+    emp_q = db.query(Employee).filter(
+        Employee.staff_id == req.nik
+    )
+
+    try:
+        emp = emp_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({req.nik}) was found!')
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({req.nik}) was found!')
+
+
     stored_data = jsonable_encoder(eng.first())
     stored_model = schemas.BUSUEngagementIn(**stored_data)
 
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     eng_types = ["Regular Meeting", "Workshop"]
-    div_id =  divs.index(req.division) + 1
 
     dataIn = schemas.BUSUEngagementIn(
         activity_name   = req.activity,
         date            = utils.tablestr_to_datetime(req.date),
-        proof           = False,
+        proof           = "",
 
         eng_type_id     = eng_types.index(req.WorRM) + 1,
 
-        div_id          = divs.index(req.division) + 1
+        creator_id      = emp.id
     )
 
     new_data = dataIn.dict(exclude_unset=True)
