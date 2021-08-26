@@ -55,6 +55,8 @@ class Employee(Base):
 
     emp_csf_tl  = relationship("CSF", back_populates="tl")
 
+    emp_prj_tl = relationship("Project", back_populates="tl")
+
     emp_busu_engs = relationship("BUSUEngagement", back_populates="creator")
 
 class Certification(Base):
@@ -189,7 +191,7 @@ class Project(Base):
     id              = Column(Integer, primary_key=True, index=True)
     name            = Column(String)
     used_DA         = Column(Boolean)
-    completion_PA   = Column(Boolean)
+    completion_PA   = Column(String)
     is_carried_over = Column(Boolean)
     timely_report   = Column(Boolean)
     year            = Column(Integer)
@@ -199,6 +201,9 @@ class Project(Base):
 
     div_id  = Column(Integer, ForeignKey('divisions.id'))
     div     = relationship("Division", back_populates="div_projects")
+
+    tl_id   = Column(Integer, ForeignKey('employees.id'))
+    tl      = relationship("Employee", back_populates="emp_prj_tl")
 
     csfs = relationship("CSF", back_populates="prj")
     qaips= relationship("QAIP", back_populates="prj")

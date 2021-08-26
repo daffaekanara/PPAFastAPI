@@ -85,7 +85,8 @@ def create_project(req: schemas.Project, db: Session = Depends(get_db)):
         timely_report   = req.timely_report,
         year            = req.year,
         status_id       = req.status_id,
-        div_id          = req.div_id
+        div_id          = req.div_id,
+        tl_id           = req.tl_id
     )
 
     db.add(newPrj)

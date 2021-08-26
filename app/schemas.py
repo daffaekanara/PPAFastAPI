@@ -363,13 +363,14 @@ class ProjectStatusIn(BaseModel):
 class Project(BaseModel):
     name            :str
     used_DA         :bool
-    completion_PA   :bool
+    completion_PA   :str
     is_carried_over :bool
     timely_report   :bool
     year            :int
 
     status_id       :int
     div_id          :int
+    tl_id           :int
 
 class ProjectIn(BaseModel):
     name            :Optional[str]
@@ -381,6 +382,7 @@ class ProjectIn(BaseModel):
 
     status_id       :Optional[int]
     div_id          :Optional[int]
+    tl_id           :Optional[int]
 
 class ProjectInHiCoupling(BaseModel):
     id          : Optional[str]
