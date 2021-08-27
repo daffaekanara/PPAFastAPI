@@ -791,7 +791,7 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
         res[4][div_name] += 1 and q.status.name == status[4]
         res[5][div_name] += 1 and q.timely_report
         res[6][div_name] += 1 and q.used_DA
-        res[7][div_name] += 1 and q.completion_PA        
+        res[7][div_name] += 1 and len(q.completion_PA) > 0        
         
 
     return res
