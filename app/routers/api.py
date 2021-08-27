@@ -23,6 +23,40 @@ router = APIRouter(
 )
 
 ### File ###
+@router.post('/project/submit_pa_form/{year}')
+def post_pa_completion_form(
+    year            : int,
+    projectTitle    : str= Form(...),
+    attachment_proof: UploadFile = File(...), 
+    db: Session = Depends(get_db)
+):
+    data = attachment_proof.file.read()
+
+    # Check Project Name
+    prj_query = db.query(Project).filter(
+        Project.year == year,
+        Project.name == projectTitle
+    )
+
+    try:
+        prj = prj_query.one()
+    except MultipleResultsFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Multiple Project of Name ({projectTitle}) and of year ({year}) was found!")
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No Projects of Name ({projectTitle}) and of year ({year}) was found!")
+
+    # Process Proof
+    filepath = fio.write_pa_completion_proof(prj.id, data, attachment_proof.filename)
+
+    stored_data = jsonable_encoder(prj)
+    stored_model = schemas.ProjectIn(**stored_data)
+    new_data = {"completion_PA": filepath}
+    updated = stored_model.copy(update=new_data)
+    stored_data.update(updated)
+    prj_query.update(stored_data)
+    db.commit()
+
+    return {"Details": "Success"}
 
 @router.post('/engagement/input_form')
 def post_engagement_input_form(
@@ -75,7 +109,6 @@ def post_engagement_input_form(
     db.commit()
 
     return {"Details": "Success"}
-
 
 @router.post('/training/form-file')
 def post_training_proof_file(

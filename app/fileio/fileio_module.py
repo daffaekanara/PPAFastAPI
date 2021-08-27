@@ -10,6 +10,28 @@ CERTS_FOLDER    = 'certs'
 BUDGET_FOLDER   = 'budget'
 TRAIN_PROOF_FOLDER = 'trainings'
 BUSU_ENG_FOLDER = 'busu'
+PA_CMPLT_FOLDER = 'pa_completion'
+
+def write_pa_completion_proof(prj_id, data, filename):
+    dir_name = os.path.join(DATA_FOLDER, FILES_FOLDER, PA_CMPLT_FOLDER)
+    os.makedirs(dir_name, exist_ok=True)
+
+    new_fname = f"{prj_id}.{filename.split('.')[-1]}"
+
+    # Check if cert with same name exist
+    for (idirpath, dirnames, filenames) in os.walk(dir_name):
+        for fname in filenames:
+            if fname.split('.')[0] == new_fname.split('.')[0]:
+                os.remove(os.path.join(dir_name, fname))
+        break # Only walk first level dir
+    
+    # Write proof
+    full_filepath = os.path.join(dir_name, new_fname)
+    f = open(full_filepath, 'wb')
+    f.write(data)
+    f.close()
+
+    return full_filepath
 
 def write_busu_proof(eng_id, emp_id, data, filename):
     dir_name = os.path.join(DATA_FOLDER, FILES_FOLDER, BUSU_ENG_FOLDER, str(emp_id))
