@@ -24,6 +24,59 @@ router = APIRouter(
 
 ### File ###
 
+@router.post('/engagement/input_form')
+def post_engagement_input_form(
+    id              : str= Form(...),
+    WorM            : str= Form(...),
+    activity        : str= Form(...),
+    date            : str= Form(...),
+    proof           : UploadFile = File(...), 
+    db: Session = Depends(get_db)
+):
+    eng_types = ["Regular Meeting", "Workshop"]
+
+    data = proof.file.read()
+    # Check NIK
+    emp = db.query(Employee).filter(
+        Employee.staff_id == id
+    )
+    if not emp.first():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({id}) was not found!")
+
+    emp = emp.first()
+    emp_id = emp.id
+
+    # Create BUSU Engagement
+    new_eng = BUSUEngagement(
+        activity_name   = activity,
+        date            = utils.formstr_to_datetime(date),
+        proof           = "",
+        
+        eng_type_id     = eng_types.index(WorM) + 1,
+
+        creator_id      = emp_id
+    )
+
+    db.add(new_eng)
+    db.commit()
+    db.refresh(new_eng)
+
+    # Process Proof
+    filepath = fio.write_busu_proof(new_eng.id, emp_id, data, proof.filename)
+
+    eng_query = db.query(BUSUEngagement).filter(BUSUEngagement.id == new_eng.id)
+
+    stored_data = jsonable_encoder(new_eng)
+    stored_model = schemas.BUSUEngagementIn(**stored_data)
+    new_data = {"proof": filepath}
+    updated = stored_model.copy(update=new_data)
+    stored_data.update(updated)
+    eng_query.update(stored_data)
+    db.commit()
+
+    return {"Details": "Success"}
+
+
 @router.post('/training/form-file')
 def post_training_proof_file(
     name            : str= Form(...),
@@ -76,7 +129,7 @@ def post_training_proof_file(
     train_query.update(stored_data)
     db.commit()
 
-    return
+    return {"Details": "Success"}
 
 @router.post('/training/proof/{nik}/{training_id}')
 def post_training_proof_file(nik: str, training_id: int, attachment_proof: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -2902,7 +2955,6 @@ def get_busu_table(year: int, db: Session = Depends(get_db)):
 
 @router.post('/admin/busu_data/table_data/')
 def create_busu_table_entry(req: schemas.BUSUEngagementInHiCoupling, db: Session = Depends(get_db)):
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     eng_types = ["Regular Meeting", "Workshop"]
 
     # Check NIK
