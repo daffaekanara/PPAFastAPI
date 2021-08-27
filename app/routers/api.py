@@ -1,5 +1,5 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Form
 from fastapi.datastructures import UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.param_functions import File
@@ -24,6 +24,60 @@ router = APIRouter(
 
 ### File ###
 
+@router.post('/training/form-file')
+def post_training_proof_file(
+    name            : str= Form(...),
+    date            : str= Form(...),
+    duration_hours  : int= Form(...),
+    id              : str= Form(...),
+    remarks         : str= Form(...),
+    proof           : UploadFile = File(...), 
+    db: Session = Depends(get_db)
+):
+    data = proof.file.read()
+    # Check NIK
+    emp = db.query(Employee).filter(
+        Employee.staff_id == id
+    )
+    if not emp.first():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({id}) was not found!")
+
+    emp = emp.first()
+    emp_id = emp.id
+
+    # Create Training
+    newTrain = Training(
+        name            = name, 
+        date            = utils.formstr_to_datetime(date), 
+        duration_hours  = duration_hours, 
+        proof           = "",
+        budget          = 0,
+        realization     = 0,
+        charged_by_fin  = 0,
+        remark          = remarks,
+        mandatory_from  = "",
+        emp_id          = emp_id
+    )
+
+    db.add(newTrain)
+    db.commit()
+    db.refresh(newTrain)
+
+    # Process Proof
+    filepath = fio.write_training_proof(newTrain.id, emp_id, data, proof.filename)
+
+    train_query = db.query(Training).filter(Training.id == newTrain.id)
+
+    stored_data = jsonable_encoder(newTrain)
+    stored_model = schemas.TrainingIn(**stored_data)
+    new_data = {"proof": filepath}
+    updated = stored_model.copy(update=new_data)
+    stored_data.update(updated)
+    train_query.update(stored_data)
+    db.commit()
+
+    return
+
 @router.post('/training/proof/{nik}/{training_id}')
 def post_training_proof_file(nik: str, training_id: int, attachment_proof: UploadFile = File(...), db: Session = Depends(get_db)):
     data = attachment_proof.file.read()
@@ -33,7 +87,7 @@ def post_training_proof_file(nik: str, training_id: int, attachment_proof: Uploa
         Employee.staff_id == nik
     )
     if not emp.first():
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of NIK ({nik}) was not found!")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({nik}) was not found!")
 
     emp = emp.first()
     emp_id = emp.id
@@ -104,7 +158,7 @@ def post_file(cert_name: str, nik: str, cert_file: UploadFile = File(...), db: S
     )
 
     if not emp.first():
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of NIK ({nik}) was not found!")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({nik}) was not found!")
 
     emp = emp.first()
     emp_id = emp.id
@@ -365,7 +419,7 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
     ).first()
 
     if not e:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of NIK ({nik}) was not found!")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({nik}) was not found!")
 
     res = []
 
@@ -464,7 +518,7 @@ def patch_employee_table_entry(nik: str, req: schemas.EmployeeInHiCoupling, db: 
     )
 
     if not emp.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
     
     stored_data = jsonable_encoder(emp.first())
     stored_model = schemas.EmployeeIn(**stored_data)
@@ -580,12 +634,12 @@ def change_password(id: int, req: schemas.PasswordChangeIn, db: Session = Depend
     )
 
     if not emp_query.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Emp ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Emp ID not found')
 
     emp = emp_query.first()
 
     if not hashing.verify_bcrypt(emp.pw, req.old_pw):
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Old Password do not match')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Old Password do not match')
 
     # Update new_pw
     stored_data = jsonable_encoder(emp)
@@ -723,7 +777,7 @@ def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Sess
     )
 
     if not prj.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
     
     stored_data = jsonable_encoder(prj.first())
     stored_model = schemas.ProjectIn(**stored_data)
@@ -990,7 +1044,7 @@ def create_training_from_form(req: schemas.TrainingInHiCouplingForm, db: Session
     )
 
     if not emp.first():
-        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Employee of NIK ({req.nik}) was not found!")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({req.nik}) was not found!")
 
     emp_id = emp.first().id
     
@@ -1067,7 +1121,7 @@ def delete_training_table_entry(id: int, db: Session = Depends(get_db)):
     )
 
     if not t.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
     
     t.delete()
     db.commit()
@@ -1296,7 +1350,7 @@ def patch_busu_input_table_entry(id:int, req: schemas.BUSUEngagementInHiCoupling
     ) 
 
     if not eng.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
 
 
     stored_data = jsonable_encoder(eng.first())
@@ -1328,7 +1382,7 @@ def delete_busu_input_table_entry(id:int, db: Session = Depends(get_db)):
     )
 
     if not eng.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
 
     eng.delete()
     db.commit()
@@ -1540,7 +1594,7 @@ def patch_qaip_entry(req: schemas.QAIPFormInHiCoupling, db: Session = Depends(ge
     )
 
     if not qaip.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f'Project with name ({req.projectTitle}) and year ({req.year}) was not found!')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Project with name ({req.projectTitle}) and year ({req.year}) was not found!')
 
     qaip = db.query(QAIP).filter(
         QAIP.id == qaip.first().id
@@ -1556,7 +1610,7 @@ def patch_qaip_entry(req: schemas.QAIPFormInHiCoupling, db: Session = Depends(ge
     gradRes_id  = utils.qa_gradingres_str_to_id(req.QAResults)
 
     if not type_id or not gradRes_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Wrong QAType or QAResults')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Wrong QAType or QAResults')
 
     # Patch Entry
     dataIn = schemas.QAIP(
@@ -2042,18 +2096,18 @@ def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(g
     invdiv_id = utils.div_str_to_divID(req.division_by_inv)
     
     if not invdiv_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Div Name not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Div Name not found')
 
     tl_emp = db.query(Employee).filter(Employee.name == req.TL)
     tl_id = tl_emp.first().id if tl_emp.first() else 1
 
     prj_id = utils.str_to_int_or_None(req.auditProject)
     if not prj_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Audit Project must be an ID')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Audit Project must be an ID')
     
     prj = db.query(Project).filter(Project.id == prj_id)
     if not prj.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Audit Project must be an ID of an existing project')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Audit Project must be an ID of an existing project')
     
     new_csf = CSF(
         client_name         = req.clientName,
@@ -2093,7 +2147,7 @@ def patch_csf_table_entry(id: int, req: schemas.CSFInHiCoupling, db: Session = D
     )
 
     if not csf.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
     
     stored_data = jsonable_encoder(csf.first())
     stored_model = schemas.CSFIn(**stored_data)
@@ -2102,18 +2156,18 @@ def patch_csf_table_entry(id: int, req: schemas.CSFInHiCoupling, db: Session = D
     invdiv_id = utils.div_str_to_divID(req.division_by_inv)
     
     if not invdiv_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Div Name not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Div Name not found')
 
     tl_emp = db.query(Employee).filter(Employee.name == req.TL)
     tl_id = tl_emp.first().id if tl_emp.first() else 1
 
     prj_id = utils.str_to_int_or_None(req.auditProject)
     if not prj_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Audit Project must be an ID')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Audit Project must be an ID')
     
     prj = db.query(Project).filter(Project.id == prj_id)
     if not prj.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Audit Project must be an ID of an existing project')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Audit Project must be an ID of an existing project')
     
     dataIn = schemas.CSF(
         client_name         = req.clientName,
@@ -2156,7 +2210,7 @@ def delete_csf_table_entry(id: int, db: Session = Depends(get_db)):
     )
 
     if not c.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
     
     c.delete()
     db.commit()
@@ -2303,7 +2357,7 @@ def patch_employee_table_entry(id: int, req: schemas.EmployeeInHiCoupling, db: S
     )
 
     if not emp.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
     
     stored_data = jsonable_encoder(emp.first())
     stored_model = schemas.EmployeeIn(**stored_data)
@@ -2384,7 +2438,7 @@ def delete_employee_table_entry(id: int, db: Session = Depends(get_db)):
     )
 
     if not e.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
     
     e.delete()
     db.commit()
@@ -2469,7 +2523,7 @@ def create_training_table_entry(req: schemas.TrainingInHiCoupling, db: Session =
     )
 
     if not emp.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
 
     emp_id = emp.first().id
 
@@ -2500,7 +2554,7 @@ def patch_training_table_entry(id: int, req: schemas.TrainingInHiCoupling, db: S
     )
 
     if not training.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
     
     stored_data = jsonable_encoder(training.first())
     stored_model = schemas.TrainingIn(**stored_data)
@@ -2543,7 +2597,7 @@ def delete_training_table_entry(id: int, db: Session = Depends(get_db)):
     )
 
     if not t.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
     
     t.delete()
     db.commit()
@@ -2667,7 +2721,7 @@ def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Sess
     )
 
     if not prj.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
     
     stored_data = jsonable_encoder(prj.first())
     stored_model = schemas.ProjectIn(**stored_data)
@@ -2716,7 +2770,7 @@ def delete_project_table_entry(id: int, db: Session = Depends(get_db)):
     )
 
     if not prj.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
 
     if len(prj.first().qaips) != 1:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='More than one QA Result entry associated with this project is found.')
@@ -2783,7 +2837,7 @@ def patch_contrib_table_entry(id: int,req: schemas.SocialContribHiCouplingIn, db
     )
 
     if not contrib.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
     
     stored_data = jsonable_encoder(contrib.first())
     stored_model = schemas.SocialContribIn(**stored_data)
@@ -2814,7 +2868,7 @@ def delete_contrib_table_entry(id: int, db: Session = Depends(get_db)):
     )
 
     if not contrib.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
     
     contrib.delete()
     db.commit()
@@ -2886,7 +2940,7 @@ def patch_busu_table_entry(id:int, req: schemas.BUSUEngagementInHiCoupling, db: 
     ) 
 
     if not eng.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
 
     # Check NIK
     emp_q = db.query(Employee).filter(
@@ -2932,7 +2986,7 @@ def delete_busu_table_entry(id:int, db: Session = Depends(get_db)):
     )
 
     if not eng.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
 
     eng.delete()
     db.commit()
@@ -3011,7 +3065,7 @@ def patch_attr_entry(id:int, req: schemas.YearlyAttritionInHiCoupling, db: Sessi
     )
 
     if not attr.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
 
     stored_data = jsonable_encoder(attr.first())
     stored_model = schemas.YearlyAttritionIn(**stored_data)
@@ -3044,7 +3098,7 @@ def delete_attr_entry(id:int, db: Session = Depends(get_db)):
     )
 
     if not attr.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
 
     attr.delete()
     db.commit()

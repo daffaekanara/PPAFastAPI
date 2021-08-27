@@ -73,6 +73,9 @@ def find_index(listOfDict, dict_key, value):
 def str_to_datetime(text):
     return datetime.datetime.strptime(text, "%m/%d/%Y")
 
+def formstr_to_datetime(text):
+    return datetime.datetime.strptime(text, "%Y-%m-%d")
+
 def tablestr_to_datetime(text):
     try:
         return datetime.datetime.strptime(text, "%m/%d/%Y")
