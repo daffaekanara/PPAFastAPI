@@ -937,6 +937,97 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
     return res
 
 ### Social Contrib ###
+@router.get('/auditcontrib/audit_contribution_data/table_data/{year}/{div}')
+def get_contrib_table_by_div(year: int, div: str, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    div_id = divs.index(div)+1
+
+
+    contribs = db.query(SocialContrib).filter(
+        SocialContrib.date >= startDate,
+        SocialContrib.date <= endDate,
+        SocialContrib.div_id == div_id
+    ).all()
+
+    res = []
+
+    for c in contribs:
+        res.append({
+            "id"        : str(c.id),
+            "category"  : c.social_type.name,
+            "title"     : c.topic_name,
+            "date"      : c.date.strftime("%m/%d/%Y")
+        })
+
+    return res
+
+@router.post('/auditcontrib/audit_contribution_data/table_data/{div}')
+def create_contrib_table_entry(div: str, req: schemas.SocialContribHiCouplingUserPageIn, db: Session = Depends(get_db)):
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    types = ["Audit News", "MyUOB", "Audit Bulletin"]
+
+    div_id = divs.index(div)+1
+
+    new_con = SocialContrib(
+        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        topic_name      = req.title,
+        div_id          = div_id,
+        social_type_id  = types.index(req.category) + 1
+    )
+
+    db.add(new_con)
+    db.commit()
+    db.refresh(new_con)
+
+    return new_con
+
+@router.patch('/auditcontrib/audit_contribution_data/table_data/{id}')
+def patch_contrib_table_entry(id: int,req: schemas.SocialContribHiCouplingUserPageIn, db: Session = Depends(get_db)):
+    types = ["Audit News", "MyUOB", "Audit Bulletin"]
+
+    contrib = db.query(SocialContrib).filter(
+        SocialContrib.id == id
+    )
+
+    if not contrib.first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
+    
+    stored_data = jsonable_encoder(contrib.first())
+    stored_model = schemas.SocialContribIn(**stored_data)
+    
+    social_type_id  =types.index(req.category)+1
+
+    dataIn = schemas.SocialContribIn(
+        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        topic_name      = req.title,
+        social_type_id  = social_type_id
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    contrib.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/auditcontrib/audit_contribution_data/table_data/{id}')
+def delete_contrib_table_entry(id: int, db: Session = Depends(get_db)):
+    contrib = db.query(SocialContrib).filter(
+        SocialContrib.id == id
+    )
+
+    if not contrib.first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
+    
+    contrib.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
 
 @router.get('/socialcontrib/total_by_division/{year}')
 def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
@@ -2896,34 +2987,6 @@ def delete_project_table_entry(id: int, db: Session = Depends(get_db)):
     return {'details': 'Deleted'}
 
 # Social Contribution
-@router.get('/admin/audit_contribution_data/table_data/{year}/{div}')
-def get_contrib_table_by_div(year: int, div: str, db: Session = Depends(get_db)):
-    startDate   = datetime.date(year,1,1)
-    endDate     = datetime.date(year,12,31)
-
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
-    div_id = divs.index(div)+1
-
-
-    contribs = db.query(SocialContrib).filter(
-        SocialContrib.date >= startDate,
-        SocialContrib.date <= endDate,
-        SocialContrib.div_id == div_id
-    ).all()
-
-    res = []
-
-    for c in contribs:
-        res.append({
-            "id"        : str(c.id),
-            "division"  : c.div.name,
-            "category"  : c.social_type.name,
-            "title"     : c.topic_name,
-            "date"      : c.date.strftime("%m/%d/%Y")
-        })
-
-    return res
-
 @router.get('/admin/audit_contribution_data/table_data/{year}')
 def get_contrib_table(year: int, db: Session = Depends(get_db)):
     startDate   = datetime.date(year,1,1)

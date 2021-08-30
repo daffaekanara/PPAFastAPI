@@ -292,6 +292,13 @@ class SocialContribHiCouplingIn(BaseModel):
     division    :Optional[str]
     id          :Optional[str]
 
+class SocialContribHiCouplingUserPageIn(BaseModel):
+    date        :Optional[str]
+    title       :Optional[str]
+    category    :Optional[str]
+    division    :Optional[str]
+    id          :Optional[str]
+
 # Attrition
 class YearlyAttrition(BaseModel):
     year                :int
