@@ -2870,6 +2870,34 @@ def delete_project_table_entry(id: int, db: Session = Depends(get_db)):
     return {'details': 'Deleted'}
 
 # Social Contribution
+@router.get('/admin/audit_contribution_data/table_data/{year}/{div}')
+def get_contrib_table_by_div(year: int, div: str, db: Session = Depends(get_db)):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    div_id = divs.index(div)+1
+
+
+    contribs = db.query(SocialContrib).filter(
+        SocialContrib.date >= startDate,
+        SocialContrib.date <= endDate,
+        SocialContrib.div_id == div_id
+    ).all()
+
+    res = []
+
+    for c in contribs:
+        res.append({
+            "id"        : str(c.id),
+            "division"  : c.div.name,
+            "category"  : c.social_type.name,
+            "title"     : c.topic_name,
+            "date"      : c.date.strftime("%m/%d/%Y")
+        })
+
+    return res
+
 @router.get('/admin/audit_contribution_data/table_data/{year}')
 def get_contrib_table(year: int, db: Session = Depends(get_db)):
     startDate   = datetime.date(year,1,1)
