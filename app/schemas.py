@@ -142,6 +142,10 @@ class PasswordChangeIn(BaseModel):
     old_pw: str
     new_pw: str
 
+class PasswordChangeAdminIn(BaseModel):
+    nik     : str
+    new_pw  : str
+
 class Token(BaseModel):
     access_token: str
     token_type: str

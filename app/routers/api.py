@@ -2304,6 +2304,32 @@ def delete_csf_table_entry(id: int, db: Session = Depends(get_db)):
     return {'details': 'Deleted'}
 
 # Employee
+@router.post('/admin/change_password')
+def change_password_admin(req: schemas.PasswordChangeAdminIn, db: Session = Depends(get_db)):
+    # Check NIK
+    emp_query = db.query(Employee).filter(
+        Employee.staff_id == req.nik
+    )
+
+    if not emp_query.first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Employee of NIK ({req.nik}) was not found')
+
+    emp = emp_query.first()
+
+    # Update new_pw
+    stored_data = jsonable_encoder(emp)
+    stored_model = schemas.EmployeeIn(**stored_data)
+
+    new_data = {'pw': hashing.bcrypt(req.new_pw)}
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    emp_query.update(stored_data)
+    db.commit()
+
+    return {'detail':'Password Change Success!'}
+
 @router.get('/admin/employee_data/table_data')
 def get_employee_table(db: Session = Depends(get_db)):
     emps = db.query(Employee).all()
