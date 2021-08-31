@@ -856,7 +856,6 @@ def get_project_table(nik: str, year: int, db: Session = Depends(get_db)):
 @router.patch('/projects/edit_project_table/{id}')
 def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
     divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
-    statuses= ["Not Started", "Planning", "Fieldwork", "Reporting", "Completed"]
 
     prj = db.query(Project).filter(
         Project.id == id
@@ -869,7 +868,7 @@ def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Sess
     stored_model = schemas.ProjectIn(**stored_data)
     
     div_id      = divs.index(req.division)+1
-    status_id   = statuses.index(req.status)+1
+    status_id   = get_project_status_id(req.status)
 
     dataIn = schemas.ProjectIn(
         name            = req.auditPlan,
@@ -897,10 +896,11 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
     query = db.query(Project).filter(Project.year == year).all()
     
     status = [
-        "Total Projects", 
-        "Completed", 
-        "Reporting", 
-        "Fieldwork", 
+        "Total Projects",
+        "Completed",
+        "Sign-off",
+        "Reporting",
+        "Fieldwork",
         "Planning",
         "Timely Report",
         "DA",
@@ -929,9 +929,10 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
         res[2][div_name] += 1 and q.status.name == status[2]
         res[3][div_name] += 1 and q.status.name == status[3]
         res[4][div_name] += 1 and q.status.name == status[4]
-        res[5][div_name] += 1 and q.timely_report
-        res[6][div_name] += 1 and q.used_DA
-        res[7][div_name] += 1 and len(q.completion_PA) > 0        
+        res[5][div_name] += 1 and q.status.name == status[5]
+        res[6][div_name] += 1 and q.timely_report
+        res[7][div_name] += 1 and q.used_DA
+        res[8][div_name] += 1 and len(q.completion_PA) > 0        
         
 
     return res
@@ -2837,10 +2838,9 @@ def get_project_table(year: int, db: Session = Depends(get_db)):
 @router.post('/admin/audit_project_data/table_data')
 def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
     divs    = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
-    statuses= ["Not Started", "Planning", "Fieldwork", "Reporting", "Completed"]
 
     div_id = divs.index(req.division)+1
-    status_id = statuses.index(req.status)+1
+    status_id = get_project_status_id(req.status)
 
     # Check NIK
     emp_q = db.query(Employee).filter(
@@ -2917,7 +2917,6 @@ def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = D
 @router.patch('/admin/audit_project_data/table_data/{id}')
 def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
     divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
-    statuses= ["Not Started", "Planning", "Fieldwork", "Reporting", "Completed"]
 
     prj = db.query(Project).filter(
         Project.id == id
@@ -2930,8 +2929,7 @@ def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Sess
     stored_model = schemas.ProjectIn(**stored_data)
     
     div_id      = divs.index(req.division)+1
-    status_id   = statuses.index(req.status)+1
-
+    status_id   = get_project_status_id(req.status)
     # Check NIK
     emp_q = db.query(Employee).filter(
         Employee.staff_id == req.tl_nik
@@ -3469,3 +3467,13 @@ def create_or_update_yBudget(data, db: Session):
         db.add(newYearlyBudget)
         db.commit()
         db.refresh(newYearlyBudget)
+
+def get_project_status_id(inputText):
+    statuses= ["Not Started", "Planning", "Fieldwork", "Reporting", "Sign-off", "Completed"]
+
+    try:
+        stat_id = statuses.index(inputText)+1
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Project Status ({inputText}) is invalid!')
+
+    return stat_id
