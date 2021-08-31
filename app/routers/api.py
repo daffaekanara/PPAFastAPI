@@ -1670,11 +1670,11 @@ def get_rate_by_division_by_yearmonth(div_name: str, year: int, db: Session = De
     ).first()
 
     attr_sum = query.resigned_count + query.transfer_count if query else 0
-    attr_rate = attr_sum / query.start_headcount if query else 0
+    attr_rate = (attr_sum / query.start_headcount) * 100 if query else 0
 
     return [
-        {"title":"Attrition Rate","rate":attr_rate},
-        {"title":"","rate":1-attr_rate}
+        {"title":"Attrition Rate","rate":round(attr_rate, 2)},
+        {"title":"","rate":round(100-attr_rate,2)}
     ]
 
 ### Admin ###
