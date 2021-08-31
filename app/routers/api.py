@@ -973,7 +973,7 @@ def create_contrib_table_entry(div: str, req: schemas.SocialContribHiCouplingUse
     div_id = divs.index(div)+1
 
     new_con = SocialContrib(
-        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        date            = utils.tablestr_to_datetime(req.date),
         topic_name      = req.title,
         div_id          = div_id,
         social_type_id  = types.index(req.category) + 1
@@ -1002,7 +1002,7 @@ def patch_contrib_table_entry(id: int,req: schemas.SocialContribHiCouplingUserPa
     social_type_id  =types.index(req.category)+1
 
     dataIn = schemas.SocialContribIn(
-        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        date            = utils.tablestr_to_datetime(req.date),
         topic_name      = req.title,
         social_type_id  = social_type_id
     )
@@ -3016,7 +3016,7 @@ def create_contrib_table_entry(req: schemas.SocialContribHiCouplingIn, db: Sessi
     div_id = divs.index(req.division)+1
 
     new_con = SocialContrib(
-        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        date            = utils.tablestr_to_datetime(req.date),
         topic_name      = req.title,
         div_id          = divs.index(req.division) + 1,
         social_type_id  = types.index(req.category) + 1
@@ -3047,7 +3047,7 @@ def patch_contrib_table_entry(id: int,req: schemas.SocialContribHiCouplingIn, db
     social_type_id  =types.index(req.category)+1
 
     dataIn = schemas.SocialContribIn(
-        date            = datetime.datetime.strptime(req.date, "%m/%d/%Y"),
+        date            = utils.tablestr_to_datetime(req.date),
         topic_name      = req.title,
         div_id          = div_id,
         social_type_id  = social_type_id
