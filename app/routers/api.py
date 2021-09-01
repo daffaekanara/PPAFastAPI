@@ -2561,7 +2561,7 @@ def get_employee_table(db: Session = Depends(get_db)):
             "staffName"                   : e.name,
             "email"                       : e.email,
             "role"                        : e.role.name,
-            "divison"                     : e.part_of_div.short_name,
+            "divison"                     : e.part_of_div.id,
             "stream"                      : e.div_stream,
             "corporateTitle"              : e.corporate_title,
             "corporateGrade"              : e.corporate_grade,
@@ -2599,7 +2599,19 @@ def get_employee_table(db: Session = Depends(get_db)):
 
 @router.post('/admin/employee_data/table_data')
 def create_employee_table_entry(req: schemas.EmployeeInHiCoupling, db: Session = Depends(get_db)):
-    div_id = utils.div_str_to_divID(req.divison)
+    # Check Division ID
+    div_q = db.query(Division).filter(
+        Division.id == req.divison
+    )
+
+    try:
+        div = div_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Division of ID ({req.divison}) was found!')
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Division of ID ({req.divison}) was found!')
+
+
     role_id = utils.role_str_to_id(req.role)
 
     new_emp = Employee(
@@ -2624,7 +2636,7 @@ def create_employee_table_entry(req: schemas.EmployeeInHiCoupling, db: Session =
         ea_background           = req.EABackground,
         active                  = req.active,
 
-        div_id = div_id,
+        div_id = div.id,
         role_id= role_id
     )
 
@@ -2645,6 +2657,18 @@ def patch_employee_table_entry(id: int, req: schemas.EmployeeInHiCoupling, db: S
     
     stored_data = jsonable_encoder(emp.first())
     stored_model = schemas.EmployeeIn(**stored_data)
+
+    # Check Division ID
+    div_q = db.query(Division).filter(
+        Division.id == req.divison
+    )
+
+    try:
+        div = div_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Division of ID ({req.divison}) was found!')
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Division of ID ({req.divison}) was found!')
 
     dataIn = schemas.Employee(
         name    = req.staffName,
@@ -2668,7 +2692,7 @@ def patch_employee_table_entry(id: int, req: schemas.EmployeeInHiCoupling, db: S
         ea_background           = req.EABackground,
         active                  = req.active,
 
-        div_id = utils.div_str_to_divID(req.divison),
+        div_id = div.id,
         role_id = utils.role_str_to_id(req.role)
     )
 
