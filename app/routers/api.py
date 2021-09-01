@@ -3387,6 +3387,35 @@ def delete_attr_entry(id:int, db: Session = Depends(get_db)):
     return {'details': 'Deleted'}
 
 ### Utils ###
+@router.get('/utils/divs')
+def get_divs(db: Session = Depends(get_db)):
+    divs = db.query(Division).filter(
+        Division.short_name != "IAH"
+    )
+
+    res = []
+    for d in divs:
+        res.append({
+            'id'            : str(d.id),
+            'division'      : d.short_name
+        })
+
+    return res
+
+@router.get('/utils/divs_with_IAH')
+def get_divs_with_IAH(db: Session = Depends(get_db)):
+    divs = db.query(Division).all()
+
+    res = []
+    for d in divs:
+        res.append({
+            'id'            : str(d.id),
+            'division'      : d.short_name
+        })
+
+    return res
+
+
 @router.get('/utils/title_project/{year}')
 def get_project_titles(year:int, db: Session = Depends(get_db)):
     prjs = db.query(Project).filter(
