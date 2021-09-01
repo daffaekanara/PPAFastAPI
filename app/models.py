@@ -261,9 +261,6 @@ class QAIP(Base):
     prj_id              = Column(Integer, ForeignKey('projects.id'))
     prj                 = relationship("Project", back_populates="qaips")
 
-    TL                  = Column(String)
-    DH                  = Column(String)
-
     qa_type_id          = Column(Integer, ForeignKey('qatypes.id'))
     qa_type             = relationship("QAType", back_populates="qaips")
 

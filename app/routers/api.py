@@ -494,7 +494,6 @@ def get_total_audit_exp(db: Session = Depends(get_db)):
 
     return res
 
-
 ### Profile ###
 
 @router.get('/profile/about/table_data/{nik}')
@@ -3414,7 +3413,6 @@ def get_divs_with_IAH(db: Session = Depends(get_db)):
         })
 
     return res
-
 
 @router.get('/utils/title_project/{year}')
 def get_project_titles(year:int, db: Session = Depends(get_db)):

@@ -152,8 +152,6 @@ def get_single_qaip(id: int, db: Session = Depends(get_db)):
 def create_qaip(req: schemas.QAIP, db: Session = Depends(get_db)):
     newQA = QAIP(
         prj_id                      = req.prj_id,
-        TL                          = req.TL,
-        DH                          = req.DH,
         qa_type_id                  = req.qa_type_id,
         qa_grading_result_id        = req.qa_grading_result_id,
 

@@ -518,9 +518,6 @@ class BudgetTableInHiCoupling(BaseModel):
 class QAIP(BaseModel):
     prj_id                      :int
 
-    TL                          :str
-    DH                          :str
-
     qa_type_id                  :int
     qa_grading_result_id        :int
 
@@ -553,9 +550,6 @@ class QAIP(BaseModel):
 
 class QAIPIn(BaseModel):
     prj_id                      :Optional[int]
-
-    TL                          :Optional[str]
-    DH                          :Optional[str]
 
     qa_type_id                  :Optional[int]
     qa_grading_result_id        :Optional[int]
