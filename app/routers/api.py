@@ -4,7 +4,7 @@ from fastapi.datastructures import UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.param_functions import File
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import MultipleResultsFound, NoResultFound 
+from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 import datetime
 from dateutil.relativedelta import relativedelta
 from fileio import fileio_module as fio
@@ -204,7 +204,6 @@ def post_training_proof_file(nik: str, training_id: int, attachment_proof: Uploa
     db.commit()
 
     return {"filename": filepath}
-
 
 @router.post('/admin/budget_data/mrpt_file')
 def post_mrpt_file(mrpt: UploadFile = File(...), db: Session = Depends(get_db)):

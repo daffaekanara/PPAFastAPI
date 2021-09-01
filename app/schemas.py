@@ -7,13 +7,28 @@ class TempLoginForm(BaseModel):
     password: str
 
 class Division(BaseModel):
-    name:str
+    short_name  :str
+    long_name   :str
+    dh_id       :int
+
+class DivisionCreate(BaseModel):
+    short_name  :str
+    long_name   :str
+    dh_id       :Optional[int]
 
 class DivisionIn(BaseModel):
-    name:Optional[str]
+    short_name  :Optional[str]
+    long_name   :Optional[str]
+    dh_id       :Optional[int]
+
+class DivisionInHiCoupling(BaseModel):
+    short_name  : str
+    long_name   : str
+    dh_id       : str
+    dh_name     : str
 
 class ShowDivision(BaseModel):
-    name:str
+    short_name:str
 
     class Config():
         orm_mode = True

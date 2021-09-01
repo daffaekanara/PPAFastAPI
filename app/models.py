@@ -5,7 +5,9 @@ from database import Base
 class Division(Base):
     __tablename__ = 'divisions'
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String)
+    short_name  = Column(String)
+    long_name   = Column(String)
+    dh_id       = Column(Integer)
 
     employees_of_div = relationship("Employee", back_populates="part_of_div")
 

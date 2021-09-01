@@ -11,25 +11,6 @@ router = APIRouter(
     prefix="/division"
 )
 
-@router.get('/get_emps')
-def get_employees_by_div(db: Session = Depends(get_db)):
-    divs = db.query(Division).all()
-
-    ds    = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
-
-    res = []
-    for d in ds:
-        res.append({
-            'division': d,
-            'employees': []
-        })
-
-    for d in divs:
-        for e in d.employees_of_div:
-            res[d.id - 1]['employees'].append(e.name)
-
-    return res
-
 @router.get('/')
 def get_all(db: Session = Depends(get_db)):
     divs = db.query(Division).all()
@@ -45,9 +26,11 @@ def get_single(id: int, db: Session = Depends(get_db)):
     return div
 
 @router.post('/', status_code=status.HTTP_201_CREATED)
-def create(req: schemas.Division, db: Session = Depends(get_db)):
+def create(req: schemas.DivisionCreate, db: Session = Depends(get_db)):
     new_div = Division(
-        name=req.name
+        short_name  = req.short_name,
+        long_name   = req.long_name,
+        dh_id       = req.dh_id if req.dh_id else None
     )
 
     db.add(new_div)
@@ -77,7 +60,9 @@ def update(id: int, req: schemas.DivisionIn , db: Session = Depends(get_db)):
 
 @router.delete('/{id}', status_code=status.HTTP_202_ACCEPTED)
 def delete_division(id: int, db: Session = Depends(get_db)): #, currUser = Depends(oauth2.get_current_user)
-    query_res = db.query(Division).filter(Division.id == id)
+    query_res = db.query(Division).filter(
+        Division.id == id
+    )
 
     if not query_res.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
@@ -85,4 +70,4 @@ def delete_division(id: int, db: Session = Depends(get_db)): #, currUser = Depen
     query_res.delete()
     db.commit()
 
-    return
+    return {"Details": "Deleted!"}
