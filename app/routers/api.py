@@ -560,7 +560,7 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
         "staffName"                   : e.name,
         "email"                       : e.email,
         "role"                        : e.role.name,
-        "divison"                     : e.part_of_div.name,
+        "divison"                     : e.part_of_div.short_name,
         "stream"                      : e.div_stream,
         "corporateTitle"              : e.corporate_title,
         "corporateGrade"              : e.corporate_grade,
@@ -840,7 +840,7 @@ def get_project_table(nik: str, year: int, db: Session = Depends(get_db)):
         res.append({
             "id"        : str(p.id),
             "auditPlan" : p.name,
-            "division"  : p.div.name,
+            "division"  : p.div.short_name,
             "status"    : p.status.name,
             "useOfDA"   : p.used_DA,
             "year"      : p.year,
@@ -919,7 +919,7 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
 
     for q in query:
         # Cek Divisi
-        div_name = q.div.name
+        div_name = q.div.short_name
 
         # Process Each Prj Status
         # res[utils.find_index(res, 'project_status', status[0])]
@@ -1044,7 +1044,7 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
         res.append({"contribute_sum":0, "division":div})
 
     for q in query:
-        contrib_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.div.name), None)
+        contrib_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.div.short_name), None)
         res[contrib_by_div]["contribute_sum"] += 1
 
     return res
@@ -1065,11 +1065,11 @@ def get_total_by_division_by_year_type_categorized(year: int, db: Session = Depe
 
     for q in query:
         if q.social_type_id == 1:
-            res[q.div.name]["news"] += 1
+            res[q.div.short_name]["news"] += 1
         if q.social_type_id == 2:
-            res[q.div.name]["myUob"] += 1
+            res[q.div.short_name]["myUob"] += 1
         if q.social_type_id == 3:
-            res[q.div.name]["buletin"] += 1
+            res[q.div.short_name]["buletin"] += 1
 
     return res
 
@@ -1125,7 +1125,7 @@ def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
     # Get Divisions Yearly Training Budget
     for y in yearlyBudgets:
         if 0 < y.div_id < 6:
-            i = utils.find_index(values, "div", y.div.name)
+            i = utils.find_index(values, "div", y.div.short_name)
             values[i]["budget"] = y.budget
     
     # Get Each Training's Charged and Realized
@@ -1136,7 +1136,7 @@ def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
             values[5]["charged"]    += t.charged_by_fin
         else:
             if 1 <= t.employee.div_id <= 5: # Not Including IAH
-                i = utils.find_index(values, "div", t.employee.part_of_div.name)
+                i = utils.find_index(values, "div", t.employee.part_of_div.short_name)
                 values[i]["realized"]   += t.realization
                 values[i]["charged"]    += t.charged_by_fin
 
@@ -1188,12 +1188,12 @@ def get_training_progress_percentage(year: int, db: Session = Depends(get_db)):
     
     # Get Targets
     for t in targets:
-        i = utils.find_index(values, "div", t.trainee.part_of_div.name)
+        i = utils.find_index(values, "div", t.trainee.part_of_div.short_name)
         values[i]["target_hours"] += t.target_hours
 
     # Get Currs
     for t in trainings:
-        i = utils.find_index(values, "div", t.employee.part_of_div.name)
+        i = utils.find_index(values, "div", t.employee.part_of_div.short_name)
         values[i]["curr_hours"] += t.duration_hours
     
     # Translate to Percentage
@@ -1270,7 +1270,7 @@ def get_training_table(nik: str, year: int, db: Session = Depends(get_db)):
     res = []
 
     for t in training:
-        divison = t.employee.part_of_div.name if t.employee else ""
+        divison = t.employee.part_of_div.short_name if t.employee else ""
         emp_name= t.employee.name if t.employee else ""
         emp_nik = t.employee.staff_id if t.employee else ""
 
@@ -1332,7 +1332,7 @@ def get_csf_bar_chart_data(year: int, db: Session = Depends(get_db)):
 
         # Find Unique Project IDs of a div
         for c in csfs:
-            if c.prj.div.name == d:
+            if c.prj.div.short_name == d:
                 if c.prj_id not in prj_ids:
                     prj_ids.append(c.prj_id)
 
@@ -1364,7 +1364,7 @@ def get_csf_bar_chart_data(year: int, db: Session = Depends(get_db)):
 
         # Find Unique Project IDs of a div
         for c in csfs:
-            if c.by_invdiv_div.name == d:
+            if c.by_invdiv_div.short_name == d:
                 if c.prj_id not in prj_ids:
                     prj_ids.append(c.prj_id)
 
@@ -1374,7 +1374,7 @@ def get_csf_bar_chart_data(year: int, db: Session = Depends(get_db)):
             
             # Get project's feedback scores
             for c in csfs:
-                if c.prj_id == prj_id and c.by_invdiv_div.name == d:
+                if c.prj_id == prj_id and c.by_invdiv_div.short_name == d:
                     score = utils.calc_single_csf_score(c)
                     list_of_csf_scores.append(score)
             
@@ -1409,7 +1409,7 @@ def get_csf_donut_data(year: int, db: Session = Depends(get_db)):
 
         # Find Unique Project IDs of a div
         for c in csfs:
-            if c.by_invdiv_div.name == d:
+            if c.by_invdiv_div.short_name == d:
                 if c.prj_id not in prj_ids:
                     prj_ids.append(c.prj_id)
 
@@ -1419,7 +1419,7 @@ def get_csf_donut_data(year: int, db: Session = Depends(get_db)):
             
             # Get project's feedback scores
             for c in csfs:
-                if c.prj_id == prj_id and c.by_invdiv_div.name == d:
+                if c.prj_id == prj_id and c.by_invdiv_div.short_name == d:
                     score = utils.calc_single_csf_score(c)
                     list_of_csf_scores.append(score)
             
@@ -1480,7 +1480,7 @@ def get_busu_input_table(nik: str, year: int, db: Session = Depends(get_db)):
     for e in engs:
         res.append({
             "id"        : str(e.id),
-            "division"  : e.creator.part_of_div.name,
+            "division"  : e.creator.part_of_div.short_name,
             "WorRM"     : e.eng_type.name,
             "activity"  : e.activity_name,
             "date"      : e.date.strftime("%m/%d/%Y")
@@ -1595,7 +1595,7 @@ def get_view_busu_table(nik: str, year: int, db: Session = Depends(get_db)):
     for e in engs:
         res.append({
             "id"        : str(e.id),
-            "division"  : e.creator.part_of_div.name,
+            "division"  : e.creator.part_of_div.short_name,
             "WorRM"     : e.eng_type.name,
             "activity"  : e.activity_name,
             "date"      : e.date.strftime("%m/%d/%Y")
@@ -1621,7 +1621,7 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
         res.append({"quarterly_meeting":0, "workshop":0, "division":div})
 
     for q in query:
-        eng_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.creator.part_of_div.name), None)
+        eng_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.creator.part_of_div.short_name), None)
 
         if q.eng_type_id == 1:
             res[eng_by_div]["quarterly_meeting"] += 1
@@ -1651,7 +1651,7 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
         })
 
     for q in query:
-        q_div_index = utils.find_index(res, "division", q.div.name)
+        q_div_index = utils.find_index(res, "division", q.div.short_name)
 
         res[q_div_index]["headcounts"]  = q.start_headcount
         res[q_div_index]["join"]        = q.joined_count
@@ -2238,7 +2238,7 @@ def get_csf_table(year: int, db: Session = Depends(get_db)):
 
         res.append({
             'id'                : str(c.id),
-            'division_project'  : c.prj.div.name,
+            'division_project'  : c.prj.div.short_name,
             'auditProject'      : str(c.prj_id),
             'clientName'        : c.client_name,
             'unitJabatan'       : c.client_unit,
@@ -2263,7 +2263,7 @@ def get_csf_table(year: int, db: Session = Depends(get_db)):
             'paw3'              : c.paw_3,
             'pawOverall'        : avg_paw,
             'overall'           : avg,
-            'division_by_inv'   : c.by_invdiv_div.name
+            'division_by_inv'   : c.by_invdiv_div.short_name
         })
 
     return res
@@ -2562,7 +2562,7 @@ def get_employee_table(db: Session = Depends(get_db)):
             "staffName"                   : e.name,
             "email"                       : e.email,
             "role"                        : e.role.name,
-            "divison"                     : e.part_of_div.name,
+            "divison"                     : e.part_of_div.short_name,
             "stream"                      : e.div_stream,
             "corporateTitle"              : e.corporate_title,
             "corporateGrade"              : e.corporate_grade,
@@ -2780,7 +2780,7 @@ def get_training_table(year: int, db: Session = Depends(get_db)):
     res = []
 
     for t in training:
-        divison = t.employee.part_of_div.name if t.employee else ""
+        divison = t.employee.part_of_div.short_name if t.employee else ""
         emp_name= t.employee.name if t.employee else ""
         emp_nik = t.employee.staff_id if t.employee else ""
 
@@ -2902,7 +2902,7 @@ def get_project_table(year: int, db: Session = Depends(get_db)):
         res.append({
             "id"        : str(p.id),
             "auditPlan" : p.name,
-            "division"  : p.div.name,
+            "division"  : p.div.short_name,
             "tl_name"   : p.tl.name,
             "tl_nik"    : p.tl.staff_id,
             "status"    : p.status.name,
@@ -3081,7 +3081,7 @@ def get_contrib_table(year: int, db: Session = Depends(get_db)):
     for c in contribs:
         res.append({
             "id"        : str(c.id),
-            "division"  : c.div.name,
+            "division"  : c.div.short_name,
             "category"  : c.social_type.name,
             "title"     : c.topic_name,
             "date"      : c.date.strftime("%m/%d/%Y")
@@ -3174,7 +3174,7 @@ def get_busu_table(year: int, db: Session = Depends(get_db)):
         res.append({
             "id"        : str(e.id),
             "nik"       : e.creator.staff_id,
-            "division"  : e.creator.part_of_div.name,
+            "division"  : e.creator.part_of_div.short_name,
             "WorRM"     : e.eng_type.name,
             "activity"  : e.activity_name,
             "date"      : e.date.strftime("%m/%d/%Y")
@@ -3299,7 +3299,7 @@ def get_attr_table(year: int, db: Session = Depends(get_db)):
         })
 
     for a in attrs:
-        index = utils.find_index(res, "division", a.div.name)
+        index = utils.find_index(res, "division", a.div.short_name)
 
         attr_rate = (a.resigned_count + a.transfer_count) / a.start_headcount
         attr_rate_str = str(round(attr_rate*100, 2)) + '%'
