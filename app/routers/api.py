@@ -1664,7 +1664,7 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
 def get_rate_by_division_by_yearmonth(div_name: str, year: int, db: Session = Depends(get_db)):
 
     query = db.query(YearlyAttrition).filter(
-        YearlyAttrition.div.has(name=div_name),
+        YearlyAttrition.div.has(short_name=div_name),
         YearlyAttrition.year == year
     ).first()
 
