@@ -22,11 +22,11 @@ class DivisionIn(BaseModel):
     dh_id       :Optional[int]
 
 class DivisionInHiCoupling(BaseModel):
-    id          : str
-    short_name  : str
-    long_name   : str
-    dh_id       : str
-    dh_name     : str
+    id          : Optional[str]
+    short_name  : Optional[str]
+    long_name   : Optional[str]
+    dh_id       : Optional[str]
+    dh_name     : Optional[str]
 
 class ShowDivision(BaseModel):
     short_name:str
