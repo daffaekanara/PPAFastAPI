@@ -2394,6 +2394,88 @@ def delete_csf_table_entry(id: int, db: Session = Depends(get_db)):
 
     return {'details': 'Deleted'}
 
+# Division
+@router.get('/admin/division_table_data')
+def get_division_table(db: Session = Depends(get_db)):
+    divs = db.query(Division).all()
+
+    res = []
+
+    for d in divs:
+        dh = get_emp(d.dh_id, db)
+
+        res.append({
+            "id"            : d.id,
+            "short_name"    : d.short_name,
+            "long_name"     : d.long_name,
+            "dh_id"         : dh.staff_id if dh else "",
+            "dh_name"       : dh.name if dh else ""
+        })
+
+    return res
+
+@router.post('/admin/division_table_data')
+def create_division_table_entry(req: schemas.DivisionInHiCoupling, db: Session = Depends(get_db)):
+    # Check NIK
+    dh = get_emp_by_nik(req.dh_id, db)
+    
+    new_div = Division(
+        short_name  = req.short_name,
+        long_name   = req.long_name,
+        dh_id       = dh.id if dh else None
+    )
+
+    db.add(new_div)
+    db.commit()
+    db.refresh(new_div)
+
+    return new_div
+
+@router.patch('/admin/division_table_data/{id}')
+def patch_division_table_entry(id: int, req: schemas.DivisionInHiCoupling, db: Session = Depends(get_db)):
+    div = db.query(Division).filter(
+        Division.id == id
+    )
+
+    if not div.first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
+    
+    stored_data = jsonable_encoder(div.first())
+    stored_model = schemas.DivisionIn(**stored_data)
+
+    dh = get_emp_by_nik(req.dh_id, db)
+
+    dataIn = schemas.DivisionIn(
+        short_name  = req.short_name,
+        long_name   = req.long_name,
+        dh_id       = dh.id if dh else None
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    div.update(stored_data)
+    db.commit()
+
+    return updated
+
+@router.delete('/admin/division_table_data/{id}')
+def delete_division_table_entry(id: int, db: Session = Depends(get_db)):
+    d = db.query(Division).filter(
+        Division.id == id
+    )
+
+    if not d.first():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
+    
+    d.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
+
 # Employee
 @router.post('/admin/change_password')
 def change_password_admin(req: schemas.PasswordChangeAdminIn, db: Session = Depends(get_db)):
@@ -3476,3 +3558,37 @@ def get_project_status_id(inputText):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Project Status ({inputText}) is invalid!')
 
     return stat_id
+
+def get_emp(input_id, db: Session):
+    if not input_id:
+        return None
+
+    emp_q = db.query(Employee).filter(
+        Employee.id == input_id
+    )
+
+    try:
+        emp = emp_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Multiple Employee of ID ({input_id}) was found!")
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of ID ({input_id}) was not found!")
+
+    return emp
+
+def get_emp_by_nik(input_nik, db: Session):
+    if not input_nik or len(input_nik) == 0:
+        return None
+    
+    emp_q = db.query(Employee).filter(
+        Employee.staff_id == input_nik
+    )
+
+    try:
+        emp = emp_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Multiple Employee of NIK ({input_nik}) was found!")
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({input_nik}) was not found!")
+
+    return emp

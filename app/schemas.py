@@ -22,6 +22,7 @@ class DivisionIn(BaseModel):
     dh_id       :Optional[int]
 
 class DivisionInHiCoupling(BaseModel):
+    id          : str
     short_name  : str
     long_name   : str
     dh_id       : str
