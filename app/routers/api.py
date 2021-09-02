@@ -889,6 +889,65 @@ def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Sess
     return updated
 
 # Chart
+@router.get('/projects/total_by_division/v2/{year}')
+def get_total_by_division_by_year_v2(year: int, db: Session = Depends(get_db)):
+    projects = db.query(Project).filter(Project.year == year).all()
+    
+    status = [
+        "Total Projects",
+        "Completed",
+        "Sign-off",
+        "Reporting",
+        "Fieldwork",
+        "Planning",
+        "Timely Report",
+        "DA",
+        "PA"
+    ]
+
+    # Init result dict
+    res = {
+        'labels': status,
+        'datasets': []
+    }
+
+    divs_name = get_divs_name_exclude_IAH(db)
+    colors = [
+        "#F44336", "#FF5722", "#FFEB3B", "#4CAF50", "#2196F3", 
+        "#3F51B5", "#9C27B0", "#795548", "#9E9E9E", "#000000",
+        "#F44336", "#FF5722", "#FFEB3B", "#4CAF50", "#2196F3", 
+        "#3F51B5", "#9C27B0", "#795548", "#9E9E9E", "#000000"
+    ]
+
+    datasets = []
+    for idx, d in enumerate(divs_name):
+        datasets.append({
+            "label"             : d,
+            "data"              : [0,0,0,0,0,0,0,0,0],
+            "backgroundColor"   : colors[idx]
+        })
+
+    for p in projects:
+        # Cek Divisi
+        div_name = p.div.short_name
+        div_index = utils.find_index(datasets, "label", div_name)
+        # Process Each Prj Status
+        # res[utils.find_index(res, 'project_status', status[0])]
+
+        datasets[div_index]["data"][0] += 1
+        datasets[div_index]["data"][1] += 1 and p.status.name == status[1]
+        datasets[div_index]["data"][2] += 1 and p.status.name == status[2]
+        datasets[div_index]["data"][3] += 1 and p.status.name == status[3]
+        datasets[div_index]["data"][4] += 1 and p.status.name == status[4]
+        datasets[div_index]["data"][5] += 1 and p.status.name == status[5]
+        datasets[div_index]["data"][6] += 1 and p.timely_report
+        datasets[div_index]["data"][7] += 1 and p.used_DA
+        datasets[div_index]["data"][8] += 1 and len(p.completion_PA) > 0        
+    
+    res["datasets"] = datasets
+
+    return res
+
 @router.get('/projects/total_by_division/{year}')
 def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
     query = db.query(Project).filter(Project.year == year).all()
@@ -3475,6 +3534,17 @@ def get_project_by_NIK(year:int, nik: str, db: Session = Depends(get_db)):
             'project_title' : p.name
         })
 
+    return res
+
+def get_divs_name_exclude_IAH(db: Session = Depends(get_db)):
+    divs = db.query(Division).filter(
+        Division.short_name != "IAH"
+    )
+
+    res = []
+    for d in divs:
+        res.append(d.short_name)
+    
     return res
 
 def create_or_update_mActual(data, db: Session):
