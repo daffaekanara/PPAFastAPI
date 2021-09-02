@@ -909,11 +909,11 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
     res = []
     for s in status:
         res.append({
+            "project_status":s,
             "WBGM":0, 
             "RBA":0, 
             "BRDS":0,
-            "TAD":0,
-            "project_status":s
+            "TAD":0
         })
 
     for q in query:
