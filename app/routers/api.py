@@ -2243,7 +2243,7 @@ def get_csf_table(year: int, db: Session = Depends(get_db)):
             'auditProject'      : str(c.prj_id),
             'clientName'        : c.client_name,
             'unitJabatan'       : c.client_unit,
-            'TL'                : c.tl.name,
+            'TL'                : c.prj.tl.name,
             'CSFDate'           : utils.date_to_str(c.csf_date),
             'atp1'              : c.atp_1,
             'atp2'              : c.atp_2,
@@ -2276,9 +2276,6 @@ def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(g
     if not invdiv_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Div Name not found')
 
-    tl_emp = db.query(Employee).filter(Employee.name == req.TL)
-    tl_id = tl_emp.first().id if tl_emp.first() else 1
-
     prj_id = utils.str_to_int_or_None(req.auditProject)
     if not prj_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Audit Project must be an ID')
@@ -2308,7 +2305,6 @@ def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(g
         paw_3               = req.paw3,
 
         prj_id              = prj_id,
-        tl_id               = tl_id,
         by_invdiv_div_id    = invdiv_id
     )
 
@@ -2335,9 +2331,6 @@ def patch_csf_table_entry(id: int, req: schemas.CSFInHiCoupling, db: Session = D
     
     if not invdiv_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Div Name not found')
-
-    tl_emp = db.query(Employee).filter(Employee.name == req.TL)
-    tl_id = tl_emp.first().id if tl_emp.first() else 1
 
     prj_id = utils.str_to_int_or_None(req.auditProject)
     if not prj_id:
@@ -2368,7 +2361,6 @@ def patch_csf_table_entry(id: int, req: schemas.CSFInHiCoupling, db: Session = D
         paw_3               = req.paw3,
 
         prj_id              = prj_id,
-        tl_id               = tl_id,
         by_invdiv_div_id    = invdiv_id
     )
 

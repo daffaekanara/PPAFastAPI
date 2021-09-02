@@ -50,7 +50,6 @@ def create(req: schemas.CSF, db: Session = Depends(get_db)):
         paw_3               = req.paw_3,
 
         prj_id              = req.prj_id,
-        tl_id               = req.tl_id,
         by_invdiv_div_id    = req.by_invdiv_div_id
     )
 

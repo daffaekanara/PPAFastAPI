@@ -662,8 +662,6 @@ class CSF(BaseModel):
     paw_3               :float
 
     prj_id              :int
-    tl_id               :int
-
     by_invdiv_div_id    :int
 
 class CSFIn(BaseModel):
@@ -687,7 +685,6 @@ class CSFIn(BaseModel):
     paw_3               :Optional[float]
 
     prj_id              :Optional[int]
-    tl_id               :Optional[int]
     by_invdiv_div_id    :Optional[int]
 
 class CSFInHiCoupling(BaseModel):
@@ -696,7 +693,7 @@ class CSFInHiCoupling(BaseModel):
 	auditProject        : str
 	clientName          : str
 	unitJabatan         : str
-	TL                  : str
+	TL                  : Optional[str]
 	CSFDate             : str
 	atp1                : float
 	atp2                : float
@@ -704,19 +701,19 @@ class CSFInHiCoupling(BaseModel):
 	atp4                : float
 	atp5                : float
 	atp6                : float
-	atpOverall          : float
+	atpOverall          : Optional[float]
 	ac1                 : float
 	ac2                 : float
 	ac3                 : float
 	ac4                 : float
 	ac5                 : float
 	ac6                 : float
-	acOverall           : float
+	acOverall           : Optional[float]
 	paw1                : float
 	paw2                : float
 	paw3                : float
-	pawOverall          : float
-	overall             : float
+	pawOverall          : Optional[float]
+	overall             : Optional[float]
 	division_by_inv     : str
 
 class ServerState(BaseModel):

@@ -55,8 +55,6 @@ class Employee(Base):
 
     emp_certifications = relationship("Certification", back_populates="owner")
 
-    emp_csf_tl  = relationship("CSF", back_populates="tl")
-
     emp_prj_tl = relationship("Project", back_populates="tl")
 
     emp_busu_engs = relationship("BUSUEngagement", back_populates="creator")
@@ -333,9 +331,6 @@ class CSF(Base):
 
     prj_id  = Column(Integer, ForeignKey('projects.id'))
     prj     = relationship("Project", back_populates="csfs")
-
-    tl_id = Column(Integer, ForeignKey('employees.id'))
-    tl    = relationship("Employee", back_populates="emp_csf_tl")
 
     by_invdiv_div_id = Column(Integer, ForeignKey('divisions.id'))
     by_invdiv_div    = relationship("Division", back_populates="csfs_by_invdiv")
