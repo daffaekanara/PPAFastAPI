@@ -90,7 +90,7 @@ def create_contrib(req: schemas.SocialContrib, db: Session = Depends(get_db)):
     newContrib = SocialContrib(
         date            = req.date,
         topic_name      = req.topic_name,
-        div_id          = req.div_id,
+        creator_id      = req.creator_id,
         social_type_id  = req.social_type_id
     )
 

@@ -12,7 +12,6 @@ class Division(Base):
     employees_of_div = relationship("Employee", back_populates="part_of_div")
 
     div_trainBudgets    = relationship("TrainingBudget", back_populates="div")
-    div_socialcontribs  = relationship("SocialContrib", back_populates="div")
     div_yearlyAttr      = relationship("YearlyAttrition", back_populates="div")
     div_projects        = relationship("Project", back_populates="div")
     
@@ -49,15 +48,12 @@ class Employee(Base):
     role_id = Column(Integer, ForeignKey('roles.id'))
     role = relationship("Role", back_populates="users")
 
-    emp_trainings = relationship("Training", back_populates="employee")
-
+    emp_trainings       = relationship("Training", back_populates="employee")
     emp_trainingtargets = relationship("TrainingTarget", back_populates="trainee")
-
-    emp_certifications = relationship("Certification", back_populates="owner")
-
-    emp_prj_tl = relationship("Project", back_populates="tl")
-
-    emp_busu_engs = relationship("BUSUEngagement", back_populates="creator")
+    emp_certifications  = relationship("Certification", back_populates="owner")
+    emp_prj_tl          = relationship("Project", back_populates="tl")
+    emp_busu_engs       = relationship("BUSUEngagement", back_populates="creator")
+    emp_social_contrib  = relationship("SocialContrib", back_populates="creator")
 
 class Certification(Base):
     __tablename__ = 'certifications'
@@ -131,8 +127,8 @@ class SocialContrib(Base):
     date        = Column(Date)
     topic_name  = Column(String)
 
-    div_id  = Column(Integer, ForeignKey('divisions.id'))
-    div     = relationship("Division", back_populates="div_socialcontribs")
+    creator_id  = Column(Integer, ForeignKey('employees.id'))
+    creator     = relationship("Employee", back_populates="emp_social_contrib")
 
     social_type_id  = Column(Integer, ForeignKey('socialtypes.id'))
     social_type     = relationship("SocialType", back_populates="contribs")

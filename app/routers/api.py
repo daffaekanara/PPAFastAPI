@@ -936,19 +936,18 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
     return res
 
 ### Social Contrib ###
-@router.get('/auditcontrib/audit_contribution_data/table_data/{year}/{div}')
-def get_contrib_table_by_div(year: int, div: str, db: Session = Depends(get_db)):
+@router.get('/auditcontrib/audit_contribution_data/table_data/{year}/{nik}')
+def get_contrib_table_by_div(year: int, nik: str, db: Session = Depends(get_db)):
     startDate   = datetime.date(year,1,1)
     endDate     = datetime.date(year,12,31)
 
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
-    div_id = divs.index(div)+1
-
+    # Check NIK
+    creator = get_emp_by_nik(nik, db)
 
     contribs = db.query(SocialContrib).filter(
         SocialContrib.date >= startDate,
         SocialContrib.date <= endDate,
-        SocialContrib.div_id == div_id
+        SocialContrib.creator_id == creator.id
     ).all()
 
     res = []
@@ -963,17 +962,17 @@ def get_contrib_table_by_div(year: int, div: str, db: Session = Depends(get_db))
 
     return res
 
-@router.post('/auditcontrib/audit_contribution_data/table_data/{div}')
-def create_contrib_table_entry(div: str, req: schemas.SocialContribHiCouplingUserPageIn, db: Session = Depends(get_db)):
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+@router.post('/auditcontrib/audit_contribution_data/table_data/{nik}')
+def create_contrib_table_entry(nik: str, req: schemas.SocialContribHiCouplingUserPageIn, db: Session = Depends(get_db)):
     types = ["Audit News", "MyUOB", "Audit Bulletin"]
 
-    div_id = divs.index(div)+1
+    # Check NIK
+    creator = get_emp_by_nik(nik, db)
 
     new_con = SocialContrib(
         date            = utils.tablestr_to_datetime(req.date),
         topic_name      = req.title,
-        div_id          = div_id,
+        creator_id      = creator.id,
         social_type_id  = types.index(req.category) + 1
     )
 
@@ -3098,7 +3097,9 @@ def get_contrib_table(year: int, db: Session = Depends(get_db)):
     for c in contribs:
         res.append({
             "id"        : str(c.id),
-            "division"  : c.div.short_name,
+            "creator_name"  : c.creator.name,
+            "creator_nik"   : c.creator.staff_id,
+            "division"  : c.creator.part_of_div.short_name,
             "category"  : c.social_type.name,
             "title"     : c.topic_name,
             "date"      : c.date.strftime("%m/%d/%Y")
@@ -3108,15 +3109,15 @@ def get_contrib_table(year: int, db: Session = Depends(get_db)):
 
 @router.post('/admin/audit_contribution_data/table_data')
 def create_contrib_table_entry(req: schemas.SocialContribHiCouplingIn, db: Session = Depends(get_db)):
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     types = ["Audit News", "MyUOB", "Audit Bulletin"]
 
-    div_id = divs.index(req.division)+1
+    # Check NIK
+    creator = get_emp_by_nik(req.creator_nik, db)
 
     new_con = SocialContrib(
         date            = utils.tablestr_to_datetime(req.date),
         topic_name      = req.title,
-        div_id          = divs.index(req.division) + 1,
+        creator_id      = creator.id,
         social_type_id  = types.index(req.category) + 1
     )
 
@@ -3128,7 +3129,6 @@ def create_contrib_table_entry(req: schemas.SocialContribHiCouplingIn, db: Sessi
 
 @router.patch('/admin/audit_contribution_data/table_data/{id}')
 def patch_contrib_table_entry(id: int,req: schemas.SocialContribHiCouplingIn, db: Session = Depends(get_db)):
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     types = ["Audit News", "MyUOB", "Audit Bulletin"]
 
     contrib = db.query(SocialContrib).filter(
@@ -3141,13 +3141,14 @@ def patch_contrib_table_entry(id: int,req: schemas.SocialContribHiCouplingIn, db
     stored_data = jsonable_encoder(contrib.first())
     stored_model = schemas.SocialContribIn(**stored_data)
     
-    div_id = divs.index(req.division)+1
+    # Check NIK
+    creator = get_emp_by_nik(req.creator_nik, db)
     social_type_id  =types.index(req.category)+1
 
     dataIn = schemas.SocialContribIn(
         date            = utils.tablestr_to_datetime(req.date),
         topic_name      = req.title,
-        div_id          = div_id,
+        creator_id      = creator.id,
         social_type_id  = social_type_id
     )
 

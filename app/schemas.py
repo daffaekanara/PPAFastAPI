@@ -283,36 +283,28 @@ class ShowSocialType(BaseModel):
 class SocialContrib(BaseModel):
     date        :datetime.date
     topic_name  :str
-    div_id      :int
+    creator_id  :int
     social_type_id:int
 
 class SocialContribIn(BaseModel):
     date        :Optional[datetime.date]
     topic_name  :Optional[str]
-    div_id      :Optional[int]
+    creator_id  :Optional[int]
     social_type_id:Optional[int]
-
-class ShowSocialContrib(BaseModel):
-    date        :str
-    topic_name  :str
-    div         :ShowDivision
-    social_type :ShowSocialType
-
-    class Config():
-        orm_mode = True
 
 class SocialContribHiCouplingIn(BaseModel):
     date        :Optional[str]
     title       :Optional[str]
     category    :Optional[str]
     division    :Optional[str]
+    creator_name:Optional[str]
+    creator_nik :Optional[str]
     id          :Optional[str]
 
 class SocialContribHiCouplingUserPageIn(BaseModel):
     date        :Optional[str]
     title       :Optional[str]
     category    :Optional[str]
-    division    :Optional[str]
     id          :Optional[str]
 
 # Attrition
