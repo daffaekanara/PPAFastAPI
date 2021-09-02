@@ -598,9 +598,6 @@ class QAIPFormInHiCoupling(BaseModel):
     projectTitle: str
     year		: int
 
-    TL			: str
-    DH			: str
-
     QAType		: str
     QAResults	: str
 

@@ -1746,12 +1746,15 @@ def get_qaip_table(year: int, db: Session = Depends(get_db)):
         stages  = utils.qa_to_stage_str(q)
         delivs  = utils.qa_to_delivs_str(q)
 
+        # Get DH Name
+        dh = get_emp(q.prj.div.dh_id, db)
+
         res.append({
             "id"            : str(q.id),
             "QAType"        : q.qa_type.name,
             "auditProject"  : q.prj.name,
-            "TL"            : q.TL,
-            "divisionHead"  : q.DH,
+            "TL"            : q.prj.tl.name,
+            "divisionHead"  : dh.name,
             "result"        : q.qa_grading_result.name,
             "category"      : ", ".join(cats),
             "stage"         : ", ".join(stages),
@@ -1791,8 +1794,7 @@ def patch_qaip_entry(req: schemas.QAIPFormInHiCoupling, db: Session = Depends(ge
     # Patch Entry
     dataIn = schemas.QAIP(
         prj_id                      = qaip_model.prj_id,
-        TL                          = req.TL,
-        DH                          = req.DH,
+
         qa_type_id                  = type_id,
         qa_grading_result_id        = gradRes_id,
 
