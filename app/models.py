@@ -141,6 +141,29 @@ class SocialType(Base):
     contribs    = relationship("SocialContrib", back_populates="social_type")
 
 # Attrition
+class AttrType(Base):
+    __tablename__ = 'attrtypes'
+    id      = Column(Integer, primary_key=True, index=True)
+    name    = Column(String)
+
+    attrs = relationship("Attrition", back_populates="type")
+
+class Attrition(Base):
+    __tablename__ = 'attritions'
+    id          = Column(Integer, primary_key=True, index=True)
+    
+    type_id     = Column(Integer, ForeignKey('attrtypes.id'))
+    type        = relationship("AttrType", back_populates="attrs")
+
+    staff_name  = Column(String)
+    staff_nik   = Column(String)
+
+    date        = Column(Date)
+
+    from_div_id = Column(Integer)
+    to_div_id   = Column(Integer)
+
+
 class YearlyAttrition(Base):
     __tablename__ = 'yearlyattritions'
     id              = Column(Integer, primary_key=True, index=True)
