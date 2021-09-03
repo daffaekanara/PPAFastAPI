@@ -259,6 +259,20 @@ class TrainingInHiCoupling(BaseModel):
     mandatoryFrom       : Optional[str]
     remark              : Optional[str]
 
+class TrainingInHiCouplingUserPage(BaseModel):
+    id                  : Optional[str]
+    divison             : Optional[str]
+    name                : Optional[str]
+    nik                 : Optional[str]
+    trainingTitle       : Optional[str]
+    date                : Optional[str]
+    numberOfHours       : Optional[int]
+    budget              : Optional[int]
+    costRealization     : Optional[int]
+    chargedByFinance    : Optional[int]
+    mandatoryFrom       : Optional[str]
+    remark              : Optional[str]
+
 class DebugParent(BaseModel):
     first_name:str
     last_name:str
@@ -308,6 +322,25 @@ class SocialContribHiCouplingUserPageIn(BaseModel):
     id          :Optional[str]
 
 # Attrition
+class AttrType(BaseModel):
+    name    : str
+
+class Attrition(BaseModel):
+    type_id     : int
+    staff_name  : str
+    staff_nik   : str
+    date        : datetime.date
+    from_div_id : int
+    to_div_id   : int
+
+class AttritionIn(BaseModel):
+    type_id     : Optional[int]
+    staff_name  : Optional[str]
+    staff_nik   : Optional[str]
+    date        : Optional[datetime.date]
+    from_div_id : Optional[int]
+    to_div_id   : Optional[int]
+
 class YearlyAttrition(BaseModel):
     year                :int
     start_headcount     :int
