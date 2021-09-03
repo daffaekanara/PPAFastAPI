@@ -1101,7 +1101,7 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
         res.append({"contribute_sum":0, "division":div})
 
     for q in query:
-        contrib_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.div.short_name), None)
+        contrib_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.creator.part_of_div.short_name), None)
         res[contrib_by_div]["contribute_sum"] += 1
 
     return res
