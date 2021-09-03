@@ -1348,6 +1348,36 @@ def get_training_table(nik: str, year: int, db: Session = Depends(get_db)):
 
     return res
 
+@router.patch('/training/table/{id}')
+def update_training_table_entry(id: int, req: schemas.TrainingInHiCouplingUserPage, db: Session = Depends(get_db)):
+    train_q = db.query(Training).filter(
+        Training.id == id
+    )
+
+    try:
+        train = train_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=f"Multiple Training of ID ({id}) was found!")
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail=f"Training of ID ({id}) was not found!")
+
+    stored_data = jsonable_encoder(train)
+    stored_model = schemas.TrainingIn(**stored_data)
+
+    dataIn = schemas.Training(
+        name            = req.trainingTitle,
+        date            = utils.tablestr_to_datetime(req.date),
+        duration_hours  = req.numberOfHours
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+    stored_data.update(updated)
+
+    train_q.update(stored_data)
+    db.commit()
+    return updated
+
 @router.delete('/training/table/{id}')
 def delete_training_table_entry(id: int, db: Session = Depends(get_db)):
     t = db.query(Training).filter(
