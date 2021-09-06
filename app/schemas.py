@@ -353,9 +353,6 @@ class YearlyAttrition(BaseModel):
     year                :int
     start_headcount     :int
     budget_headcount    :int
-    joined_count        :int
-    resigned_count      :int
-    transfer_count      :int
 
     div_id              :int
 
@@ -363,9 +360,6 @@ class YearlyAttritionIn(BaseModel):
     year                :Optional[int]
     start_headcount     :Optional[int]
     budget_headcount    :Optional[int]
-    joined_count        :Optional[int]
-    resigned_count      :Optional[int]
-    transfer_count      :Optional[int]
     
     div_id              :Optional[int]
 

@@ -196,9 +196,6 @@ def create_yearly_attr(req: schemas.YearlyAttrition, db: Session = Depends(get_d
         year                = req.year,
         start_headcount     = req.start_headcount,
         budget_headcount    = req.budget_headcount,
-        joined_count        = req.joined_count,
-        resigned_count      = req.resigned_count,
-        transfer_count      = req.transfer_count,
         div_id              = req.div_id
     )
 

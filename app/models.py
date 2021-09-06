@@ -175,9 +175,6 @@ class YearlyAttrition(Base):
     year            = Column(Integer)
     start_headcount = Column(Integer)
     budget_headcount= Column(Integer)
-    joined_count    = Column(Integer)
-    resigned_count  = Column(Integer)
-    transfer_count  = Column(Integer)
     div_id  = Column(Integer, ForeignKey('divisions.id'))
     div     = relationship("Division", back_populates="div_yearlyAttr")
 
