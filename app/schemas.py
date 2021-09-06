@@ -325,18 +325,26 @@ class SocialContribHiCouplingUserPageIn(BaseModel):
 class AttrType(BaseModel):
     name    : str
 
-class Attrition(BaseModel):
+class AttritionJoinResignTransfer(BaseModel):
     type_id     : int
     staff_name  : str
-    staff_nik   : str
+    date        : datetime.date
+    div_id   : int
+
+class AttritionJoinResignTransferIn(BaseModel):
+    type_id     : Optional[int]
+    staff_name  : Optional[str]
+    date        : Optional[datetime.date]
+    div_id   : Optional[int]
+
+class AttritionRotation(BaseModel):
+    staff_name  : str
     date        : datetime.date
     from_div_id : int
     to_div_id   : int
 
-class AttritionIn(BaseModel):
-    type_id     : Optional[int]
+class AttritionRotationIn(BaseModel):
     staff_name  : Optional[str]
-    staff_nik   : Optional[str]
     date        : Optional[datetime.date]
     from_div_id : Optional[int]
     to_div_id   : Optional[int]

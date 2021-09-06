@@ -2681,52 +2681,9 @@ def get_employee_table(db: Session = Depends(get_db)):
 
 @router.post('/admin/employee_data/table_data')
 def create_employee_table_entry(req: schemas.EmployeeInHiCoupling, db: Session = Depends(get_db)):
-    # Check Division ID
-    div_q = db.query(Division).filter(
-        Division.id == req.divison
-    )
-
-    try:
-        div = div_q.one()
-    except MultipleResultsFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Division of ID ({req.divison}) was found!')
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Division of ID ({req.divison}) was found!')
-
-
-    role_id = utils.role_str_to_id(req.role)
-
-    new_emp = Employee(
-        name    = req.staffName,
-        email   = req.email,
-        pw      = "pass",
-
-        staff_id                = req.staffNIK,
-        div_stream              = req.stream,
-        corporate_title         = req.corporateTitle,
-        corporate_grade         = req.corporateGrade,
-        date_of_birth           = utils.tablestr_to_datetime(req.dateOfBirth),
-        date_first_employment   = utils.tablestr_to_datetime(req.dateStartFirstEmployment),
-        date_first_uob          = utils.tablestr_to_datetime(req.dateJoinUOB),
-        date_first_ia           = utils.tablestr_to_datetime(req.dateJoinIAFunction),
-        gender                  = req.gender,
-        year_audit_non_uob      = req.auditNonUOBExp,
-        edu_level               = req.educationLevel,
-        edu_major               = req.educationMajor,
-        edu_category            = req.educationCategory,
-        ia_background           = req.IABackgground,
-        ea_background           = req.EABackground,
-        active                  = req.active,
-
-        div_id = div.id,
-        role_id= role_id
-    )
-
-    db.add(new_emp)
-    db.commit()
-    db.refresh(new_emp)
-
-    return new_emp
+    # Create Employee Data
+    emp = _create_employee_from_table(req, db)
+    return emp
 
 @router.patch('/admin/employee_data/table_data/{id}')
 def patch_employee_table_entry(id: int, req: schemas.EmployeeInHiCoupling, db: Session = Depends(get_db)):
@@ -3704,6 +3661,54 @@ def get_project_status_id(inputText):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Project Status ({inputText}) is invalid!')
 
     return stat_id
+
+def _create_employee_from_table(req: schemas.EmployeeInHiCoupling, db : Session):
+    # Check Division ID
+    div_q = db.query(Division).filter(
+        Division.id == req.divison
+    )
+
+    try:
+        div = div_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Division of ID ({req.divison}) was found!')
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Division of ID ({req.divison}) was found!')
+
+
+    role_id = utils.role_str_to_id(req.role)
+
+    new_emp = Employee(
+        name    = req.staffName,
+        email   = req.email,
+        pw      = "pass",
+
+        staff_id                = req.staffNIK,
+        div_stream              = req.stream,
+        corporate_title         = req.corporateTitle,
+        corporate_grade         = req.corporateGrade,
+        date_of_birth           = utils.tablestr_to_datetime(req.dateOfBirth),
+        date_first_employment   = utils.tablestr_to_datetime(req.dateStartFirstEmployment),
+        date_first_uob          = utils.tablestr_to_datetime(req.dateJoinUOB),
+        date_first_ia           = utils.tablestr_to_datetime(req.dateJoinIAFunction),
+        gender                  = req.gender,
+        year_audit_non_uob      = req.auditNonUOBExp,
+        edu_level               = req.educationLevel,
+        edu_major               = req.educationMajor,
+        edu_category            = req.educationCategory,
+        ia_background           = req.IABackgground,
+        ea_background           = req.EABackground,
+        active                  = req.active,
+
+        div_id = div.id,
+        role_id= role_id
+    )
+
+    db.add(new_emp)
+    db.commit()
+    db.refresh(new_emp)
+
+    return new_emp
 
 def get_emp(input_id, db: Session):
     if not input_id:

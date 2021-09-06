@@ -61,6 +61,120 @@ def delete_attr_type(id: int, db: Session = Depends(get_db)):
 
     return {'details': 'Deleted'}
 
+# Attrition JoinResignTransfer
+@router.get('/jrt')
+def get_all_jrt_attrition(db: Session = Depends(get_db)):
+    attr = db.query(AttritionJoinResignTransfer).all()
+    return attr
+
+@router.post('/jrt', status_code=status.HTTP_201_CREATED)
+def create_jrt_attrition(req: schemas.AttritionJoinResignTransfer, db: Session = Depends(get_db)):
+    newJtr = AttritionJoinResignTransfer(
+        type_id     = req.type_id,
+
+        staff_name  = req.staff_name,
+        date        = req.date,
+        div_id      = req.div_id
+    )
+
+    db.add(newJtr)
+    db.commit()
+    db.refresh(newJtr)
+
+    return newJtr
+
+@router.patch('/jrt/{id}',  status_code=status.HTTP_202_ACCEPTED)
+def update_jrt_attrition(id: int, req: schemas.AttritionJoinResignTransferIn, db: Session = Depends(get_db)):
+    query_res = db.query(AttritionJoinResignTransfer).filter(
+        AttritionJoinResignTransfer.id == id
+    )
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    stored_data = jsonable_encoder(query_res.first())
+    stored_model = schemas.AttritionJoinResignTransfer(**stored_data)
+
+    new_data = req.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    query_res.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/jrt/{id}', status_code=status.HTTP_202_ACCEPTED)
+def delete_jrt_attrition(id: int, db: Session = Depends(get_db)):
+    query_res = db.query(AttritionJoinResignTransfer).filter(
+        AttritionJoinResignTransfer.id == id
+    )
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    query_res.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
+# Attrition Rotation
+@router.get('/rotation')
+def get_all_rotation_attrition(db: Session = Depends(get_db)):
+    attr = db.query(AttritionRotation).all()
+    return attr
+
+@router.post('/rotation', status_code=status.HTTP_201_CREATED)
+def create_rotation_attrition(req: schemas.AttritionRotation, db: Session = Depends(get_db)):
+    newAttr = AttritionRotation(
+        staff_name  = req.staff_name,
+        date        = req.date,
+        from_div_id = req.from_div_id,
+        to_div_id   = req.to_div_id
+    )
+
+    db.add(newAttr)
+    db.commit()
+    db.refresh(newAttr)
+
+    return newAttr
+
+@router.patch('/rotation/{id}',  status_code=status.HTTP_202_ACCEPTED)
+def update_rotation_attrition(id: int, req: schemas.AttritionRotationIn, db: Session = Depends(get_db)):
+    query_res = db.query(AttritionRotation).filter(
+        AttritionRotation.id == id
+    )
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    stored_data = jsonable_encoder(query_res.first())
+    stored_model = schemas.AttritionRotation(**stored_data)
+
+    new_data = req.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    query_res.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/rotation/{id}', status_code=status.HTTP_202_ACCEPTED)
+def delete_rotation_attrition(id: int, db: Session = Depends(get_db)):
+    query_res = db.query(AttritionRotation).filter(
+        AttritionRotation.id == id
+    )
+
+    if not query_res.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
+
+    query_res.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
+
+
 # Yearly Attrition
 @router.get('/yearly')
 def get_all_yearly_attr(db: Session = Depends(get_db)):
@@ -116,61 +230,6 @@ def update_yearly_attr(id: int, req: schemas.YearlyAttritionIn, db: Session = De
 @router.delete('/yearly/{id}', status_code=status.HTTP_202_ACCEPTED)
 def delete_yearly_attr(id: int, db: Session = Depends(get_db)):
     query_res = db.query(YearlyAttrition).filter(YearlyAttrition.id == id)
-
-    if not query_res.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
-
-    query_res.delete()
-    db.commit()
-
-    return {'details': 'Deleted'}
-
-
-# Attrition
-@router.get('/')
-def get_all_attrition(db: Session = Depends(get_db)):
-    attr = db.query(Attrition).all()
-    return attr
-
-@router.post('/', status_code=status.HTTP_201_CREATED)
-def create_attrition(req: schemas.Attrition, db: Session = Depends(get_db)):
-    newAttr = Attrition(
-        type_id     = req.type_id,
-        staff_name  = req.staff_name,
-        staff_nik   = req.staff_nik,
-        date        = req.date,
-        from_div_id = req.from_div_id,
-        to_div_id   = req.to_div_id
-    )
-
-    db.add(newAttr)
-    db.commit()
-    db.refresh(newAttr)
-
-    return newAttr
-
-@router.patch('/{id}',  status_code=status.HTTP_202_ACCEPTED)
-def update_attrition(id: int, req: schemas.AttritionIn, db: Session = Depends(get_db)):
-    query_res = db.query(Attrition).filter(Attrition.id == id)
-
-    if not query_res.first():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
-
-    stored_data = jsonable_encoder(query_res.first())
-    stored_model = schemas.Attrition(**stored_data)
-
-    new_data = req.dict(exclude_unset=True)
-    updated = stored_model.copy(update=new_data)
-
-    stored_data.update(updated)
-
-    query_res.update(stored_data)
-    db.commit()
-    return updated
-
-@router.delete('/{id}', status_code=status.HTTP_202_ACCEPTED)
-def delete_attrition(id: int, db: Session = Depends(get_db)):
-    query_res = db.query(Attrition).filter(Attrition.id == id)
 
     if not query_res.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
