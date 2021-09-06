@@ -369,8 +369,10 @@ class YearlyAttritionInHiCoupling(BaseModel):
     totalBudgetHC   :Optional[int]
     totalHCNewYear  :Optional[int]
     join            :Optional[int]
-    resign          :Optional[int]
-    transfer        :Optional[int]
+    rotation_in     :Optional[int]
+    rotation_out    :Optional[int]
+    transfer_in     :Optional[int]
+    transfer_out    :Optional[int]
     attritionRate   :Optional[str]
     CurrentHC       :Optional[int]
 

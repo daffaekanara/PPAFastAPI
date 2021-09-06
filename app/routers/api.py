@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 import datetime
 from dateutil.relativedelta import relativedelta
+from sqlalchemy.sql.expression import or_
 from fileio import fileio_module as fio
 import schemas, datetime, utils, hashing
 from models import *
@@ -3338,93 +3339,85 @@ def delete_busu_table_entry(id:int, db: Session = Depends(get_db)):
 
     return {'details': 'Deleted'}
 
-# Attrition Table
-@router.get('/admin/attrition_data/table_data/{year}')
-def get_attr_table(year: int, db: Session = Depends(get_db)):
-    attrs = db.query(YearlyAttrition).filter(
-        YearlyAttrition.year == year
-    )
-
+# Attrition MainTable
+@router.get('/admin/attrition/summary_table/year/{year}')
+def get_summary_attr_table(year: int, db: Session = Depends(get_db)):
     divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     res = []
 
-    # Init result dict
+    # Result Dict
     for div in divs:
-        res.append({
-            "id"              : "",
-            "division"        : div,
-            "totalBudgetHC"   : 0,
-            "totalHCNewYear"  : 0,
-            "join"            : 0,
-            "resign"          : 0,
-            "transfer"        : 0,
-            "attritionRate"   : "",
-            "CurrentHC"       : 0,
-        })
+        # HCBudget and NewYear
+        yAttr = get_yAttr_by_div_shortname(year, div, db)
+        div_id = yAttr.div_id
 
-    for a in attrs:
-        index = utils.find_index(res, "division", a.div.short_name)
+        join = resign = t_in = t_out = r_in = r_out = curr_hc = 0
 
-        attr_rate = (a.resigned_count + a.transfer_count) / a.start_headcount
+        # Join, Resign, Transfer (jrt)
+        attr_jrts = get_jrtAttrs_by_div_id(year, div_id, db)
+        for a in attr_jrts:
+            jrt_type = a.type.name
+
+            join += 1   and jrt_type == "Join"
+            resign += 1 and jrt_type == "Resign"
+            t_in += 1   and jrt_type == "Transfer In"
+            t_out += 1  and jrt_type == "Transfer Out"
+
+        # Rotation (rot)
+        attr_rots = get_rotAttrs_by_div_id(year, div_id, db)
+        for b in attr_rots:
+            r_in    and b.to_div_id == div_id
+            r_out   and b.from_div_id == div_id
+
+        # CurrentHC
+        start_count = yAttr.start_headcount
+        plus_count  = join + t_in + r_in
+        minus_count = resign + t_out + r_out
+        curr_hc = start_count + plus_count - minus_count
+
+        # Attr Rate
+        attr_rate = minus_count / yAttr.start_headcount
         attr_rate_str = str(round(attr_rate*100, 2)) + '%'
 
-        curr_hc = a.start_headcount + a.joined_count - (a.resigned_count + a.transfer_count)
-
-        res[index]['id']             = str(a.id)
-        res[index]['totalBudgetHC']  = a.budget_headcount
-        res[index]['totalHCNewYear'] = a.start_headcount
-        res[index]['join']           = a.joined_count
-        res[index]['resign']         = a.resigned_count
-        res[index]['transfer']       = a.transfer_count
-        res[index]['attritionRate']  = attr_rate_str
-        res[index]['CurrentHC']      = curr_hc
+        res.append({
+            "id"                : yAttr.id,
+            "division"          : div,
+            "totalBudgetHC"     : yAttr.budget_headcount,
+            "totalHCNewYear"    : start_count,
+            "join"              : join,
+            "resign"            : resign,
+            "rotation_in"       : r_in,
+            "rotation_out"      : r_out,
+            "transfer_in"       : t_in,
+            "transfer_out"      : t_out,
+            "attritionRate"     : attr_rate_str,
+            "CurrentHC"         : curr_hc
+        })
 
     return res
 
-@router.post('/admin/attrition_data/table_data/{year}')
-def create_attr_table_entry(year: int, req: schemas.YearlyAttritionInHiCoupling, db: Session = Depends(get_db)):
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
-
-    div_id = divs.index(req.division)+1
-
-    new_attr = YearlyAttrition(
-        year                = year,
-        start_headcount     = req.totalHCNewYear,
-        budget_headcount    = req.totalBudgetHC,
-        joined_count        = req.join,
-        resigned_count      = req.resign,
-        transfer_count      = req.transfer,
-        div_id              = div_id
-    )
-
-    db.add(new_attr)
-    db.commit()
-    db.refresh(new_attr)
-
-    return new_attr
-
-@router.patch('/admin/attrition_data/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
-def patch_attr_entry(id:int, req: schemas.YearlyAttritionInHiCoupling, db: Session = Depends(get_db)):
-    attr = db.query(YearlyAttrition).filter(
+@router.patch('/admin/attrition/summary_table/year/{year}/id/{id}')
+def get_summary_attr_table(year: int, id: int, req: schemas.YearlyAttritionInHiCoupling, db: Session = Depends(get_db)):
+    yAttr_q = db.query(YearlyAttrition).filter(
         YearlyAttrition.id == id
     )
 
-    if not attr.first():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
+    try:
+        yAttr = yAttr_q.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f'yAttr of ID ({id}) was not found')
+    
+    if yAttr.year != year:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f"Found yAttr's year ({yAttr.year}) is different to endpoint's year ({year})")
 
-    stored_data = jsonable_encoder(attr.first())
+    stored_data = jsonable_encoder(yAttr)
     stored_model = schemas.YearlyAttritionIn(**stored_data)
-
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
-    div_id =  divs.index(req.division) + 1
 
     dataIn = schemas.YearlyAttritionIn(
         start_headcount = req.totalHCNewYear,
-        budget_headcount= req.totalBudgetHC,
-        joined_count    = req.join,
-        resigned_count  = req.resign,
-        transfer_count  = req.transfer,
-        div_id          = div_id
+        budget_headcount= req.totalBudgetHC
     )
 
     new_data = dataIn.dict(exclude_unset=True)
@@ -3432,23 +3425,9 @@ def patch_attr_entry(id:int, req: schemas.YearlyAttritionInHiCoupling, db: Sessi
 
     stored_data.update(updated)
 
-    attr.update(stored_data)
+    yAttr_q.update(stored_data)
     db.commit()
     return updated
-
-@router.delete('/admin/attrition_data/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
-def delete_attr_entry(id:int, db: Session = Depends(get_db)):
-    attr = db.query(YearlyAttrition).filter(
-        YearlyAttrition.id == id
-    )
-
-    if not attr.first():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
-
-    attr.delete()
-    db.commit()
-
-    return {'details': 'Deleted'}
 
 ### Utils ###
 @router.get('/utils/divs')
@@ -3743,3 +3722,47 @@ def get_emp_by_nik(input_nik, db: Session):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({input_nik}) was not found!")
 
     return emp
+
+def get_yAttr_by_div_shortname(year: int, short_name: str, db: Session):
+    yAttr_q = db.query(YearlyAttrition).filter(
+        YearlyAttrition.year == year,
+        YearlyAttrition.div.has(short_name = short_name)
+    )
+
+    try:
+        yAttr = yAttr_q.one()
+    except NoResultFound:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f'No YearlyAttrition of div shortname ({short_name}) and year ({year}) was found'
+        )
+    except MultipleResultsFound:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail=f'Found Multiple YearlyAttritions of div shortname ({short_name}) and year ({year})!'
+        )
+    
+    return yAttr
+
+def get_jrtAttrs_by_div_id(year: int, div_id: int, db: Session):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    return db.query(AttritionJoinResignTransfer).filter(
+        AttritionJoinResignTransfer.date >= startDate,
+        AttritionJoinResignTransfer.date <= endDate,
+        AttritionJoinResignTransfer.div_id == div_id
+    ).all()
+
+def get_rotAttrs_by_div_id(year: int, div_id: int, db: Session):
+    startDate   = datetime.date(year,1,1)
+    endDate     = datetime.date(year,12,31)
+
+    return db.query(AttritionRotation).filter(
+        AttritionRotation.date >= startDate,
+        AttritionRotation.date <= endDate,
+    ).filter(or_(
+        AttritionRotation.from_div_id == div_id,
+        AttritionRotation.to_div_id == div_id
+    )).all()
+
