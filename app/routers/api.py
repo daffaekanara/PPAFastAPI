@@ -1366,7 +1366,7 @@ def update_training_table_entry(id: int, req: schemas.TrainingInHiCouplingUserPa
     stored_data = jsonable_encoder(train)
     stored_model = schemas.TrainingIn(**stored_data)
 
-    dataIn = schemas.Training(
+    dataIn = schemas.TrainingIn(
         name            = req.trainingTitle,
         date            = utils.tablestr_to_datetime(req.date),
         duration_hours  = req.numberOfHours
