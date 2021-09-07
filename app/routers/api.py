@@ -3438,7 +3438,7 @@ def get_jrt_attr_table(year: int, month: int, db: Session = Depends(get_db)):
     # Res
     res = []
     for j in jrts:
-        div_name = get_div_by_id(j.div_id, db).short_name
+        # div_name = get_div_by_id(j.div_id, db).short_name
 
         res.append({
             "id"                : j.id,
@@ -3446,7 +3446,7 @@ def get_jrt_attr_table(year: int, month: int, db: Session = Depends(get_db)):
             "employee_nik"      : j.staff_nik,
             "category"          : j.type.name,
             "date"              : j.date.strftime("%m/%d/%Y"),
-            "division"          : div_name
+            "division"          : j.div_id
         })
 
     return res
@@ -3459,7 +3459,7 @@ def create_jrt_attr_table_entry(req: schemas.AttritionJoinResignTransferInHiCoup
     try:
         type_id = jrtTypes.index(req.category) + 1
         emp = get_emp_by_nik(req.employee_nik, db)
-        div = get_div_by_shortname(req.division, db)
+        # div = get_div_by_shortname(req.division, db)
     except ValueError:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f'Invalid Type ({req.category})!')
 
@@ -3468,7 +3468,7 @@ def create_jrt_attr_table_entry(req: schemas.AttritionJoinResignTransferInHiCoup
         staff_nik   = emp.staff_id,
         staff_name  = emp.name,
         date        = utils.tablestr_to_datetime(req.date),
-        div_id      = div.id
+        div_id      = int(req.division)
     )
 
     db.add(newJrtAttr)
@@ -3494,7 +3494,7 @@ def patch_jrt_attr_table_entry(id: int, req: schemas.AttritionJoinResignTransfer
     try:
         type_id = jrtTypes.index(req.category) + 1
         emp = get_emp_by_nik(req.employee_nik, db)
-        div = get_div_by_shortname(req.division, db)
+        # div = get_div_by_shortname(req.division, db)
     except ValueError:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f'Invalid Type ({req.category})!')
 
@@ -3506,7 +3506,7 @@ def patch_jrt_attr_table_entry(id: int, req: schemas.AttritionJoinResignTransfer
         staff_nik   = emp.staff_id,
         staff_name  = emp.name,
         date        = utils.tablestr_to_datetime(req.date),
-        div_id      = div.id
+        div_id      = int(req.division)
     )
 
     new_data = dataIn.dict(exclude_unset=True)
@@ -3540,16 +3540,16 @@ def get_rot_attr_table(year: int, month: int, db: Session = Depends(get_db)):
 
     res = []
     for r in rots:
-        from_div_name   = get_div_by_id(r.from_div_id, db).short_name
-        to_div_name     = get_div_by_id(r.to_div_id, db).short_name
+        # from_div_name   = get_div_by_id(r.from_div_id, db).short_name
+        # to_div_name     = get_div_by_id(r.to_div_id, db).short_name
 
         res.append({
             'id'            : r.id,
             'employee_name' : r.staff_name,
             'employee_nik'  : r.staff_nik,
             'date'          : r.date.strftime("%m/%d/%Y"),
-            'from_div'      : from_div_name,
-            'to_div'        : to_div_name
+            'from_div'      : r.from_div_id,
+            'to_div'        : r.to_div_id
         })
     
     return res
@@ -3558,15 +3558,15 @@ def get_rot_attr_table(year: int, month: int, db: Session = Depends(get_db)):
 def create_rot_attr_table_entry(req: schemas.AttritionRotationInHiCoupling, db: Session = Depends(get_db)):   
     # NIK, Divs
     emp         = get_emp_by_nik(req.employee_nik, db)
-    from_div    = get_div_by_shortname(req.from_div, db)
-    to_div      = get_div_by_shortname(req.to_div, db)
+    # from_div    = get_div_by_shortname(req.from_div, db)
+    # to_div      = get_div_by_shortname(req.to_div, db)
 
     newRotAttr = AttritionRotation(
         staff_name  = emp.name,
         staff_nik   = emp.staff_id,
         date        = utils.tablestr_to_datetime(req.date),
-        from_div_id = from_div.id,
-        to_div_id   = to_div.id
+        from_div_id = int(req.from_div),
+        to_div_id   = int(req.to_div)
     )
 
     db.add(newRotAttr)
@@ -3588,8 +3588,8 @@ def patch_rot_attr_table_entry(id: int, req: schemas.AttritionRotationInHiCoupli
 
     # type_id, NIK, Div
     emp = get_emp_by_nik(req.employee_nik, db)
-    from_div    = get_div_by_shortname(req.from_div, db)
-    to_div      = get_div_by_shortname(req.to_div, db)
+    # from_div    = get_div_by_shortname(req.from_div, db)
+    # to_div      = get_div_by_shortname(req.to_div, db)
 
     stored_data = jsonable_encoder(rot)
     stored_model = schemas.AttritionRotation(**stored_data)
@@ -3598,8 +3598,8 @@ def patch_rot_attr_table_entry(id: int, req: schemas.AttritionRotationInHiCoupli
         staff_name  = emp.name,
         staff_nik   = emp.staff_id,
         date        = utils.tablestr_to_datetime(req.date),
-        from_div_id = from_div.id,
-        to_div_id   = to_div.id
+        from_div_id = int(req.from_div),
+        to_div_id   = int(req.to_div)
     )
 
     new_data = dataIn.dict(exclude_unset=True)
