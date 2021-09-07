@@ -328,26 +328,47 @@ class AttrType(BaseModel):
 class AttritionJoinResignTransfer(BaseModel):
     type_id     : int
     staff_name  : str
+    staff_nik   : str
     date        : datetime.date
     div_id   : int
 
 class AttritionJoinResignTransferIn(BaseModel):
     type_id     : Optional[int]
     staff_name  : Optional[str]
+    staff_nik   : Optional[str]
     date        : Optional[datetime.date]
     div_id   : Optional[int]
 
+class AttritionJoinResignTransferInHiCoupling(BaseModel):
+    id              : Optional[str]
+    employee_name   : Optional[str]
+    employee_nik    : Optional[str]
+    category        : Optional[str]
+    date            : Optional[str]
+    division        : Optional[str]
+
+
 class AttritionRotation(BaseModel):
     staff_name  : str
+    staff_nik   : str
     date        : datetime.date
     from_div_id : int
     to_div_id   : int
 
 class AttritionRotationIn(BaseModel):
     staff_name  : Optional[str]
+    staff_nik   : Optional[str]
     date        : Optional[datetime.date]
     from_div_id : Optional[int]
     to_div_id   : Optional[int]
+
+class AttritionRotationInHiCoupling(BaseModel):
+    id              : Optional[str]
+    employee_name   : Optional[str]
+    employee_nik    : Optional[str]
+    date            : Optional[str]
+    from_div        : Optional[str]
+    to_div          : Optional[str]
 
 class YearlyAttrition(BaseModel):
     year                :int

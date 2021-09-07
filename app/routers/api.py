@@ -6,6 +6,7 @@ from fastapi.param_functions import File
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 import datetime
+import calendar
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.sql.expression import or_
 from fileio import fileio_module as fio
@@ -3354,7 +3355,7 @@ def get_summary_attr_table(year: int, db: Session = Depends(get_db)):
         join = resign = t_in = t_out = r_in = r_out = curr_hc = 0
 
         # Join, Resign, Transfer (jrt)
-        attr_jrts = get_jrtAttrs_by_div_id(year, div_id, db)
+        attr_jrts = get_jrtAttrs(year, db, div_id=div_id)
         for a in attr_jrts:
             jrt_type = a.type.name
 
@@ -3364,10 +3365,10 @@ def get_summary_attr_table(year: int, db: Session = Depends(get_db)):
             t_out += 1  and jrt_type == "Transfer Out"
 
         # Rotation (rot)
-        attr_rots = get_rotAttrs_by_div_id(year, div_id, db)
+        attr_rots = get_rotAttrs(year, db, div_id=div_id)
         for b in attr_rots:
-            r_in    and b.to_div_id == div_id
-            r_out   and b.from_div_id == div_id
+            r_in += 1   and b.to_div_id == div_id
+            r_out += 1  and b.from_div_id == div_id
 
         # CurrentHC
         start_count = yAttr.start_headcount
@@ -3428,6 +3429,202 @@ def get_summary_attr_table(year: int, id: int, req: schemas.YearlyAttritionInHiC
     yAttr_q.update(stored_data)
     db.commit()
     return updated
+
+# Attrition JRT Table
+@router.get('/admin/attrition/jrt_table/year/{year}/month/{month}')
+def get_jrt_attr_table(year: int, month: int, db: Session = Depends(get_db)):
+    jrts = get_jrtAttrs(year, db, month=month)
+
+    # Res
+    res = []
+    for j in jrts:
+        div_name = get_div_by_id(j.div_id, db).short_name
+
+        res.append({
+            "id"                : j.id,
+            "employee_name"     : j.staff_name,
+            "employee_nik"      : j.staff_nik,
+            "category"          : j.type.name,
+            "date"              : j.date.strftime("%m/%d/%Y"),
+            "division"          : div_name
+        })
+
+    return res
+
+@router.post('/admin/attrition/jrt_table')
+def create_jrt_attr_table_entry(req: schemas.AttritionJoinResignTransferInHiCoupling, db: Session = Depends(get_db)):
+    jrtTypes = ["Join", "Resign", "Transfer In", "Transfer Out"]
+    
+    # type_id, NIK, Div
+    try:
+        type_id = jrtTypes.index(req.category) + 1
+        emp = get_emp_by_nik(req.employee_nik, db)
+        div = get_div_by_shortname(req.division, db)
+    except ValueError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f'Invalid Type ({req.category})!')
+
+    newJrtAttr = AttritionJoinResignTransfer(
+        type_id     = type_id,
+        staff_nik   = emp.staff_id,
+        staff_name  = emp.name,
+        date        = utils.tablestr_to_datetime(req.date),
+        div_id      = div.id
+    )
+
+    db.add(newJrtAttr)
+    db.commit()
+    db.refresh(newJrtAttr)
+
+    return newJrtAttr
+
+@router.patch('/admin/attrition/jrt_table/id/{id}')
+def patch_jrt_attr_table_entry(id: int, req: schemas.AttritionJoinResignTransferInHiCoupling, db: Session = Depends(get_db)):
+    jrtTypes = ["Join", "Resign", "Transfer In", "Transfer Out"]
+    
+    # Check Attr ID
+    jrt_q = db.query(AttritionJoinResignTransfer).filter(
+        AttritionJoinResignTransfer.id == id
+    )
+    try:
+        jrt = jrt_q.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No AttrJRT of ID ({id}) was found!")
+
+    # type_id, NIK, Div
+    try:
+        type_id = jrtTypes.index(req.category) + 1
+        emp = get_emp_by_nik(req.employee_nik, db)
+        div = get_div_by_shortname(req.division, db)
+    except ValueError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f'Invalid Type ({req.category})!')
+
+    stored_data = jsonable_encoder(jrt)
+    stored_model = schemas.AttritionJoinResignTransfer(**stored_data)
+
+    dataIn = schemas.AttritionJoinResignTransferIn(
+        type_id     = type_id,
+        staff_nik   = emp.staff_id,
+        staff_name  = emp.name,
+        date        = utils.tablestr_to_datetime(req.date),
+        div_id      = div.id
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    jrt_q.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/admin/attrition/jrt_table/id/{id}')
+def patch_jrt_attr_table_entry(id: int, db: Session = Depends(get_db)):
+    # Check Attr ID
+    jrt_q = db.query(AttritionJoinResignTransfer).filter(
+        AttritionJoinResignTransfer.id == id
+    )
+    try:
+        jrt = jrt_q.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No AttrJRT of ID ({id}) was found!")
+    
+    jrt_q.delete()
+    db.commit()
+    return {'details': 'Deleted'}
+
+# Attrition Rotation Table
+@router.get('/admin/attrition/rot_table/year/{year}/month/{month}')
+def get_rot_attr_table(year: int, month: int, db: Session = Depends(get_db)):
+    rots = get_rotAttrs(year, db, month=month)
+
+    res = []
+    for r in rots:
+        from_div_name   = get_div_by_id(r.from_div_id, db).short_name
+        to_div_name     = get_div_by_id(r.to_div_id, db).short_name
+
+        res.append({
+            'id'            : r.id,
+            'employee_name' : r.staff_name,
+            'employee_nik'  : r.staff_nik,
+            'date'          : r.date.strftime("%m/%d/%Y"),
+            'from_div'      : from_div_name,
+            'to_div'        : to_div_name
+        })
+    
+    return res
+
+@router.post('/admin/attrition/rot_table')
+def create_rot_attr_table_entry(req: schemas.AttritionRotationInHiCoupling, db: Session = Depends(get_db)):   
+    # NIK, Divs
+    emp         = get_emp_by_nik(req.employee_nik, db)
+    from_div    = get_div_by_shortname(req.from_div, db)
+    to_div      = get_div_by_shortname(req.to_div, db)
+
+    newRotAttr = AttritionRotation(
+        staff_name  = emp.name,
+        staff_nik   = emp.staff_id,
+        date        = utils.tablestr_to_datetime(req.date),
+        from_div_id = from_div.id,
+        to_div_id   = to_div.id
+    )
+
+    db.add(newRotAttr)
+    db.commit()
+    db.refresh(newRotAttr)
+
+    return newRotAttr
+
+@router.patch('/admin/attrition/rot_table/id/{id}')
+def patch_rot_attr_table_entry(id: int, req: schemas.AttritionRotationInHiCoupling, db: Session = Depends(get_db)):    
+    # Check Attr ID
+    rot_q = db.query(AttritionRotation).filter(
+        AttritionRotation.id == id
+    )
+    try:
+        rot = rot_q.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No AttrRotation of ID ({id}) was found!")
+
+    # type_id, NIK, Div
+    emp = get_emp_by_nik(req.employee_nik, db)
+    from_div    = get_div_by_shortname(req.from_div, db)
+    to_div      = get_div_by_shortname(req.to_div, db)
+
+    stored_data = jsonable_encoder(rot)
+    stored_model = schemas.AttritionRotation(**stored_data)
+
+    dataIn = schemas.AttritionRotationIn(
+        staff_name  = emp.name,
+        staff_nik   = emp.staff_id,
+        date        = utils.tablestr_to_datetime(req.date),
+        from_div_id = from_div.id,
+        to_div_id   = to_div.id
+    )
+
+    new_data = dataIn.dict(exclude_unset=True)
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+
+    rot_q.update(stored_data)
+    db.commit()
+    return updated
+
+@router.delete('/admin/attrition/rot_table/id/{id}')
+def patch_rot_attr_table_entry(id: int, db: Session = Depends(get_db)):
+    # Check Attr ID
+    rot_q = db.query(AttritionRotation).filter(
+        AttritionRotation.id == id
+    )
+    try:
+        rot = rot_q.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No AttrRotation of ID ({id}) was found!")
+    
+    rot_q.delete()
+    db.commit()
+    return {'details': 'Deleted'}
 
 ### Utils ###
 @router.get('/utils/divs')
@@ -3512,6 +3709,34 @@ def get_divs_name_exclude_IAH(db: Session = Depends(get_db)):
         res.append(d.short_name)
     
     return res
+
+def get_div_by_shortname(shortname: str , db: Session):
+    div_q = db.query(Division).filter(
+        Division.short_name == shortname
+    )
+
+    try:
+        div = div_q.one()
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Div of shortname ({shortname}) was not found!')
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Divs of shortname ({shortname}) were found!')
+
+    return div
+
+def get_div_by_id(div_id: int, db: Session = Depends(get_db)):
+    div_q = db.query(Division).filter(
+        Division.id == div_id
+    )
+
+    try:
+        div = div_q.one()
+    except NoResultFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Div of ID ({div_id}) was not found!')
+    except MultipleResultsFound:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Divs of ID ({div_id}) were found!')
+
+    return div
 
 def create_or_update_mActual(data, db: Session):
     actual_query = db.query(MonthlyActualBudget).filter(
@@ -3744,25 +3969,39 @@ def get_yAttr_by_div_shortname(year: int, short_name: str, db: Session):
     
     return yAttr
 
-def get_jrtAttrs_by_div_id(year: int, div_id: int, db: Session):
-    startDate   = datetime.date(year,1,1)
-    endDate     = datetime.date(year,12,31)
+def get_jrtAttrs(year: int, db: Session, div_id: int = None, month: int = None):
 
-    return db.query(AttritionJoinResignTransfer).filter(
-        AttritionJoinResignTransfer.date >= startDate,
-        AttritionJoinResignTransfer.date <= endDate,
-        AttritionJoinResignTransfer.div_id == div_id
-    ).all()
+    startDate   = datetime.date(year,1,1)   if not month else datetime.date(year,month,1)
+    endDate     = datetime.date(year,12,31) if not month else datetime.date(year,month,calendar.monthrange(year,month)[1])
+    
 
-def get_rotAttrs_by_div_id(year: int, div_id: int, db: Session):
-    startDate   = datetime.date(year,1,1)
-    endDate     = datetime.date(year,12,31)
+    if div_id:
+        return db.query(AttritionJoinResignTransfer).filter(
+            AttritionJoinResignTransfer.date >= startDate,
+            AttritionJoinResignTransfer.date <= endDate,
+            AttritionJoinResignTransfer.div_id == div_id
+        ).all()
+    else:
+        return db.query(AttritionJoinResignTransfer).filter(
+            AttritionJoinResignTransfer.date >= startDate,
+            AttritionJoinResignTransfer.date <= endDate,
+        ).all()
 
-    return db.query(AttritionRotation).filter(
-        AttritionRotation.date >= startDate,
-        AttritionRotation.date <= endDate,
-    ).filter(or_(
-        AttritionRotation.from_div_id == div_id,
-        AttritionRotation.to_div_id == div_id
-    )).all()
+def get_rotAttrs(year: int, db: Session, div_id: int = None, month: int = None):
+    startDate   = datetime.date(year,1,1)   if not month else datetime.date(year,month,1)
+    endDate     = datetime.date(year,12,31) if not month else datetime.date(year,month,calendar.monthrange(year,month)[1])
+
+    if div_id:
+        return db.query(AttritionRotation).filter(
+            AttritionRotation.date >= startDate,
+            AttritionRotation.date <= endDate,
+        ).filter(or_(
+            AttritionRotation.from_div_id == div_id,
+            AttritionRotation.to_div_id == div_id
+        )).all()
+    else:
+        return db.query(AttritionRotation).filter(
+            AttritionRotation.date >= startDate,
+            AttritionRotation.date <= endDate,
+        ).all()
 

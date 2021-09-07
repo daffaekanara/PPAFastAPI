@@ -156,6 +156,7 @@ class AttritionJoinResignTransfer(Base):
     type        = relationship("AttrType", back_populates="attrs")
 
     staff_name  = Column(String)
+    staff_nik   = Column(String)
     date        = Column(Date)
     div_id      = Column(Integer)
 
@@ -164,6 +165,7 @@ class AttritionRotation(Base):
     id          = Column(Integer, primary_key=True, index=True)
 
     staff_name  = Column(String)
+    staff_nik   = Column(String)
     date        = Column(Date)
 
     from_div_id = Column(Integer)

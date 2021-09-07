@@ -71,7 +71,7 @@ def get_all_jrt_attrition(db: Session = Depends(get_db)):
 def create_jrt_attrition(req: schemas.AttritionJoinResignTransfer, db: Session = Depends(get_db)):
     newJtr = AttritionJoinResignTransfer(
         type_id     = req.type_id,
-
+        staff_nik   = req.staff_nik,
         staff_name  = req.staff_name,
         date        = req.date,
         div_id      = req.div_id
@@ -128,6 +128,7 @@ def get_all_rotation_attrition(db: Session = Depends(get_db)):
 def create_rotation_attrition(req: schemas.AttritionRotation, db: Session = Depends(get_db)):
     newAttr = AttritionRotation(
         staff_name  = req.staff_name,
+        staff_nik   = req.staff_nik,
         date        = req.date,
         from_div_id = req.from_div_id,
         to_div_id   = req.to_div_id
