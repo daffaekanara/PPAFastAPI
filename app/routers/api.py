@@ -1885,45 +1885,67 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
     return res
 
 ### Attrition ###
+def get_attr_summary_details_by_div_shortname(year: int, div: str, db: Session):
+    """Returns a tuple of ints (join, resign, transfer_in, transfer_out, resign_in, resign_out, start_hc, curr_hc) given a div shortname and year"""
+    
+    yAttr = get_yAttr_by_div_shortname(year, div, db)
+    div_id = yAttr.div_id
+
+    join = resign = t_in = t_out = r_in = r_out = curr_hc = 0
+    
+    # Join, Resign, Transfer (jrt)
+    attr_jrts = get_jrtAttrs(year, db, div_id=div_id)
+    for a in attr_jrts:
+        jrt_type = a.type.name
+
+        join += 1   and jrt_type == "Join"
+        resign += 1 and jrt_type == "Resign"
+        t_in += 1   and jrt_type == "Transfer In"
+        t_out += 1  and jrt_type == "Transfer Out"
+
+    # Rotation (rot)
+    attr_rots = get_rotAttrs(year, db, div_id=div_id)
+    for b in attr_rots:
+        r_in += 1   and b.to_div_id == div_id
+        r_out += 1  and b.from_div_id == div_id
+
+    # CurrentHC
+    start_count = yAttr.start_headcount
+    plus_count  = join + t_in + r_in
+    minus_count = resign + t_out + r_out
+    curr_hc = start_count + plus_count - minus_count
+
+    return (join, resign, t_in, t_out, r_in, r_out, start_count, curr_hc)
+
 
 @router.get('/attrition/staff_attrition/{year}')
 def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
-
-    query = db.query(YearlyAttrition).filter(YearlyAttrition.year == year).all()
-
     divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     res = []
 
-    # Init result dict
     for div in divs:
+        (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div, db)
+
         res.append({
-            "headcounts":0,
-            "join":0,
-            "resign":0,
-            "transfer":0, 
-            "division":div
+            "headcounts"    :curr_hc,
+            "join"          :join,
+            "resign"        :resign,
+            "transfer_in"   :t_in, 
+            "transfer_out"  :t_out,
+            "rotation_in"   :r_in, 
+            "rotation_out"  :r_out, 
+            "division"      :div
         })
-
-    for q in query:
-        q_div_index = utils.find_index(res, "division", q.div.short_name)
-
-        res[q_div_index]["headcounts"]  = q.start_headcount
-        res[q_div_index]["join"]        = q.joined_count
-        res[q_div_index]["resign"]      = q.resigned_count
-        res[q_div_index]["transfer"]    = q.transfer_count
-
+    
     return res
 
 @router.get('/attrition/rate/{div_name}/{year}')
 def get_rate_by_division_by_yearmonth(div_name: str, year: int, db: Session = Depends(get_db)):
+    (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div_name, db)
 
-    query = db.query(YearlyAttrition).filter(
-        YearlyAttrition.div.has(short_name=div_name),
-        YearlyAttrition.year == year
-    ).first()
 
-    attr_sum = query.resigned_count + query.transfer_count if query else 0
-    attr_rate = (attr_sum / query.start_headcount) * 100 if query else 0
+    attr_sum = resign + t_out + r_out
+    attr_rate = (attr_sum / start_hc) * 100 
 
     return [
         {"title":"Attrition Rate","rate":round(attr_rate, 2)},
