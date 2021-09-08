@@ -1,4 +1,3 @@
-from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status, Form
 from fastapi.datastructures import UploadFile
 from fastapi.encoders import jsonable_encoder
@@ -7,6 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import MultipleResultsFound, NoResultFound
 import datetime
 import calendar
+from operator import itemgetter
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.sql.expression import or_
 from fileio import fileio_module as fio
@@ -321,12 +321,12 @@ def get_smr_certs(db: Session = Depends(get_db)):
 
     # Init res
     levels = [
+        "SMR In Progress",
         "SMR Level 1",
         "SMR Level 2",
         "SMR Level 3",
         "SMR Level 4",
         "SMR Level 5",
-        "SMR In Progress",
     ]
     res = []
     for lvl in levels:
@@ -336,11 +336,11 @@ def get_smr_certs(db: Session = Depends(get_db)):
         })
 
     for e in emps:
-        for cert in e.emp_certifications:
-            index = utils.find_index(res,"smr_level", cert.cert_name)
-    
-            if index:
-                res[index]["sum_per_level"] += 1 
+        # Check Smr of Emp
+        max_lvl, max_id = extract_highest_smr_level(e.emp_certifications)
+
+        if max_lvl >= 0:
+            res[max_lvl]["sum_per_level"] += 1
     
     return res
 
@@ -372,7 +372,7 @@ def get_pro_certs(db: Session = Depends(get_db)):
         for cert in e.emp_certifications:
             index = utils.find_index(res,"certification_name", cert.cert_name)
     
-            if index:
+            if index and cert.cert_proof:
                 res[index]["sum_per_name"] += 1 
     
     return res
@@ -496,6 +496,112 @@ def get_total_audit_exp(db: Session = Depends(get_db)):
 
     return res
 
+### ClickTable ###
+@router.get('/clicktable/emp/audit_exp')
+def get_emp_audit_exp(db: Session = Depends(get_db)):
+    # Get Emps
+    emps = db.query(Employee).all()
+
+    res = []
+
+    for e in emps:
+        auditUOBYears   = utils.get_year_diff_to_now(e.date_first_uob)
+
+        res.append({
+            'id'            : e.id,
+            'name'          : e.name,
+            'total_year'    : e.year_audit_non_uob + auditUOBYears,
+            'inside_uob'    : auditUOBYears,
+            'outside_uob'   : e.year_audit_non_uob
+        })
+
+    return sorted(res, key=itemgetter('total_year'), reverse=True)
+
+@router.get('/clicktable/emp/edu_lvl')
+def get_emp_edulvl(db: Session = Depends(get_db)):
+    # Get Emps
+    emps = db.query(Employee).all()
+
+    res = []
+
+    for e in emps:
+        res.append({
+            'id'        : e.id,
+            'BorM'      : e.edu_level,
+            'major'     : e.edu_major,
+            'name'      : e.name
+        })
+
+    return sorted(res, key=itemgetter('BorM'), reverse=True)
+
+@router.get('/clicktable/emp/generation')
+def get_emp_gen(db: Session = Depends(get_db)):
+    # Get Emps
+    emps = db.query(Employee).all()
+
+    res = []
+
+    for e in emps:
+        res.append({
+            'id'            : e.id,
+            'generation'    : utils.get_gen(e.date_of_birth),
+            'gender'        : e.gender,
+            'name'          : e.name
+        })
+
+    return sorted(res, key=itemgetter('generation'), reverse=True)
+
+@router.get('/clicktable/cert/smr')
+def get_click_cert_smr(db: Session = Depends(get_db)):
+    # Get Emps
+    emps = db.query(Employee).all()
+
+    # Init res
+    res = []
+    for e in emps:
+        # Check Smr of Emp
+        max_lvl, max_id = extract_highest_smr_level(e.emp_certifications)
+        
+        if max_lvl > -1:
+            res.append({
+                'id'        : max_id,
+                'smr_level' : "SMR In Progress" if max_lvl == 0 else f"SMR Level {max_lvl}",
+                'name'      : e.name
+            })
+    
+    return sorted(res, key=itemgetter('smr_level'), reverse=True)
+
+@router.get('/clicktable/cert/pro')
+def get_click_cert_pro(db: Session = Depends(get_db)):
+    # Get Emps
+    emps = db.query(Employee).all()
+
+    types = [
+        "CISA",
+        "CEH",
+        "ISO27001",
+        "CHFI",
+        "QIA",
+        "CIA",
+        "CA",
+        "CBIA",
+        "CPA"
+    ]
+
+    # Init res
+    res = []
+    for e in emps:
+        for c in e.emp_certifications:
+            if not is_cert_smr_related(c) and c.cert_proof:
+            # if c.cert_proof or not is_cert_smr_related(c):
+                res.append({
+                    'id'            : c.id,
+                    'certification' : c.cert_name,
+                    'name'          : e.name
+                })
+    
+    return sorted(res, key=itemgetter('certification'), reverse=False)
+
 ### Profile ###
 
 @router.get('/profile/about/table_data/{nik}')
@@ -540,10 +646,10 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
                     max_smr = smr_level
         elif c.cert_name == "SMR In Progress":
             cert_res[0]['value'] = "In Progress"
-        elif c.cert_name in certs:
+        elif c.cert_name in certs and c.cert_proof:
             index = utils.find_index(cert_res, 'title', c.cert_name)
             cert_res[index]['value'] = 1
-        else:
+        elif c.cert_proof:
             cert_res[-1]["value"] += 1
 
     smr_lvl = cert_res[0]['value']
@@ -2624,10 +2730,10 @@ def get_employee_table(db: Session = Depends(get_db)):
                         max_smr = smr_level
             elif c.cert_name == "SMR In Progress":
                 cert_res[0]['value'] = "In Progress"
-            elif c.cert_name in certs:
+            elif c.cert_name in certs and c.cert_proof:
                 index = utils.find_index(cert_res, 'title', c.cert_name)
                 cert_res[index]['value'] = 1
-            else:
+            elif c.cert_proof:
                 cert_res[-1]["value"] += 1
 
         smr_lvl = cert_res[0]['value']
@@ -4005,3 +4111,21 @@ def get_rotAttrs(year: int, db: Session, div_id: int = None, month: int = None):
             AttritionRotation.date <= endDate,
         ).all()
 
+def extract_highest_smr_level(certs):
+    """Returns a tuple of Two Ints (max-smr-Level, Certs ID) which indicates the highest proof-exist smr certs from a given certs list"""
+
+    max_smr = [-1, 0]
+    for c in certs:
+        smr_level = utils.extract_SMR_level(c.cert_name)
+        
+        if smr_level:
+            if c.cert_proof and smr_level > max_smr[0]:
+                max_smr = [smr_level, c.id]
+        elif c.cert_name == "SMR In Progress" and max_smr[0] < 1:
+            max_smr = [0, c.id]
+
+    return (max_smr[0], max_smr[1])
+
+def is_cert_smr_related(cert):
+    smr_level = utils.extract_SMR_level(cert.cert_name)
+    return smr_level or cert.cert_name == "SMR In Progress"
