@@ -115,6 +115,7 @@ class EmployeeInHiCoupling(BaseModel):
     CIA                         : Optional[bool]
     CPA                         : Optional[bool]
     CA                          : Optional[bool]
+    other_cert                  : Optional[str]
     IABackgground               : Optional[bool]
     EABackground                : Optional[bool]
     active                      : Optional[bool]

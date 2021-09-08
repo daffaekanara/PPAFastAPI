@@ -235,6 +235,52 @@ def post_mrpt_file(mrpt: UploadFile = File(...), db: Session = Depends(get_db)):
     
     return {'details': 'All budgets updated!'}
 
+@router.post('/admin/employee_data/cert/others')
+def post_others_cert_form(
+    certification_name  : str= Form(...),
+    nik                 : str= Form(...),
+    proof               : UploadFile = File(...), 
+    db: Session = Depends(get_db)
+):
+    data = proof.file.read()
+
+    # Check NIK
+    emp = get_emp_by_nik(nik, db)
+
+    # Write CertFile
+    filepath = fio.write_cert(certification_name, emp.id, data, proof.filename)
+
+    # Update DB
+    existing_cert = None
+    for c in emp.emp_certifications:
+        if c.cert_name == certification_name:
+            existing_cert = c
+            break
+
+    if existing_cert: # Update cert_proof
+        query = db.query(Certification).filter(
+            Certification.id == existing_cert.id
+        )
+        stored_data = jsonable_encoder(existing_cert)
+        stored_model = schemas.CertificationIn(**stored_data)
+        new_data = {"cert_proof": filepath}
+        updated = stored_model.copy(update=new_data)
+        stored_data.update(updated)
+        query.update(stored_data)
+        db.commit()
+    else: # Create New Cert
+        newCert = Certification(
+            cert_name   = certification_name,
+            cert_proof  = filepath,
+            emp_id      = emp.id
+        )
+
+        db.add(newCert)
+        db.commit()
+        db.refresh(newCert)
+
+    return {"filename": filepath}
+
 @router.post('/admin/employee_data/cert/{cert_name}/{nik}')
 def post_file(cert_name: str, nik: str, cert_file: UploadFile = File(...), db: Session = Depends(get_db)):
     data = cert_file.file.read()
@@ -368,13 +414,23 @@ def get_pro_certs(db: Session = Depends(get_db)):
             "sum_per_name"     : 0
         })
 
+    other_certs = 0
+
     for e in emps:
         for cert in e.emp_certifications:
             index = utils.find_index(res,"certification_name", cert.cert_name)
     
-            if index and cert.cert_proof:
-                res[index]["sum_per_name"] += 1 
+            if cert.cert_proof:
+                if index:
+                    res[index]["sum_per_name"] += 1
+                else:
+                    other_certs += 1
     
+    res.append({
+        "certification_name": "Others",
+        "sum_per_name"      : other_certs
+    })
+
     return res
 
 @router.get('/dashboard/age_group')
@@ -623,7 +679,7 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
     # Process Certs
     certs = [
         "SMR", "CISA", "CEH", "ISO27001", "CHFI", 
-        "IDEA", "QualifiedIA", "CBIA", "CIA", "CPA", "CA", "Others"]
+        "IDEA", "QualifiedIA", "CBIA", "CIA", "CPA", "CA"]
 
     cert_res = []
 
@@ -633,6 +689,7 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
             'value': 0
         })
 
+    otherCerts = []
     max_smr = 0
 
     for c in e.emp_certifications:
@@ -646,11 +703,12 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
                     max_smr = smr_level
         elif c.cert_name == "SMR In Progress":
             cert_res[0]['value'] = "In Progress"
-        elif c.cert_name in certs and c.cert_proof:
+        elif c.cert_name in certs and c.cert_proof: # Pro Certs
             index = utils.find_index(cert_res, 'title', c.cert_name)
             cert_res[index]['value'] = 1
-        elif c.cert_proof:
+        elif c.cert_proof:                          # Other Certs
             cert_res[-1]["value"] += 1
+            otherCerts.append(c.cert_name)
 
     smr_lvl = cert_res[0]['value']
 
@@ -696,6 +754,7 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
         "CIA"                         : cert_res[8]['value'],
         "CPA"                         : cert_res[9]['value'],
         "CA"                          : cert_res[10]['value'],
+        "other_cert"                  : ", ".join(otherCerts),
         "IABackgground"               : e.ia_background,
         "EABackground"                : e.ea_background,
         "active"                      : e.active
@@ -2707,7 +2766,7 @@ def get_employee_table(db: Session = Depends(get_db)):
         # Process Certs
         certs = [
             "SMR", "CISA", "CEH", "ISO27001", "CHFI", 
-            "IDEA", "QualifiedIA", "CBIA", "CIA", "CPA", "CA", "Others"]
+            "IDEA", "QualifiedIA", "CBIA", "CIA", "CPA", "CA"]
 
         cert_res = []
 
@@ -2717,6 +2776,7 @@ def get_employee_table(db: Session = Depends(get_db)):
                 'value': 0
             })
 
+        otherCerts = []
         max_smr = 0
 
         for c in e.emp_certifications:
@@ -2730,11 +2790,12 @@ def get_employee_table(db: Session = Depends(get_db)):
                         max_smr = smr_level
             elif c.cert_name == "SMR In Progress":
                 cert_res[0]['value'] = "In Progress"
-            elif c.cert_name in certs and c.cert_proof:
+            elif c.cert_name in certs and c.cert_proof: # Pro Certs
                 index = utils.find_index(cert_res, 'title', c.cert_name)
                 cert_res[index]['value'] = 1
-            elif c.cert_proof:
+            elif c.cert_proof:                          # Other Certs
                 cert_res[-1]["value"] += 1
+                otherCerts.append(c.cert_name)
 
         smr_lvl = cert_res[0]['value']
 
@@ -2780,6 +2841,7 @@ def get_employee_table(db: Session = Depends(get_db)):
             "CIA"                         : cert_res[8]['value'],
             "CPA"                         : cert_res[9]['value'],
             "CA"                          : cert_res[10]['value'],
+            "other_cert"                  : ", ".join(otherCerts),
             "IABackgground"               : e.ia_background,
             "EABackground"                : e.ea_background,
             "active"                      : e.active
