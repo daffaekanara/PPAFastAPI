@@ -12,6 +12,9 @@ TRAIN_PROOF_FOLDER = 'trainings'
 BUSU_ENG_FOLDER = 'busu'
 PA_CMPLT_FOLDER = 'pa_completion'
 
+def is_file_exist(filepath:str):
+    return os.path.isfile(filepath)
+
 def write_pa_completion_proof(prj_id, data, filename):
     dir_name = os.path.join(DATA_FOLDER, FILES_FOLDER, PA_CMPLT_FOLDER)
     os.makedirs(dir_name, exist_ok=True)

@@ -26,20 +26,32 @@ router = APIRouter(
 )
 
 ### File ###
-def get_cert_by_id(id:int, db:Session):
-    cert_q = db.query(Certification).filter(
-        Certification.id == id
-    )
-
-    try:
-        return cert_q.one()
-    except NoResultFound:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No Cert of ID ({id}) was found!")
-    
 @router.get('/profile/get_cert_proof/id/{id}')
 def get_cert_proof(id: int, db: Session = Depends(get_db)):
     cert = get_cert_by_id(id, db)
 
+    return FileResponse(cert.cert_proof)
+
+@router.get('/admin/employee/download/cert/cname/{cert_name}/nik/{nik}')
+def get_cert_proof(cert_name: str, nik: str, db: Session = Depends(get_db)):
+    # Check if cert_name is SMR_x
+    if "SMR_" in cert_name:
+        smr_lvl = cert_name[-1]
+        cert_name = f"SMR Level {smr_lvl}"
+    
+    try:
+        cert = get_cert_by_empnik_certname(nik, cert_name, db)
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No Cert of name ({cert_name}) and Owner NIK of ({nik}) was found!")
+    except MultipleResultsFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Found multiple Certs of name ({cert_name}) and Owner NIK of ({nik}) was found!")
+    
+
+    if cert.cert_proof == "":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({nik}) hasn't uploaded any files for {cert.cert_name} cert!")
+    elif not fio.is_file_exist(cert.cert_proof):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Cert of name ({cert_name}) and Employee of NIK ({nik}) was found (id:{cert.id}, but file ({cert.cert_proof}) doesn't exist in server!")
+        
     return FileResponse(cert.cert_proof)
 
 @router.post('/project/submit_pa_form/{year}')
@@ -315,7 +327,7 @@ def post_file(cert_name: str, nik: str, cert_file: UploadFile = File(...), db: S
 
     filepath = fio.write_cert(cert_name, emp_id, data, cert_file.filename)
 
-    # Check if cert_name is RMG_x
+    # Check if cert_name is SMR_x
     if "SMR_" in cert_name:
         smr_lvl = cert_name[-1]
         cert_db_name = f"SMR Level {smr_lvl}"
@@ -4230,3 +4242,21 @@ def extract_highest_smr_level(certs):
 def is_cert_smr_related(cert):
     smr_level = utils.extract_SMR_level(cert.cert_name)
     return smr_level or cert.cert_name == "SMR In Progress"
+
+def get_cert_by_id(id:int, db:Session):
+    cert_q = db.query(Certification).filter(
+        Certification.id == id
+    )
+
+    try:
+        return cert_q.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No Cert of ID ({id}) was found!")
+
+def get_cert_by_empnik_certname(nik:str, cname:str, db:Session):
+    cert_q = db.query(Certification).filter(
+        Certification.cert_name == cname,
+        Certification.owner.has(staff_id=nik)
+    )
+
+    return cert_q.one()
