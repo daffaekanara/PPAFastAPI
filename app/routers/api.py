@@ -9,6 +9,7 @@ import calendar
 from operator import itemgetter
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.sql.expression import or_
+from fastapi.responses import FileResponse
 from fileio import fileio_module as fio
 import schemas, datetime, utils, hashing
 from models import *
@@ -25,6 +26,22 @@ router = APIRouter(
 )
 
 ### File ###
+def get_cert_by_id(id:int, db:Session):
+    cert_q = db.query(Certification).filter(
+        Certification.id == id
+    )
+
+    try:
+        return cert_q.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No Cert of ID ({id}) was found!")
+    
+@router.get('/profile/get_cert_proof/id/{id}')
+def get_cert_proof(id: int, db: Session = Depends(get_db)):
+    cert = get_cert_by_id(id, db)
+
+    return FileResponse(cert.cert_proof)
+
 @router.post('/project/submit_pa_form/{year}')
 def post_pa_completion_form(
     year            : int,
