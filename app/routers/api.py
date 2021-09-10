@@ -26,11 +26,49 @@ router = APIRouter(
 )
 
 ### File ###
+@router.get('/admin/audit_project_data/download/pa/id/{id}')
+def get_prj_paproof_proof(id: int, db: Session = Depends(get_db)):
+    prj = get_prj_by_id(id, db)
+
+    if prj.completion_PA == "":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No uploaded proof for PA Completion of Project ({prj.name})")
+    elif fio.is_file_exist(prj.completion_PA):
+        return FileResponse(prj.completion_PA)
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Cannot find file on filepath ({prj.completion_PA})")
+
+@router.get('/admin/training_data/download/proof/id/{id}')
+def get_training_proof(id: int, db: Session = Depends(get_db)):
+    train = get_training_by_id(id, db)
+
+    if train.proof == "":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No uploaded proof for Training ({train.name})")
+    elif fio.is_file_exist(train.proof):
+        return FileResponse(train.proof)
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Cannot find file on filepath ({train.proof})")
+
+@router.get('/admin/busu_data/download/proof/id/{id}')
+def get_busu_proof(id: int, db: Session = Depends(get_db)):
+    busu = get_busu_by_id(id, db)
+
+    if busu.proof == "":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No uploaded proof for BUSU Engagement ({busu.activity_name})")
+    elif fio.is_file_exist(busu.proof):
+        return FileResponse(busu.proof)
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Cannot find file on filepath ({busu.proof})")
+
 @router.get('/profile/get_cert_proof/id/{id}')
 def get_cert_proof(id: int, db: Session = Depends(get_db)):
     cert = get_cert_by_id(id, db)
 
-    return FileResponse(cert.cert_proof)
+    if cert.cert_proof == "":
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No uploaded proof for Cert ({cert.cert_name})")
+    elif fio.is_file_exist(cert.cert_proof):
+        return FileResponse(cert.cert_proof)
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Cannot find file on filepath ({cert.cert_proof})")
 
 @router.get('/admin/employee/download/cert/cname/{cert_name}/nik/{nik}')
 def get_cert_proof(cert_name: str, nik: str, db: Session = Depends(get_db)):
@@ -4252,6 +4290,38 @@ def get_cert_by_id(id:int, db:Session):
         return cert_q.one()
     except NoResultFound:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No Cert of ID ({id}) was found!")
+
+def get_prj_by_id(id:int, db:Session):
+    prj_q = db.query(Project).filter(
+        Project.id == id
+    )
+
+    try:
+        return prj_q.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No Project of ID ({id}) was found!")
+
+
+def get_busu_by_id(id:int, db:Session):
+    busu_q = db.query(BUSUEngagement).filter(
+        BUSUEngagement.id == id
+    )
+
+    try:
+        return busu_q.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No BUSUEngagement of ID ({id}) was found!")
+
+def get_training_by_id(id:int, db:Session):
+    train_q = db.query(Training).filter(
+        Training.id == id
+    )
+
+    try:
+        return train_q.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No Training of ID ({id}) was found!")
+ 
 
 def get_cert_by_empnik_certname(nik:str, cname:str, db:Session):
     cert_q = db.query(Certification).filter(
