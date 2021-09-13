@@ -15,3 +15,6 @@ _delete/
 data/
 
 *.pem
+*.crt
+*.cert
+*.key

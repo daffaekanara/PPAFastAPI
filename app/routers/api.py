@@ -2812,7 +2812,6 @@ def delete_division_table_entry(id: int, db: Session = Depends(get_db)):
 
     return {'details': 'Deleted'}
 
-
 # Employee
 @router.post('/admin/change_password')
 def change_password_admin(req: schemas.PasswordChangeAdminIn, db: Session = Depends(get_db)):
@@ -2839,6 +2838,34 @@ def change_password_admin(req: schemas.PasswordChangeAdminIn, db: Session = Depe
     db.commit()
 
     return {'detail':'Password Change Success!'}
+
+@router.get('/admin/employee/tables/cert/nik/{nik}')
+def get_employee_cert_table(nik: str, db: Session = Depends(get_db)):
+    emp = get_emp_by_nik(nik, db)
+
+    res = []
+
+    for c in emp.emp_certifications:
+        res.append({
+            "id"              : c.id,
+            "employee_name"   : emp.name,
+            "certifcate_name" : c.cert_name
+        })
+    
+    return res
+
+@router.delete('/admin/employee/tables/cert/id/{id}')
+def delete_employee_cert_table_entry(id: int, db: Session = Depends(get_db)):
+    c = get_cert_by_id(id, db)
+
+    c_q = db.query(Certification).filter(
+        Certification.id == c.id
+    )
+
+    c_q.delete()
+    db.commit()
+
+    return {'details': 'Deleted'}
 
 @router.get('/admin/employee_data/table_data')
 def get_employee_table(db: Session = Depends(get_db)):
