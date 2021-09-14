@@ -2324,6 +2324,9 @@ def get_budget_table(year: int, month: int, db: Session = Depends(get_db)):
         r["STDProRate"]        = f"{round(std_rate * 100)}%"
         r["overUnderBudget"]   = "-%" if ytd_rate == None else f"{round((ytd_rate - std_rate) * 100)}%"
 
+    # Format Numbering
+    res = utils.format_budget_numbering(res)
+
     return res
 
 @router.patch('/admin/budget_data/table_data/{year}/{month}', status_code=status.HTTP_202_ACCEPTED)

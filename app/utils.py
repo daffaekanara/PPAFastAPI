@@ -3,6 +3,18 @@ import re
 from decimal import Decimal
 from models import QAIP
 
+### Budget ###
+def format_budget_numbering(res):
+    for r in res:
+        a,b,c,d,e = int(r['budgetYear']), int(r['budgetMonth']), int(r['budgetMonthTD']), int(r['actualMonth']), int(r['actualMonthTD'])
+        r['budgetYear']     = f'{a:,}'
+        r['budgetMonth']    = f'{b:,}'
+        r['budgetMonthTD']  = f'{c:,}'
+        r['actualMonth']    = f'{d:,}'
+        r['actualMonthTD']  = f'{e:,}'
+
+    return res
+
 ### QA Result ###
 def qa_to_category_str(x: QAIP):
     res = []
