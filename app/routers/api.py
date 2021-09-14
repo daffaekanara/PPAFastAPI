@@ -488,7 +488,7 @@ def get_pro_certs(db: Session = Depends(get_db)):
             index = utils.find_index(res,"certification_name", cert.cert_name)
     
             if cert.cert_proof:
-                if index:
+                if index is not None:
                     res[index]["sum_per_name"] += 1
                 else:
                     other_certs += 1
