@@ -3957,6 +3957,32 @@ def get_project_titles(year:int, db: Session = Depends(get_db)):
 
     return res
 
+@router.get('/utils/title_project_v2/year/{year}')
+def get_project_titles_v2(year:int, db: Session = Depends(get_db)):
+    prjs = db.query(Project).filter(
+        Project.year == year
+    )
+
+    res = []
+    for p in prjs:
+        res.append({
+            'title' : p.name
+        })
+
+    return res
+
+@router.get('/utils/title_project_v3/year/{year}')
+def get_project_titles_v3(year:int, db: Session = Depends(get_db)):
+    prjs = db.query(Project).filter(
+        Project.year == year
+    )
+
+    res = []
+    for p in prjs:
+        res.append(p.name)
+
+    return res
+
 @router.get('/utils/project_by_nik/{year}/{nik}')
 def get_project_by_NIK(year:int, nik: str, db: Session = Depends(get_db)):
     # Check NIK
