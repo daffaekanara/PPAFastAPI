@@ -1147,10 +1147,10 @@ def get_total_by_division_by_year_v2(year: int, db: Session = Depends(get_db)):
 
     divs_name = get_divs_name_exclude_IAH(db)
     colors = [
-        "#F44336", "#FF5722", "#FFEB3B", "#4CAF50", "#2196F3", 
-        "#3F51B5", "#9C27B0", "#795548", "#9E9E9E", "#000000",
-        "#F44336", "#FF5722", "#FFEB3B", "#4CAF50", "#2196F3", 
-        "#3F51B5", "#9C27B0", "#795548", "#9E9E9E", "#000000"
+        "#F44336", "#9C27B0", "#FFEB3B", "#4CAF50", "#2196F3", 
+        "#3F51B5", "#FF5722", "#795548", "#9E9E9E", "#000000",
+        "#F44336", "#9C27B0", "#FFEB3B", "#4CAF50", "#2196F3", 
+        "#3F51B5", "#FF5722", "#795548", "#9E9E9E", "#000000"
     ]
 
     datasets = []
