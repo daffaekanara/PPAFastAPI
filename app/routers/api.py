@@ -10,6 +10,7 @@ from operator import itemgetter
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.sql.expression import or_
 from fastapi.responses import FileResponse
+from sqlalchemy.sql.schema import ColumnCollectionConstraint
 from fileio import fileio_module as fio
 import schemas, datetime, utils, hashing
 from models import *
@@ -140,13 +141,7 @@ def post_engagement_input_form(
 
     data = proof.file.read()
     # Check NIK
-    emp = db.query(Employee).filter(
-        Employee.staff_id == id
-    )
-    if not emp.first():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({id}) was not found!")
-
-    emp = emp.first()
+    emp = get_emp_by_nik(id, db)
     emp_id = emp.id
 
     # Create BUSU Engagement
@@ -191,13 +186,7 @@ def post_training_proof_file(
 ):
     data = proof.file.read()
     # Check NIK
-    emp = db.query(Employee).filter(
-        Employee.staff_id == id
-    )
-    if not emp.first():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({id}) was not found!")
-
-    emp = emp.first()
+    emp = get_emp_by_nik(id, db)
     emp_id = emp.id
 
     # Create Training
@@ -238,13 +227,7 @@ def post_training_proof_file(nik: str, training_id: int, attachment_proof: Uploa
     data = attachment_proof.file.read()
 
     # Check NIK
-    emp = db.query(Employee).filter(
-        Employee.staff_id == nik
-    )
-    if not emp.first():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({nik}) was not found!")
-
-    emp = emp.first()
+    emp = get_emp_by_nik(id,db)
     emp_id = emp.id
 
     # Check training_id
@@ -353,14 +336,7 @@ def post_file(cert_name: str, nik: str, cert_file: UploadFile = File(...), db: S
     data = cert_file.file.read()
 
     # Check NIK
-    emp = db.query(Employee).filter(
-        Employee.staff_id == nik
-    )
-
-    if not emp.first():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({nik}) was not found!")
-
-    emp = emp.first()
+    emp = get_emp_by_nik(nik, db)
     emp_id = emp.id
 
     filepath = fio.write_cert(cert_name, emp_id, data, cert_file.filename)
@@ -430,7 +406,7 @@ def post_excel_file_budget(file: UploadFile = File(...)):
 @router.get('/dashboard/smr_certification')
 def get_smr_certs(db: Session = Depends(get_db)):
     # Get Emps
-    emps = db.query(Employee).all()
+    emps = get_all_active_emps(db)
 
     # Init res
     levels = [
@@ -460,7 +436,7 @@ def get_smr_certs(db: Session = Depends(get_db)):
 @router.get('/dashboard/pro_certification')
 def get_pro_certs(db: Session = Depends(get_db)):
     # Get Emps
-    emps = db.query(Employee).all()
+    emps = get_all_active_emps(db)
 
     # Init res
     types = [
@@ -503,7 +479,7 @@ def get_pro_certs(db: Session = Depends(get_db)):
 @router.get('/dashboard/age_group')
 def get_age_group(db: Session = Depends(get_db)):
     # Get All Emps
-    emps = db.query(Employee).all()
+    emps = get_all_active_emps(db)
 
     gens = ["Gen-X", "Gen-Y", "Gen-Z"]
     res = []
@@ -538,7 +514,7 @@ def get_age_group(db: Session = Depends(get_db)):
 @router.get('/dashboard/education_level')
 def get_edu_level(db: Session = Depends(get_db)):
     # Get All Emps
-    emps = db.query(Employee).all()
+    emps = get_all_active_emps(db)
 
     titles = ["Management/Economy", "Information Technology", "Others"]
     res = []
@@ -573,7 +549,7 @@ def get_edu_level(db: Session = Depends(get_db)):
 @router.get('/dashboard/audit_exp')
 def get_total_audit_exp(db: Session = Depends(get_db)):
     # Get All Emps
-    emps = db.query(Employee).all()
+    emps = get_all_active_emps(db)
 
     # in_uob, outside_uob, total_exp, year
     year_cats = [
@@ -623,7 +599,7 @@ def get_total_audit_exp(db: Session = Depends(get_db)):
 @router.get('/clicktable/emp/audit_exp')
 def get_emp_audit_exp(db: Session = Depends(get_db)):
     # Get Emps
-    emps = db.query(Employee).all()
+    emps = get_all_active_emps(db)
 
     res = []
 
@@ -643,7 +619,7 @@ def get_emp_audit_exp(db: Session = Depends(get_db)):
 @router.get('/clicktable/emp/edu_lvl')
 def get_emp_edulvl(db: Session = Depends(get_db)):
     # Get Emps
-    emps = db.query(Employee).all()
+    emps = get_all_active_emps(db)
 
     res = []
 
@@ -660,7 +636,7 @@ def get_emp_edulvl(db: Session = Depends(get_db)):
 @router.get('/clicktable/emp/generation')
 def get_emp_gen(db: Session = Depends(get_db)):
     # Get Emps
-    emps = db.query(Employee).all()
+    emps = get_all_active_emps(db)
 
     res = []
 
@@ -677,7 +653,7 @@ def get_emp_gen(db: Session = Depends(get_db)):
 @router.get('/clicktable/cert/smr')
 def get_click_cert_smr(db: Session = Depends(get_db)):
     # Get Emps
-    emps = db.query(Employee).all()
+    emps = get_all_active_emps(db)
 
     # Init res
     res = []
@@ -697,7 +673,7 @@ def get_click_cert_smr(db: Session = Depends(get_db)):
 @router.get('/clicktable/cert/pro')
 def get_click_cert_pro(db: Session = Depends(get_db)):
     # Get Emps
-    emps = db.query(Employee).all()
+    emps = get_all_active_emps(db)
 
     types = [
         "CISA",
@@ -729,12 +705,7 @@ def get_click_cert_pro(db: Session = Depends(get_db)):
 
 @router.get('/profile/about/table_data/{nik}')
 def get_employee_table(nik: str, db: Session = Depends(get_db)):
-    e = db.query(Employee).filter(
-        Employee.staff_id == nik
-    ).first()
-
-    if not e:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({nik}) was not found!")
+    e = get_emp_by_nik(nik, db)
 
     res = []
 
@@ -877,14 +848,12 @@ def patch_employee_table_entry(nik: str, req: schemas.EmployeeInHiCoupling, db: 
     return updated
 
 @router.get('/profile/header_training/{nik}/{year}')
-def get_header_training(nik: int, year: int, db: Session = Depends(get_db)):
+def get_header_training(nik: str, year: int, db: Session = Depends(get_db)):
     startDate   = datetime.date(year,1,1)
     endDate     = datetime.date(year,12,31)
 
     # Get Emp_id
-    emp = db.query(Employee).filter(
-        Employee.staff_id == str(nik)
-    ).one()
+    emp = get_emp_by_nik(nik, db)
 
     # Get Training Target
     trgt = db.query(TrainingTarget).filter(
@@ -912,14 +881,12 @@ def get_header_training(nik: int, year: int, db: Session = Depends(get_db)):
     }]
 
 @router.get('/profile/data_chart_trainings/{nik}/{year}')
-def get_header_training(nik: int, year: int, db: Session = Depends(get_db)):
+def get_header_training(nik: str, year: int, db: Session = Depends(get_db)):
     startDate   = datetime.date(year,1,1)
     endDate     = datetime.date(year,12,31)
 
     # Get Emp_id
-    emp = db.query(Employee).filter(
-        Employee.staff_id == str(nik)
-    ).one()
+    emp = get_emp_by_nik(nik, db)
 
     # Get Training Target
     trgt = db.query(TrainingTarget).filter(
@@ -948,7 +915,8 @@ def get_header_training(nik: int, year: int, db: Session = Depends(get_db)):
 def change_password(id: int, req: schemas.PasswordChangeIn, db: Session = Depends(get_db)):
     # Check old_pw
     emp_query = db.query(Employee).filter(
-        Employee.id == id
+        Employee.id == id,
+        Employee.active == True
     )
 
     if not emp_query.first():
@@ -1051,16 +1019,7 @@ def get_total_by_division_by_year(year: int, month: int, db: Session = Depends(g
 @router.get('/projects/edit_project_table/{nik}/{year}')
 def get_project_table(nik: str, year: int, db: Session = Depends(get_db)):
     # Check NIK
-    emp_q = db.query(Employee).filter(
-        Employee.staff_id == nik
-    )
-
-    try:
-        emp = emp_q.one()
-    except MultipleResultsFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({nik}) was found!')
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({nik}) was found!')
+    emp = get_emp_by_nik(nik, db)
 
     projects = db.query(Project).filter(
         Project.year == year,
@@ -1325,7 +1284,11 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
     startDate   = datetime.date(year,1,1)
     endDate     = datetime.date(year,12,31)
 
-    query = db.query(SocialContrib).filter(SocialContrib.date >= startDate, SocialContrib.date <= endDate).all()
+    query = db.query(SocialContrib).filter(
+        SocialContrib.date >= startDate, 
+        SocialContrib.date <= endDate,
+        SocialContrib.creator.has(active=True)
+    ).all()
     
     divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
     res = []
@@ -1425,7 +1388,7 @@ def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
             values[5]["budget"]     += t.budget
             values[5]["realized"]   += t.realization
             values[5]["charged"]    += t.charged_by_fin
-        else:
+        elif t.employee.active:
             if 1 <= t.employee.div_id <= 5: # Not Including IAH
                 i = utils.find_index(values, "div", t.employee.part_of_div.short_name)
                 values[i]["realized"]   += t.realization
@@ -1484,8 +1447,9 @@ def get_training_progress_percentage(year: int, db: Session = Depends(get_db)):
 
     # Get Currs
     for t in trainings:
-        i = utils.find_index(values, "div", t.employee.part_of_div.short_name)
-        values[i]["curr_hours"] += t.duration_hours
+        if t.employee.active:
+            i = utils.find_index(values, "div", t.employee.part_of_div.short_name)
+            values[i]["curr_hours"] += t.duration_hours
     
     # Translate to Percentage
     res = []
@@ -1507,14 +1471,7 @@ def get_training_progress_percentage(year: int, db: Session = Depends(get_db)):
 
 @router.post('/training/form', status_code=status.HTTP_201_CREATED)
 def create_training_from_form(req: schemas.TrainingInHiCouplingForm, db: Session = Depends(get_db)):
-    emp = db.query(Employee).filter(
-        Employee.staff_id == req.nik
-    )
-
-    if not emp.first():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Employee of NIK ({req.nik}) was not found!")
-
-    emp_id = emp.first().id
+    emp = get_emp_by_nik(req.nik, db)
     
     newTrain = Training(
         name            = req.name, 
@@ -1526,7 +1483,7 @@ def create_training_from_form(req: schemas.TrainingInHiCouplingForm, db: Session
         charged_by_fin  = 0,
         remark          = req.remarks,
         mandatory_from  = "",
-        emp_id          = emp_id
+        emp_id          = emp.id
     )
     
     db.add(newTrain)
@@ -1541,16 +1498,7 @@ def get_training_table(nik: str, year: int, db: Session = Depends(get_db)):
     endDate     = datetime.date(year,12,31)
     
     # Check NIK
-    emp_query = db.query(Employee).filter(
-        Employee.staff_id == nik
-    )
-
-    try:
-        emp = emp_query.one()
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Employee of NIK ({nik} was not found!)")
-    except MultipleResultsFound:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Multiple Employee of NIK ({nik} was found!)")
+    emp = get_emp_by_nik(nik, db)
 
     training = db.query(Training).filter(
         Training.date >= startDate,
@@ -1561,6 +1509,9 @@ def get_training_table(nik: str, year: int, db: Session = Depends(get_db)):
     res = []
 
     for t in training:
+        if not t.employee.active:
+            continue
+
         divison = t.employee.part_of_div.short_name if t.employee else ""
         emp_name= t.employee.name if t.employee else ""
         emp_nik = t.employee.staff_id if t.employee else ""
@@ -1776,16 +1727,7 @@ def get_csf_donut_data(year: int, db: Session = Depends(get_db)):
 @router.get('/engagement/input_table/{nik}/{year}')
 def get_busu_input_table(nik: str, year: int, db: Session = Depends(get_db)):
     # Check NIK
-    emp_q = db.query(Employee).filter(
-        Employee.staff_id == nik
-    )
-
-    try:
-        emp = emp_q.one()
-    except MultipleResultsFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({nik}) was found!')
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({nik}) was found!')
+    emp = get_emp_by_nik(nik, db)
 
     startDate   = datetime.date(year,1,1)
     endDate     = datetime.date(year,12,31)
@@ -1814,16 +1756,7 @@ def create_busu_input_table_entry(nik: str, req: schemas.BUSUEngagementInHiCoupl
     eng_types = ["Regular Meeting", "Workshop"]
 
     # Check NIK
-    emp_q = db.query(Employee).filter(
-        Employee.staff_id == nik
-    )
-
-    try:
-        emp = emp_q.one()
-    except MultipleResultsFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({req.nik}) was found!')
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({req.nik}) was found!')
+    emp = get_emp_by_nik(nik, db)
 
     new_eng = BUSUEngagement(
         activity_name   = req.activity,
@@ -1891,16 +1824,7 @@ def delete_busu_input_table_entry(id:int, db: Session = Depends(get_db)):
 @router.get('/engagement/user_div_table/{nik}/{year}')
 def get_view_busu_table(nik: str, year: int, db: Session = Depends(get_db)):
     # Check NIK
-    emp_q = db.query(Employee).filter(
-        Employee.staff_id == nik
-    )
-
-    try:
-        emp = emp_q.one()
-    except MultipleResultsFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({nik}) was found!')
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({nik}) was found!')
+    emp = get_emp_by_nik(nik, db)
 
     startDate   = datetime.date(year,1,1)
     endDate     = datetime.date(year,12,31)
@@ -2833,7 +2757,8 @@ def delete_division_table_entry(id: int, db: Session = Depends(get_db)):
 def change_password_admin(req: schemas.PasswordChangeAdminIn, db: Session = Depends(get_db)):
     # Check NIK
     emp_query = db.query(Employee).filter(
-        Employee.staff_id == req.nik
+        Employee.staff_id == req.nik,
+        Employee.active == True
     )
 
     if not emp_query.first():
@@ -2862,6 +2787,9 @@ def get_employee_cert_table(nik: str, db: Session = Depends(get_db)):
     res = []
 
     for c in emp.emp_certifications:
+        if not c.owner.active:
+            continue
+
         res.append({
             "id"              : c.id,
             "employee_name"   : emp.name,
@@ -2885,7 +2813,7 @@ def delete_employee_cert_table_entry(id: int, db: Session = Depends(get_db)):
 
 @router.get('/admin/employee_data/table_data')
 def get_employee_table(db: Session = Depends(get_db)):
-    emps = db.query(Employee).all()
+    emps = get_all_active_emps(db)
 
     res = []
 
@@ -2990,7 +2918,8 @@ def create_employee_table_entry(req: schemas.EmployeeInHiCoupling, db: Session =
 @router.patch('/admin/employee_data/table_data/{id}')
 def patch_employee_table_entry(id: int, req: schemas.EmployeeInHiCoupling, db: Session = Depends(get_db)):
     emp = db.query(Employee).filter(
-        Employee.id == id
+        Employee.id == id,
+        Employee.active == True
     )
 
     if not emp.first():
@@ -3144,6 +3073,9 @@ def get_training_table(year: int, db: Session = Depends(get_db)):
     res = []
 
     for t in training:
+        if not t.employee.active:
+            continue
+
         divison = t.employee.part_of_div.short_name if t.employee else ""
         emp_name= t.employee.name if t.employee else ""
         emp_nik = t.employee.staff_id if t.employee else ""
@@ -3167,14 +3099,7 @@ def get_training_table(year: int, db: Session = Depends(get_db)):
 
 @router.post('/admin/training_data/table_data/')
 def create_training_table_entry(req: schemas.TrainingInHiCoupling, db: Session = Depends(get_db)):    
-    emp = db.query(Employee).filter(
-        Employee.staff_id == req.nik
-    )
-
-    if not emp.first():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
-
-    emp_id = emp.first().id
+    emp = get_emp_by_nik(req.nik, db)
 
     new_train = Training(
         name            = req.trainingTitle,
@@ -3187,7 +3112,7 @@ def create_training_table_entry(req: schemas.TrainingInHiCoupling, db: Session =
         remark          = req.remark,
         mandatory_from  = req.mandatoryFrom,
 
-        emp_id          = emp_id
+        emp_id          = emp.id
     )
 
     db.add(new_train)
@@ -3210,10 +3135,18 @@ def patch_training_table_entry(id: int, req: schemas.TrainingInHiCoupling, db: S
     
     # Get emp_id from NIK
     emp = db.query(Employee).filter(
-        Employee.staff_id == req.nik
+        Employee.staff_id == req.nik,
+        Employee.active == True
     )
-        
-    emp_id = emp.first().id if emp.first() else 0
+
+    emp_id = 0
+
+    try:
+        emp_id = emp.one().id
+    except MultipleResultsFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Multiple Employee of NIK ({req.nik}) was found!")
+    except NoResultFound:
+        pass
 
     dataIn = schemas.Training(
         name            = req.trainingTitle,
@@ -3288,16 +3221,7 @@ def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = D
     status_id = get_project_status_id(req.status)
 
     # Check NIK
-    emp_q = db.query(Employee).filter(
-        Employee.staff_id == req.tl_nik
-    )
-
-    try:
-        emp = emp_q.one()
-    except MultipleResultsFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({req.nik}) was found!')
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({req.nik}) was found!')
+    emp = get_emp_by_nik(req.tl_nik, db)
 
     # Create Project
     new_prj = Project(
@@ -3376,17 +3300,7 @@ def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Sess
     div_id      = divs.index(req.division)+1
     status_id   = get_project_status_id(req.status)
     # Check NIK
-    emp_q = db.query(Employee).filter(
-        Employee.staff_id == req.tl_nik
-    )
-
-    try:
-        emp = emp_q.one()
-    except MultipleResultsFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({req.nik}) was found!')
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({req.nik}) was found!')
-
+    emp = get_emp_by_nik(req.tl_nik, db)
 
     dataIn = schemas.ProjectIn(
         name            = req.auditPlan,
@@ -3553,17 +3467,7 @@ def create_busu_table_entry(req: schemas.BUSUEngagementInHiCoupling, db: Session
     eng_types = ["Regular Meeting", "Workshop"]
 
     # Check NIK
-    emp_q = db.query(Employee).filter(
-        Employee.staff_id == req.nik
-    )
-
-    try:
-        emp = emp_q.one()
-    except MultipleResultsFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({req.nik}) was found!')
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({req.nik}) was found!')
-
+    emp = get_emp_by_nik(req.nik, db)
     new_eng = BUSUEngagement(
         activity_name   = req.activity,
         date            = utils.tablestr_to_datetime(req.date),
@@ -3590,17 +3494,7 @@ def patch_busu_table_entry(id:int, req: schemas.BUSUEngagementInHiCoupling, db: 
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
 
     # Check NIK
-    emp_q = db.query(Employee).filter(
-        Employee.staff_id == req.nik
-    )
-
-    try:
-        emp = emp_q.one()
-    except MultipleResultsFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({req.nik}) was found!')
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({req.nik}) was found!')
-
+    emp = get_emp_by_nik(req.nik,db)
 
     stored_data = jsonable_encoder(eng.first())
     stored_model = schemas.BUSUEngagementIn(**stored_data)
@@ -3999,16 +3893,7 @@ def get_project_titles_v3(year:int, db: Session = Depends(get_db)):
 @router.get('/utils/project_by_nik/{year}/{nik}')
 def get_project_by_NIK(year:int, nik: str, db: Session = Depends(get_db)):
     # Check NIK
-    emp_q = db.query(Employee).filter(
-        Employee.staff_id == nik
-    )
-
-    try:
-        emp = emp_q.one()
-    except MultipleResultsFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Employee of nik ({nik}) was found!')
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'No Employee of nik ({nik}) was found!')
+    emp = get_emp_by_nik(req.nik,db)
 
     # Get Projects
     prjs = db.query(Project).filter(
@@ -4228,7 +4113,7 @@ def _create_employee_from_table(req: schemas.EmployeeInHiCoupling, db : Session)
         edu_category            = req.educationCategory,
         ia_background           = req.IABackgground,
         ea_background           = req.EABackground,
-        active                  = req.active,
+        active                  = True,
 
         div_id = div.id,
         role_id= role_id
@@ -4239,6 +4124,11 @@ def _create_employee_from_table(req: schemas.EmployeeInHiCoupling, db : Session)
     db.refresh(new_emp)
 
     return new_emp
+
+def get_all_active_emps(db: Session):
+    return db.query(Employee).filter(
+        Employee.active == True
+    ).all()
 
 def get_emp(input_id, db: Session):
     if not input_id:
@@ -4262,7 +4152,8 @@ def get_emp_by_nik(input_nik, db: Session):
         return None
     
     emp_q = db.query(Employee).filter(
-        Employee.staff_id == input_nik
+        Employee.staff_id == input_nik,
+        Employee.active == True
     )
 
     try:
@@ -4370,7 +4261,6 @@ def get_prj_by_id(id:int, db:Session):
     except NoResultFound:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No Project of ID ({id}) was found!")
 
-
 def get_busu_by_id(id:int, db:Session):
     busu_q = db.query(BUSUEngagement).filter(
         BUSUEngagement.id == id
@@ -4391,11 +4281,11 @@ def get_training_by_id(id:int, db:Session):
     except NoResultFound:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No Training of ID ({id}) was found!")
  
-
 def get_cert_by_empnik_certname(nik:str, cname:str, db:Session):
     cert_q = db.query(Certification).filter(
         Certification.cert_name == cname,
-        Certification.owner.has(staff_id=nik)
+        Certification.owner.has(staff_id=nik),
+        Certification.owner.has(active=True)
     )
 
     return cert_q.one()
