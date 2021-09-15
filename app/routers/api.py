@@ -2006,6 +2006,19 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
     
     return res
 
+@router.get('/attrition/rate_v2/div/{div_name}/year/{year}')
+def get_rate_by_division_by_yearmonth(div_name: str, year: int, db: Session = Depends(get_db)):
+    (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div_name, db)
+
+
+    attr_sum = resign + t_out + r_out
+    attr_rate = (attr_sum / start_hc) * 100 
+
+    return [
+        {"title":"Attrition Rate","rate":f"{round(attr_rate, 2)}%"},
+        {"title":"","rate":f"{round(100-attr_rate,2)}%"}
+    ]
+
 @router.get('/attrition/rate/{div_name}/{year}')
 def get_rate_by_division_by_yearmonth(div_name: str, year: int, db: Session = Depends(get_db)):
     (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div_name, db)
