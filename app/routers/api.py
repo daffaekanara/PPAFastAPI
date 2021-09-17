@@ -4291,7 +4291,7 @@ def _create_employee_from_table(req: schemas.EmployeeInHiCoupling, db : Session)
     new_emp = Employee(
         name    = req.staffName,
         email   = req.email,
-        pw      = "pass",
+        pw      = hashing.bcrypt("pass"),
 
         staff_id                = req.staffNIK,
         div_stream              = req.stream,
