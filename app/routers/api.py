@@ -774,7 +774,6 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
             index = utils.find_index(cert_res, 'title', c.cert_name)
             cert_res[index]['value'] = 1
         elif c.cert_proof:                          # Other Certs
-            cert_res[-1]["value"] += 1
             otherCerts.append(c.cert_name)
 
     smr_lvl = cert_res[0]['value']
@@ -3006,7 +3005,6 @@ def get_employee_table(db: Session = Depends(get_db)):
                 index = utils.find_index(cert_res, 'title', c.cert_name)
                 cert_res[index]['value'] = 1
             elif c.cert_proof:                          # Other Certs
-                cert_res[-1]["value"] += 1
                 otherCerts.append(c.cert_name)
 
         smr_lvl = cert_res[0]['value']
