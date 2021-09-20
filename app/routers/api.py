@@ -745,7 +745,6 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
             index = utils.find_index(cert_res, 'title', c.cert_name)
             cert_res[index]['value'] = 1
         elif c.cert_proof:                          # Other Certs
-            cert_res[-1]["value"] += 1
             otherCerts.append(c.cert_name)
 
     smr_lvl = cert_res[0]['value']
@@ -1930,6 +1929,86 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
     
     return res
 
+@router.get('/attrition/rate_wbgm_testing/year/{year}')
+def get_dynamic_attr_rate_byYear(year: int, db: Session = Depends(get_db)):
+    """Temp EP for Daffa Testing WBGM Attr Rate Donut Chart"""
+    divs    = ["WBGM"]
+
+    res = []
+
+
+    for index,div in enumerate(divs):
+        (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div, db)
+
+        attr_sum = resign + t_out + r_out
+        attr_rate = (attr_sum / start_hc) * 100
+
+        res = [{
+            'id'        : index+1,
+            'division'  : div,
+            'rate'      : round(attr_rate, 2),
+            'else_rate' : round(100-attr_rate,2),
+            'title_rate': f'{div} Attrition Rate',
+            'title_else': '',
+            'text'      : f'Attrition Rate: {round(attr_rate, 2)}%'
+        }]
+
+    return res
+
+@router.get('/attrition/rate_v4/year/{year}')
+def get_dynamic_attr_rate_byYear(year: int, db: Session = Depends(get_db)):
+    """Returns List of List of Dict"""
+    divs    = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+
+    res = []
+
+
+    for index,div in enumerate(divs):
+        (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div, db)
+
+        attr_sum = resign + t_out + r_out
+        attr_rate = (attr_sum / start_hc) * 100
+
+        x = [{
+            'id'        : index+1,
+            'division'  : div,
+            'rate'      : round(attr_rate, 2),
+            'else_rate' : round(100-attr_rate,2),
+            'title_rate': f'{div} Attrition Rate',
+            'title_else': '',
+            'text'      : f'Attrition Rate: {round(attr_rate, 2)}%'
+        }]
+        res.append(x)
+
+    return res
+
+@router.get('/attrition/rate_v3/year/{year}')
+def get_dynamic_attr_rate_byYear(year: int, db: Session = Depends(get_db)):
+    """Returns List of Dict"""
+
+    divs    = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+
+    res = []
+
+
+    for index,div in enumerate(divs):
+        (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div, db)
+
+        attr_sum = resign + t_out + r_out
+        attr_rate = (attr_sum / start_hc) * 100
+
+        res.append({
+            'id'        : index+1,
+            'division'  : div,
+            'rate'      : round(attr_rate, 2),
+            'else_rate' : round(100-attr_rate,2),
+            'title_rate': f'{div} Attrition Rate',
+            'title_else': '',
+            'text'      : f'Attrition Rate: {round(attr_rate, 2)}%'
+        })
+
+    return res
+
 @router.get('/attrition/rate_v2/div/{div_name}/year/{year}')
 def get_rate_by_division_by_yearmonth(div_name: str, year: int, db: Session = Depends(get_db)):
     (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div_name, db)
@@ -2854,7 +2933,6 @@ def get_employee_table(db: Session = Depends(get_db)):
                 index = utils.find_index(cert_res, 'title', c.cert_name)
                 cert_res[index]['value'] = 1
             elif c.cert_proof:                          # Other Certs
-                cert_res[-1]["value"] += 1
                 otherCerts.append(c.cert_name)
 
         smr_lvl = cert_res[0]['value']
@@ -4096,7 +4174,7 @@ def _create_employee_from_table(req: schemas.EmployeeInHiCoupling, db : Session)
     new_emp = Employee(
         name    = req.staffName,
         email   = req.email,
-        pw      = "pass",
+        pw      = hashing.bcrypt("pass"),
 
         staff_id                = req.staffNIK,
         div_stream              = req.stream,
