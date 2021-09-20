@@ -3971,7 +3971,7 @@ def get_project_titles_v3(year:int, db: Session = Depends(get_db)):
 @router.get('/utils/project_by_nik/{year}/{nik}')
 def get_project_by_NIK(year:int, nik: str, db: Session = Depends(get_db)):
     # Check NIK
-    emp = get_emp_by_nik(req.nik,db)
+    emp = get_emp_by_nik(nik,db)
 
     # Get Projects
     prjs = db.query(Project).filter(
