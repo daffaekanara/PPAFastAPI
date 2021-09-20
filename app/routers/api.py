@@ -1446,7 +1446,7 @@ def get_training_progress_percentage(year: int, db: Session = Depends(get_db)):
 
     # Get Currs
     for t in trainings:
-        if t.employee.active:
+        if t.employee and t.employee.active:
             i = utils.find_index(values, "div", t.employee.part_of_div.short_name)
             values[i]["curr_hours"] += t.duration_hours
     
@@ -1508,7 +1508,7 @@ def get_training_table(nik: str, year: int, db: Session = Depends(get_db)):
     res = []
 
     for t in training:
-        if not t.employee.active:
+        if t.employee and not t.employee.active:
             continue
 
         divison = t.employee.part_of_div.short_name if t.employee else ""
@@ -3151,7 +3151,7 @@ def get_training_table(year: int, db: Session = Depends(get_db)):
     res = []
 
     for t in training:
-        if not t.employee.active:
+        if t.employee and not t.employee.active:
             continue
 
         divison = t.employee.part_of_div.short_name if t.employee else ""
