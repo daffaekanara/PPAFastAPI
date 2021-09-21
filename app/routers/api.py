@@ -26,6 +26,29 @@ router = APIRouter(
     prefix="/api"
 )
 
+### History ###
+@router.post('/admin/opeartion/migrate_data')
+def migrate_data(db: Session = Depends(get_db)):
+    # Copy Data
+    _copy_data_to_historic_tables(db)
+
+    return
+
+def _copy_data_to_historic_tables(db: Session):
+    # Traning
+    _copy_training_data(db)
+    return
+
+def _copy_training_data(db: Session):
+    trainings = db.query(Training).all()
+
+    for t in trainings:
+        pass
+
+    return True
+
+
+
 ### File ###
 @router.get('/admin/audit_project_data/download/pa/id/{id}')
 def get_prj_paproof_proof(id: int, db: Session = Depends(get_db)):

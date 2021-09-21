@@ -364,3 +364,170 @@ class ServerState(Base):
     id      = Column(Integer, primary_key=True, index=True)
     name    = Column(String)
     value   = Column(Boolean)
+
+### Histories ###
+class TrainingHistory(Base):
+    __tablename__ = 'traininghistory'
+    id      = Column(Integer, primary_key=True, index=True)
+    year        = Column(Integer)
+    nik         = Column(String)
+    division    = Column(String)
+    emp_name    = Column(String)
+    name        = Column(String)
+    date        = Column(Date)
+    hours       = Column(Integer)
+    budget      = Column(Float)
+    realized    = Column(Float)
+    charged     = Column(Float)
+    mandatory   = Column(String)
+    remark      = Column(String)
+
+    proof       = Column(String)
+
+class ProjectHistory(Base):
+    __tablename__ = 'projecthistory'
+    id      = Column(Integer, primary_key=True, index=True)
+    year        = Column(Integer)
+    p_name      = Column(String)
+    div         = Column(String)
+    tl_name     = Column(String)
+    tl_nik      = Column(String)
+    status      = Column(String)
+    use_da      = Column(Boolean)
+    carried_over= Column(Boolean)
+    timely      = Column(Boolean)
+    
+    pa_proof    = Column(String)
+
+class SocialContribHistory(Base):
+    __tablename__ = 'socialcontribhistory'
+    id      = Column(Integer, primary_key=True, index=True)
+    year        = Column(Integer)
+    div         = Column(String)
+    category    = Column(String)
+    sc_name     = Column(String)
+    date        = Column(Date)
+    creator_name= Column(String)
+    creator_nik = Column(String)
+
+class AttritionMainTableHistory(Base):
+    __tablename__ = 'attritionmaintablehistory'
+    id      = Column(Integer, primary_key=True, index=True)
+    year        = Column(Integer)
+    division    = Column(String)
+    hc_budget   = Column(Integer)
+    hc_start    = Column(Integer)
+    join        = Column(Integer)
+    resign      = Column(Integer)
+    r_in        = Column(Integer)
+    r_out       = Column(Integer)
+    t_in        = Column(Integer)
+    t_out       = Column(Integer)
+
+class AttritionJRTTableHistory(Base):
+    __tablename__ = 'attritionjrttablehistory'
+    id      = Column(Integer, primary_key=True, index=True)
+    year        = Column(Integer)
+    emp_name    = Column(String)
+    emp_nik     = Column(String)
+    category    = Column(String)
+    date        = Column(Date)
+    division    = Column(String)
+
+class AttritionRotationTableHistory(Base):
+    __tablename__ = 'attritionrotationtablehistory'
+    id      = Column(Integer, primary_key=True, index=True)
+    year        = Column(Integer)
+    emp_name    = Column(String)
+    emp_nik     = Column(String)
+    date        = Column(Date)
+    from_div    = Column(String)
+    to_div      = Column(String)
+
+class CSFHistory(Base):
+    __tablename__ = 'csfhistory'
+    id      = Column(Integer, primary_key=True, index=True)
+    year        = Column(Integer)
+    p_name      = Column(String)
+    client_name = Column(String)
+    client_unit = Column(String)
+    date        = Column(Date)
+    atp_1       = Column(Float)
+    atp_2       = Column(Float)
+    atp_3       = Column(Float)
+    atp_4       = Column(Float)
+    atp_5       = Column(Float)
+    atp_6       = Column(Float)
+    ac_1        = Column(Float)
+    ac_2        = Column(Float)
+    ac_3        = Column(Float)
+    ac_4        = Column(Float)
+    ac_5        = Column(Float)
+    ac_6        = Column(Float)
+    paw_1       = Column(Float)
+    paw_2       = Column(Float)
+    paw_3       = Column(Float)
+
+    division        = Column(String)
+    division_by_inv = Column(String)
+
+class QAResultHistory(Base):
+    __tablename__ = 'qaresulthistory'
+    id      = Column(Integer, primary_key=True, index=True)
+    year                = Column(Integer)
+    qa_type             = Column(String)
+    p_name              = Column(String)
+    tl_name             = Column(String)
+    div_head            = Column(String)
+    qa_grading_result   = Column(String)
+    qaf_category        = Column(String)
+    qaf_stage           = Column(String)
+    qaf_deliv           = Column(String)
+    issue_count         = Column(Integer)
+    qa_sample           = Column(Boolean)
+
+class BUSUHistory(Base):
+    __tablename__ = 'busuhistory'
+    id      = Column(Integer, primary_key=True, index=True)
+    year        = Column(Integer)
+    tl_name     = Column(String)
+    division    = Column(String)
+    WorM        = Column(String)
+    name        = Column(String)
+    date        = Column(Date)
+
+class DivisionHistory(Base):
+    __tablename__ = 'divisionhistory'
+    id      = Column(Integer, primary_key=True, index=True)
+    year        = Column(Integer)
+    short_name  = Column(String)
+    long_name   = Column(String)
+    dh_name     = Column(String)
+    dh_nik      = Column(String)
+
+class EmployeeHistory(Base):
+    __tablename__ = 'employeehistory'
+    id      = Column(Integer, primary_key=True, index=True)
+    year                    = Column(Integer)
+    name                    = Column(String)
+    email                   = Column(String)
+    staff_id                = Column(String)
+    role                    = Column(String)
+
+    division                = Column(String)
+    div_stream              = Column(String)
+
+    corporate_title         = Column(String)
+    corporate_grade         = Column(String)
+    gender                  = Column(String)
+    edu_level               = Column(String)
+    edu_major               = Column(String)
+    edu_category            = Column(String)
+    ia_background           = Column(Boolean)
+    ea_background           = Column(Boolean)
+    year_audit_non_uob      = Column(Integer)
+
+    date_of_birth           = Column(Date)
+    date_first_employment   = Column(Date)
+    date_first_uob          = Column(Date)
+    date_first_ia           = Column(Date)
