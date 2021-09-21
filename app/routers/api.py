@@ -3899,6 +3899,162 @@ def patch_rot_attr_table_entry(id: int, db: Session = Depends(get_db)):
     return {'details': 'Deleted'}
 
 ### Utils ###
+@router.get('/utils/employee/show_aas')
+def get_employee_table(db: Session = Depends(get_db)):
+    emps = get_all_active_emps(db)
+
+    res = []
+
+    for e in emps:
+        as_of_now       = datetime.date.today().strftime("%m/%d/%Y")
+        age             = utils.get_year_diff_to_now(e.date_of_birth)
+        gen             = utils.get_gen(e.date_of_birth)
+        auditUOBYears   = utils.get_year_diff_to_now(e.date_first_uob)
+
+        # Process Certs
+        certs = [
+            "SMR", "CISA", "CEH", "ISO27001", "CHFI", 
+            "IDEA", "QualifiedIA", "CBIA", "CIA", "CPA", "CA"]
+
+        cert_res = []
+
+        for c in certs:
+            cert_res.append({
+                'title': c,
+                'value': 0
+            })
+
+        otherCerts = []
+        max_smr = 0
+
+        for c in e.emp_certifications:
+            # SMR (Levels)
+            smr_level = utils.extract_SMR_level(c.cert_name)
+            
+            if smr_level: # SMR
+                if c.cert_proof:
+                    if smr_level > max_smr:
+                        cert_res[0]['value'] = smr_level
+                        max_smr = smr_level
+            elif c.cert_name == "SMR In Progress":
+                cert_res[0]['value'] = "In Progress"
+            elif c.cert_name in certs and c.cert_proof: # Pro Certs
+                index = utils.find_index(cert_res, 'title', c.cert_name)
+                cert_res[index]['value'] = 1
+            elif c.cert_proof:                          # Other Certs
+                otherCerts.append(c.cert_name)
+
+        smr_lvl = cert_res[0]['value']
+
+        if smr_lvl == "In Progress":
+            smr_str = smr_lvl
+        elif smr_lvl:
+            smr_str = f"Level {smr_lvl}"
+        else:
+            smr_str = "-"
+
+        res.append([
+            str(e.id),
+            e.staff_id,
+            e.name,
+            e.email,
+            e.role.name,
+            str(e.part_of_div.id),
+            e.div_stream,
+            e.corporate_title,
+            e.corporate_grade,
+            e.date_of_birth.strftime("%m/%d/%Y"),
+            e.date_first_employment.strftime("%m/%d/%Y"),
+            e.date_first_uob.strftime("%m/%d/%Y"),
+            e.date_first_ia.strftime("%m/%d/%Y"),
+            as_of_now,
+            str(age),
+            gen,
+            e.gender,
+            str(auditUOBYears),
+            str(e.year_audit_non_uob),
+            str(e.year_audit_non_uob + auditUOBYears),
+            e.edu_level,
+            e.edu_major,
+            e.edu_category,
+            smr_str,
+            "false" if cert_res[1]['value'] == 0 else "true",
+            "false" if cert_res[2]['value'] == 0 else "true",
+            "false" if cert_res[3]['value'] == 0 else "true",
+            "false" if cert_res[4]['value'] == 0 else "true",
+            "false" if cert_res[5]['value'] == 0 else "true",
+            "false" if cert_res[6]['value'] == 0 else "true",
+            "false" if cert_res[7]['value'] == 0 else "true",
+            "false" if cert_res[8]['value'] == 0 else "true",
+            "false" if cert_res[9]['value'] == 0 else "true",
+            "false" if cert_res[10]['value'] == 0 else "true",
+            ", ".join(otherCerts),
+            str(e.ia_background),
+            str(e.ea_background),
+            str(e.active)
+        ])
+
+    return res
+
+@router.get('/utils/csf/show_aas/year/{year}')
+def get_csf_table(year: int, db: Session = Depends(get_db)):
+    prjs = db.query(Project).filter(
+        Project.year == year
+    ).all()
+
+    prj_ids = [p.id for p in prjs]
+
+    csfs = db.query(CSF).filter(
+        CSF.prj_id.in_(prj_ids)
+    ).all()
+
+    res = []
+
+    for c in csfs:
+        sum_atp = c.atp_1 + c.atp_2 + c.atp_3 + c.atp_4 + c.atp_5 + c.atp_6
+        avg_atp = round(sum_atp / 6, 2)
+
+        sum_ac = c.ac_1 + c.ac_2 + c.ac_3 + c.ac_4 + c.ac_5 + c.ac_6
+        avg_ac = round(sum_ac / 6, 2)
+
+        sum_paw = c.paw_1 + c.paw_2 + c.paw_3
+        avg_paw = round(sum_paw / 3, 2)       
+
+        avg = round((avg_ac + avg_atp + avg_paw)/3, 2)
+
+        res.append([
+            str(c.id),
+            c.prj.div.short_name,
+            str(c.prj_id),
+            c.client_name,
+            c.client_unit,
+            c.prj.tl.name,
+            utils.date_to_str(c.csf_date),
+            str(c.atp_1),
+            str(c.atp_2),
+            str(c.atp_3),
+            str(c.atp_4),
+            str(c.atp_5),
+            str(c.atp_6),
+            str(avg_atp),
+            str(c.ac_1),
+            str(c.ac_2),
+            str(c.ac_3),
+            str(c.ac_4),
+            str(c.ac_5),
+            str(c.ac_6),
+            str(avg_ac),
+            str(c.paw_1),
+            str(c.paw_2),
+            str(c.paw_3),
+            str(avg_paw),
+            str(avg),
+            c.by_invdiv_div.short_name
+        ])
+
+    return res
+
+
 @router.get('/utils/divs')
 def get_divs(db: Session = Depends(get_db)):
     divs = db.query(Division).filter(
