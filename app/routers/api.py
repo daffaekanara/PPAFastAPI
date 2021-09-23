@@ -4124,7 +4124,7 @@ def get_project_titles_v3(year:int, db: Session = Depends(get_db)):
 
     return res
 
-@router.get('/utils/project_by_nik/{year}/{nik}')
+@router.get('/utils/project_by_nik_v2/{year}/{nik}')
 def get_project_by_NIK(year:int, nik: str, db: Session = Depends(get_db)):
     # Check NIK
     emp = get_emp_by_nik(nik,db)
@@ -4138,8 +4138,7 @@ def get_project_by_NIK(year:int, nik: str, db: Session = Depends(get_db)):
     res = []
     for p in prjs:
         res.append({
-            'id'            : str(p.id),
-            'project_title' : p.name
+            'title' : p.name
         })
 
     return res
