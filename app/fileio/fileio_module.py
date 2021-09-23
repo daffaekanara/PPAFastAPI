@@ -122,12 +122,12 @@ def delete_cert_files_dir():
     shutil.rmtree(dir_name)
 
 ### Historic
-def migrate_training_proof(old_filepath:str, year:int, id:int):
-    dir_name = os.path.join(DATA_FOLDER, str(year), HISTORY_FOLDER, TRAIN_PROOF_FOLDER)
+def migrate_training_proof(old_filepath:str, year:int, emp_id:int, train_id:int):
+    dir_name = os.path.join(DATA_FOLDER, HISTORY_FOLDER, str(year), TRAIN_PROOF_FOLDER, str(emp_id))
     os.makedirs(dir_name, exist_ok=True)
 
     _, old_filename = os.path.split(old_filepath)
-    new_fname = f"{id}.{old_filename.split('.')[-1]}"
+    new_fname = f"{train_id}.{old_filename.split('.')[-1]}"
 
     remove_duplicate_file(dir_name, new_fname)
 
@@ -135,9 +135,21 @@ def migrate_training_proof(old_filepath:str, year:int, id:int):
     full_filepath = os.path.join(dir_name, new_fname)
     shutil.copy(old_filepath, full_filepath)
     
-    # Delete Old
-    os.remove(old_filepath)
+    return full_filepath
 
+def migrate_busu_proof(old_filepath:str, year:int, emp_id:int, busu_id:int):
+    dir_name = os.path.join(DATA_FOLDER, HISTORY_FOLDER, str(year), BUSU_ENG_FOLDER, str(emp_id))
+    os.makedirs(dir_name, exist_ok=True)
+
+    _, old_filename = os.path.split(old_filepath)
+    new_fname = f"{busu_id}.{old_filename.split('.')[-1]}"
+
+    remove_duplicate_file(dir_name, new_fname)
+
+    # Migrate
+    full_filepath = os.path.join(dir_name, new_fname)
+    shutil.copy(old_filepath, full_filepath)
+    
     return full_filepath
 
 ### utils

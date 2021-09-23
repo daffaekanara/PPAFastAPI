@@ -495,6 +495,8 @@ class BUSUHistory(Base):
     WorM        = Column(String)
     name        = Column(String)
     date        = Column(Date)
+    
+    proof       = Column(String)
 
 class DivisionHistory(Base):
     __tablename__ = 'divisionhistory'

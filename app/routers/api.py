@@ -10,7 +10,6 @@ from operator import itemgetter
 from dateutil.relativedelta import relativedelta
 from sqlalchemy.sql.expression import or_
 from fastapi.responses import FileResponse
-from sqlalchemy.sql.schema import ColumnCollectionConstraint
 from fileio import fileio_module as fio
 import schemas, datetime, utils, hashing
 from models import *
@@ -27,32 +26,41 @@ router = APIRouter(
 )
 
 ### History ###
-@router.post('/admin/opeartion/migrate_data')
+@router.post('/admin/operation/migrate_data')
 def migrate_data(db: Session = Depends(get_db)):
-    # Copy Data
-    _copy_data_to_historic_tables(db)
-
-    return
-
-def _copy_data_to_historic_tables(db: Session):
-    # Traning
-    _copy_training_data(db)
-    return
-
-def _copy_training_data(db: Session):
-    trainings = db.query(Training).all()
-
+    ### TODO - Fix Default year
     year = 2021
+    
+    # Copy Data
+    _copy_data_to_historic_tables(year, db)
+    _delete_old_data(year,db)
+
+    return {"Details": "Success"}
+
+def _copy_data_to_historic_tables(year: int, db: Session):
+
+    _copy_training_data(year, db)
+    _copy_busu_data(year, db)
+
+def _delete_old_data(year: int, db: Session):
+    _delete_training_data(year,db)
+    _delete_busu_data(year,db)
+
+def _copy_training_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    trainings = db.query(Training).filter(
+        Training.date <= endDate
+    ).all()
 
     for t in trainings:
-        emp = get_emp(t.emp_id)
+        emp = get_emp(t.emp_id, db)
 
         # Create History Entry
         trainingH = TrainingHistory(
             year        = year,
-            nik         = emp.staff_id,
-            division    = emp.part_of_div.short_name,
-            emp_name    = emp.name,
+            nik         = emp.staff_id if emp else None,
+            division    = emp.part_of_div.short_name if emp else None,
+            emp_name    = emp.name if emp else None,
             name        = t.name,
             date        = t.date,
             hours       = t.duration_hours,
@@ -70,7 +78,7 @@ def _copy_training_data(db: Session):
 
         # Handle Proof File Copy
         if fio.is_file_exist(t.proof):
-            new_proof = fio.migrate_training_proof(t.proof, year, trainingH.id)
+            new_proof = fio.migrate_training_proof(t.proof, year, emp.id, trainingH.id)
 
             # Update History Proof
             tH_query = db.query(TrainingHistory).filter(
@@ -84,12 +92,71 @@ def _copy_training_data(db: Session):
             tH_query.update(stored_data)
             db.commit()
 
-        # Delete Training Data
+def _copy_busu_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    engs = db.query(BUSUEngagement).filter(
+        BUSUEngagement.date <= endDate
+    ).all()
 
-        
+    for e in engs:
+        emp = get_emp(e.creator_id, db)
 
+        # Create History Entry
+        engH = BUSUHistory(
+            year        = year,
+            tl_name     = emp.name,
+            division    = emp.part_of_div.short_name,
+            WorM        = e.eng_type.name,
+            name        = e.activity_name,
+            date        = e.date,
 
-    return True
+            proof       = None
+        )
+        db.add(engH)
+        db.commit()
+        db.refresh(engH)
+
+        # Handle Proof File Copy
+        if fio.is_file_exist(e.proof):
+            new_proof = fio.migrate_busu_proof(e.proof, year, emp.id, engH.id)
+
+            # Update History Proof
+            eH_query = db.query(BUSUHistory).filter(
+                BUSUHistory.id == engH.id
+            )
+            stored_data = jsonable_encoder(engH)
+            stored_model = schemas.BUSUHistory(**stored_data)
+            new_data = {"proof": new_proof}
+            updated = stored_model.copy(update=new_data)
+            stored_data.update(updated)
+            eH_query.update(stored_data)
+            db.commit()
+
+def _delete_training_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    trainings = db.query(Training).filter(
+        Training.date <= endDate
+    ).all()
+
+    # Delete Training Data
+    for t in trainings:
+        if fio.is_file_exist(t.proof):
+            fio.delete_file(t.proof)
+        db.delete(t)
+    db.commit()
+
+def _delete_busu_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    busus = db.query(BUSUEngagement).filter(
+        BUSUEngagement.date <= endDate
+    ).all()
+
+    # Delete Data
+    for b in busus:
+        if fio.is_file_exist(b.proof):
+            fio.delete_file(b.proof)
+        db.delete(b)
+    db.commit()
 
 ### File ###
 @router.get('/admin/audit_project_data/download/pa/id/{id}')
@@ -292,7 +359,7 @@ def post_training_proof_file(nik: str, training_id: int, attachment_proof: Uploa
     data = attachment_proof.file.read()
 
     # Check NIK
-    emp = get_emp_by_nik(id,db)
+    emp = get_emp_by_nik(nik,db)
     emp_id = emp.id
 
     # Check training_id
