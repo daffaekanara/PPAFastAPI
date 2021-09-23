@@ -6,11 +6,15 @@ from datetime import datetime
 DATA_FOLDER     = 'data'
 
 FILES_FOLDER    = 'files'
+HISTORY_FOLDER  = 'history'
+
 CERTS_FOLDER    = 'certs'
 BUDGET_FOLDER   = 'budget'
 TRAIN_PROOF_FOLDER = 'trainings'
 BUSU_ENG_FOLDER = 'busu'
 PA_CMPLT_FOLDER = 'pa_completion'
+
+
 
 def is_file_exist(filepath:str):
     return os.path.isfile(filepath)
@@ -64,11 +68,7 @@ def write_training_proof(train_id, emp_id, data, filename):
     new_fname = f"{train_id}.{filename.split('.')[-1]}"
 
     # Check if cert with same name exist
-    for (idirpath, dirnames, filenames) in os.walk(dir_name):
-        for fname in filenames:
-            if fname.split('.')[0] == new_fname.split('.')[0]:
-                os.remove(os.path.join(dir_name, fname))
-        break # Only walk first level dir
+    remove_duplicate_file(dir_name, new_fname)
     
     # Write proof
     full_filepath = os.path.join(dir_name, new_fname)
@@ -120,3 +120,34 @@ def delete_file(filepath):
 def delete_cert_files_dir():
     dir_name = pathlib.Path(f"{DATA_FOLDER}/{FILES_FOLDER}/{CERTS_FOLDER}")
     shutil.rmtree(dir_name)
+
+### Historic
+def migrate_training_proof(old_filepath:str, year:int, id:int):
+    dir_name = os.path.join(DATA_FOLDER, str(year), HISTORY_FOLDER, TRAIN_PROOF_FOLDER)
+    os.makedirs(dir_name, exist_ok=True)
+
+    _, old_filename = os.path.split(old_filepath)
+    new_fname = f"{id}.{old_filename.split('.')[-1]}"
+
+    remove_duplicate_file(dir_name, new_fname)
+
+    # Migrate
+    full_filepath = os.path.join(dir_name, new_fname)
+    shutil.copy(old_filepath, full_filepath)
+    
+    # Delete Old
+    os.remove(old_filepath)
+
+    return full_filepath
+
+### utils
+def remove_duplicate_file(dir_name, new_fname):
+    # Check if file with same name exist
+    for (idirpath, dirnames, filenames) in os.walk(dir_name):
+        for fname in filenames:
+            if fname.split('.')[0] == new_fname.split('.')[0]:
+                os.remove(os.path.join(dir_name, fname))
+                return True
+        break # Only walk first level dir
+    
+    return False

@@ -42,12 +42,54 @@ def _copy_data_to_historic_tables(db: Session):
 def _copy_training_data(db: Session):
     trainings = db.query(Training).all()
 
+    year = 2021
+
     for t in trainings:
-        pass
+        emp = get_emp(t.emp_id)
+
+        # Create History Entry
+        trainingH = TrainingHistory(
+            year        = year,
+            nik         = emp.staff_id,
+            division    = emp.part_of_div.short_name,
+            emp_name    = emp.name,
+            name        = t.name,
+            date        = t.date,
+            hours       = t.duration_hours,
+            budget      = t.budget,
+            realized    = t.realization,
+            charged     = t.charged_by_fin,
+            mandatory   = t.mandatory_from,
+            remark      = t.remark,
+
+            proof       = ""
+        )
+        db.add(trainingH)
+        db.commit()
+        db.refresh(trainingH)
+
+        # Handle Proof File Copy
+        if fio.is_file_exist(t.proof):
+            new_proof = fio.migrate_training_proof(t.proof, year, trainingH.id)
+
+            # Update History Proof
+            tH_query = db.query(TrainingHistory).filter(
+                TrainingHistory.id == trainingH.id
+            )
+            stored_data = jsonable_encoder(trainingH)
+            stored_model = schemas.TrainingHistory(**stored_data)
+            new_data = {"proof": new_proof}
+            updated = stored_model.copy(update=new_data)
+            stored_data.update(updated)
+            tH_query.update(stored_data)
+            db.commit()
+
+        # Delete Training Data
+
+        
+
 
     return True
-
-
 
 ### File ###
 @router.get('/admin/audit_project_data/download/pa/id/{id}')
@@ -4231,7 +4273,7 @@ def get_all_active_emps(db: Session):
         Employee.active == True
     ).all()
 
-def get_emp(input_id, db: Session):
+def get_emp(input_id, db: Session) -> Employee:
     if not input_id:
         return None
 
