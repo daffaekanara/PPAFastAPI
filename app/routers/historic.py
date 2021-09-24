@@ -22,3 +22,13 @@ def get_training_historic(db: Session = Depends(get_db)):
 def get_busu_historic(db: Session = Depends(get_db)):
     query = db.query(BUSUHistory).all()
     return query
+
+@router.get('/socialContrib')
+def get_socContrib_historic(db: Session = Depends(get_db)):
+    query = db.query(SocialContribHistory).all()
+    return query
+
+@router.get('/csf')
+def get_csf_historic(db: Session = Depends(get_db)):
+    query = db.query(CSFHistory).all()
+    return query

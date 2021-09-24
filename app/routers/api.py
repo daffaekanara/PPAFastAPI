@@ -32,19 +32,22 @@ def migrate_data(db: Session = Depends(get_db)):
     year = 2021
     
     # Copy Data
-    _copy_data_to_historic_tables(year, db)
-    _delete_old_data(year,db)
+    copy_data_to_historic_tables(year, db)
+    delete_old_data(year,db)
 
     return {"Details": "Success"}
 
-def _copy_data_to_historic_tables(year: int, db: Session):
+def copy_data_to_historic_tables(year: int, db: Session):
+    # _copy_training_data(year, db)
+    # _copy_busu_data(year, db)
+    # _copy_socContrrib_data(year, db)
+    _copy_csf_data(year, db)
 
-    _copy_training_data(year, db)
-    _copy_busu_data(year, db)
-
-def _delete_old_data(year: int, db: Session):
-    _delete_training_data(year,db)
-    _delete_busu_data(year,db)
+def delete_old_data(year: int, db: Session):
+    # _delete_training_data(year,db)
+    # _delete_busu_data(year,db)
+    # _delete_socContrrib_data(year, db)
+    _delete_csf_data(year, db)
 
 def _copy_training_data(year: int, db: Session):
     endDate = datetime.date(year,12,31)
@@ -132,6 +135,65 @@ def _copy_busu_data(year: int, db: Session):
             eH_query.update(stored_data)
             db.commit()
 
+def _copy_socContrrib_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    contribs = db.query(SocialContrib).filter(
+        SocialContrib.date <= endDate
+    ).all()
+
+    for s in contribs:
+        emp = get_emp(s.creator_id, db)
+
+        # Create History Entry
+        scH = SocialContribHistory(
+            year        = year,
+            div         = emp.part_of_div.short_name,
+            category    = s.social_type.name,
+            sc_name     = s.topic_name,
+            date        = s.date,
+            creator_name= emp.name,
+            creator_nik = emp.staff_id
+        )
+        db.add(scH)
+    db.commit()
+
+def _copy_csf_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    csfs = db.query(CSF).filter(
+        CSF.csf_date <= endDate
+    ).all()
+
+    for c in csfs:
+        emp = get_emp(c.prj.tl_id, db)
+
+        # Create History Entry
+        cH = CSFHistory(
+            year        = year,
+            p_name      = c.prj.name,
+            client_name = c.client_name,
+            client_unit = c.client_unit,
+            date        = c.csf_date,
+            atp_1       = c.atp_1,
+            atp_2       = c.atp_2,
+            atp_3       = c.atp_3,
+            atp_4       = c.atp_4,
+            atp_5       = c.atp_5,
+            atp_6       = c.atp_6,
+            ac_1        = c.ac_1,
+            ac_2        = c.ac_2,
+            ac_3        = c.ac_3,
+            ac_4        = c.ac_4,
+            ac_5        = c.ac_5,
+            ac_6        = c.ac_6,
+            paw_1       = c.paw_1,
+            paw_2       = c.paw_2,
+            paw_3       = c.paw_3,
+            division        = emp.part_of_div.short_name,
+            division_by_inv = c.by_invdiv_div.short_name
+        )
+        db.add(cH)
+    db.commit()
+
 def _delete_training_data(year: int, db: Session):
     endDate = datetime.date(year,12,31)
     trainings = db.query(Training).filter(
@@ -157,6 +219,29 @@ def _delete_busu_data(year: int, db: Session):
             fio.delete_file(b.proof)
         db.delete(b)
     db.commit()
+
+def _delete_socContrrib_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    contribs = db.query(SocialContrib).filter(
+        SocialContrib.date <= endDate
+    ).all()
+
+    # Delete Data
+    for c in contribs:
+        db.delete(c)
+    db.commit()
+
+def _delete_csf_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    csfs = db.query(CSF).filter(
+        CSF.csf_date <= endDate
+    ).all()
+
+    # Delete Data
+    for c in csfs:
+        db.delete(c)
+    db.commit()
+
 
 ### File ###
 @router.get('/admin/audit_project_data/download/pa/id/{id}')
