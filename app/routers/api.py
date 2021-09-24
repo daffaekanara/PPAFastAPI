@@ -4070,6 +4070,20 @@ def get_divs(db: Session = Depends(get_db)):
 
     return res
 
+@router.get('/utils/divs_v2')
+def get_divs_v2(db: Session = Depends(get_db)):
+    divs = db.query(Division).filter(
+        Division.short_name != "IAH"
+    )
+
+    res = []
+    for d in divs:
+        res.append({
+            'title' : d.short_name
+        })
+
+    return res
+
 @router.get('/utils/divs_with_IAH')
 def get_divs_with_IAH(db: Session = Depends(get_db)):
     divs = db.query(Division).all()
