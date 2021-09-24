@@ -32,3 +32,23 @@ def get_socContrib_historic(db: Session = Depends(get_db)):
 def get_csf_historic(db: Session = Depends(get_db)):
     query = db.query(CSFHistory).all()
     return query
+
+@router.get('/qaip')
+def get_qaip_historic(db: Session = Depends(get_db)):
+    query = db.query(QAResultHistory).all()
+    return query
+
+@router.get('/attr/main')
+def get_attrmain_historic(db: Session = Depends(get_db)):
+    query = db.query(AttritionMainTableHistory).all()
+    return query
+
+@router.get('/attr/jrt')
+def get_attr_jrt_historic(db: Session = Depends(get_db)):
+    query = db.query(AttritionJRTTableHistory).all()
+    return query
+
+@router.get('/attr/rot')
+def get_attr_rot_historic(db: Session = Depends(get_db)):
+    query = db.query(AttritionRotationTableHistory).all()
+    return query

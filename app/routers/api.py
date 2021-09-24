@@ -38,16 +38,20 @@ def migrate_data(db: Session = Depends(get_db)):
     return {"Details": "Success"}
 
 def copy_data_to_historic_tables(year: int, db: Session):
-    # _copy_training_data(year, db)
-    # _copy_busu_data(year, db)
-    # _copy_socContrrib_data(year, db)
+    _copy_training_data(year, db)
+    _copy_busu_data(year, db)
+    _copy_socContrrib_data(year, db)
     _copy_csf_data(year, db)
+    _copy_qaip_data(year, db)
+    _copy_attr_data(year, db)
 
 def delete_old_data(year: int, db: Session):
-    # _delete_training_data(year,db)
-    # _delete_busu_data(year,db)
-    # _delete_socContrrib_data(year, db)
+    _delete_training_data(year,db)
+    _delete_busu_data(year,db)
+    _delete_socContrrib_data(year, db)
     _delete_csf_data(year, db)
+    _delete_qaip_data(year, db)
+    _delete_attr_data(year, db)
 
 def _copy_training_data(year: int, db: Session):
     endDate = datetime.date(year,12,31)
@@ -194,6 +198,133 @@ def _copy_csf_data(year: int, db: Session):
         db.add(cH)
     db.commit()
 
+def _copy_qaip_data(year: int, db: Session):
+    qaips = db.query(QAIP).filter(
+        QAIP.prj.has(year=year)
+    ).all()
+
+    for q in qaips:
+        try:
+            dh = get_emp(q.prj.div.dh_id, db)
+        except Exception:
+            dh = None
+
+        cats    = utils.qa_to_category_str(q)
+        stages  = utils.qa_to_stage_str(q)
+        delivs  = utils.qa_to_delivs_str(q)
+
+        # Create History Entry
+        qaH = QAResultHistory(
+            year                = year,
+            qa_type             = q.qa_type.name,
+            p_name              = q.prj.name,
+            tl_name             = q.prj.tl.name,
+            div_head            = dh.name if dh else None,
+            qa_grading_result   = q.qa_grading_result.name,
+            qaf_category        = ", ".join(cats),
+            qaf_stage           = ", ".join(stages),
+            qaf_deliv           = ", ".join(delivs),
+            issue_count         = len(delivs),
+            qa_sample           = q.qa_sample
+        )
+        db.add(qaH)
+    db.commit()
+
+def _copy_attr_data(year: int, db: Session):
+    def __copy_main_attr_data():
+        divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+        res = []
+
+        # Result Dict
+        for div in divs:
+            # HCBudget and NewYear
+            yAttr = get_yAttr_by_div_shortname(year, div, db)
+            div_id = yAttr.div_id
+
+            join = resign = t_in = t_out = r_in = r_out = curr_hc = 0
+
+            # Join, Resign, Transfer (jrt)
+            attr_jrts = get_jrtAttrs(year, db, div_id=div_id)
+            for a in attr_jrts:
+                jrt_type = a.type.name
+
+                join += 1   and jrt_type == "Join"
+                resign += 1 and jrt_type == "Resign"
+                t_in += 1   and jrt_type == "Transfer In"
+                t_out += 1  and jrt_type == "Transfer Out"
+
+            # Rotation (rot)
+            attr_rots = get_rotAttrs(year, db, div_id=div_id)
+            for b in attr_rots:
+                r_in += 1   and b.to_div_id == div_id
+                r_out += 1  and b.from_div_id == div_id
+
+            # CurrentHC
+            start_count = yAttr.start_headcount
+            plus_count  = join + t_in + r_in
+            minus_count = resign + t_out + r_out
+            curr_hc = start_count + plus_count - minus_count
+
+            # Attr Rate
+            attr_rate = minus_count / yAttr.start_headcount
+            attr_rate_str = str(round(attr_rate*100, 2)) + '%'
+
+            mainAttrHistory = AttritionMainTableHistory(
+                year        = year,
+                division    = div,
+                hc_budget   = yAttr.budget_headcount,
+                hc_start    = yAttr.start_headcount,
+                join        = join,
+                resign      = resign,
+                r_in        = r_in,
+                r_out       = r_out,
+                t_in        = t_in,
+                t_out       = t_out
+            )
+            db.add(mainAttrHistory)
+        
+        db.commit()
+    
+    def __copy_jrt_attr_data():
+        jrts = get_jrtAttrs(year, db)
+
+        for j in jrts:
+            div_name = get_div_by_id(j.div_id, db).short_name
+
+            jrtHistory = AttritionJRTTableHistory(
+                year        = year,
+                emp_name    = j.staff_name,
+                emp_nik     = j.staff_nik,
+                category    = j.type.name,
+                date        = j.date,
+                division    = div_name
+            )
+
+            db.add(jrtHistory)
+        db.commit()
+
+    def __copy_rot_attr_data():
+        rots = get_rotAttrs(year, db)
+
+        for r in rots:
+            from_div_name   = get_div_by_id(r.from_div_id, db).short_name
+            to_div_name     = get_div_by_id(r.to_div_id, db).short_name
+
+            rotHistory = AttritionRotationTableHistory(
+                year        = year,
+                emp_name    = r.staff_name,
+                emp_nik     = r.staff_nik,
+                date        = r.date,
+                from_div    = from_div_name,
+                to_div      = to_div_name,
+            )
+            db.add(rotHistory)
+        db.commit()
+
+    __copy_main_attr_data()
+    __copy_jrt_attr_data()
+    __copy_rot_attr_data()
+
 def _delete_training_data(year: int, db: Session):
     endDate = datetime.date(year,12,31)
     trainings = db.query(Training).filter(
@@ -242,6 +373,35 @@ def _delete_csf_data(year: int, db: Session):
         db.delete(c)
     db.commit()
 
+def _delete_qaip_data(year: int, db: Session):
+    qaips = db.query(QAIP).filter(
+        QAIP.prj.has(year=year)
+    ).all()
+
+    # Delete Data
+    for q in qaips:
+        db.delete(q)
+    db.commit()
+
+def _delete_attr_data(year:int, db: Session):
+    endDate = datetime.date(year,12,31)
+    
+    # JRT
+    jrts = db.query(AttritionJoinResignTransfer).filter(
+        AttritionJoinResignTransfer.date <= endDate
+    ).all()
+
+    # Rotation
+    rots = db.query(AttritionRotation).filter(
+        AttritionRotation.date <= endDate
+    ).all()
+
+    # Delete Data
+    for c in jrts:
+        db.delete(c)
+    for r in rots:
+        db.delete(r)
+    db.commit()
 
 ### File ###
 @router.get('/admin/audit_project_data/download/pa/id/{id}')
@@ -2123,7 +2283,6 @@ def get_attr_summary_details_by_div_shortname(year: int, div: str, db: Session):
     curr_hc = start_count + plus_count - minus_count
 
     return (join, resign, t_in, t_out, r_in, r_out, start_count, curr_hc)
-
 
 @router.get('/attrition/staff_attrition/{year}')
 def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
