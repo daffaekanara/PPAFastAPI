@@ -916,3 +916,8 @@ class EmployeeHistory(BaseModel):
     date_first_employment   : datetime.date
     date_first_uob          : datetime.date
     date_first_ia           : datetime.date
+
+class CertHistory(BaseModel):
+    cert_name   : str
+    cert_proof  : str
+    emp_id      : int

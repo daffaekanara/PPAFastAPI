@@ -45,6 +45,8 @@ def copy_data_to_historic_tables(year: int, db: Session):
     _copy_qaip_data(year, db)
     _copy_attr_data(year, db)
     _copy_prj_data(year, db)
+    _copy_emp_data(year, db)
+    _copy_div_data(year, db)
 
 def delete_old_data(year: int, db: Session):
     _delete_training_data(year,db)
@@ -370,6 +372,86 @@ def _copy_prj_data(year: int, db: Session):
             stored_data.update(updated)
             eH_query.update(stored_data)
             db.commit()
+
+def _copy_emp_data(year: int, db: Session):
+    emps = db.query(Employee).all()
+
+    for e in emps:
+        # Create History Entry
+        empH = EmployeeHistory(
+            year                    = year,
+            name                    = e.name,
+            email                   = e.email,
+            staff_id                = e.staff_id,
+            role                    = e.role.name,
+            division                = e.part_of_div.short_name,
+            div_stream              = e.div_stream,
+            corporate_title         = e.corporate_title,
+            corporate_grade         = e.corporate_grade,
+            gender                  = e.gender,
+            edu_level               = e.edu_level,
+            edu_major               = e.edu_major,
+            edu_category            = e.edu_category,
+            ia_background           = e.ia_background,
+            ea_background           = e.ea_background,
+            year_audit_non_uob      = e.year_audit_non_uob,
+            date_of_birth           = e.date_of_birth,
+            date_first_employment   = e.date_first_employment,
+            date_first_uob          = e.date_first_uob,
+            date_first_ia           = e.date_first_ia
+        )
+        db.add(empH)
+        db.commit()
+        db.refresh(empH)
+
+        # Handle Certs
+        for c in e.emp_certifications:
+            certHistory = CertHistory(
+                cert_name   = c.cert_name,
+                cert_proof  = "",
+                emp_id = empH.id
+            )
+
+            db.add(certHistory)
+            db.commit()
+            db.refresh(certHistory)
+
+            # Handle Proofs
+            if fio.is_file_exist(c.cert_proof):
+                new_proof = fio.migrate_cert(c.cert_proof, year, empH.id, certHistory.id)
+
+                # Update History Proof
+                certH_query = db.query(CertHistory).filter(
+                    CertHistory.id == certHistory.id
+                )
+                stored_data = jsonable_encoder(certHistory)
+                stored_model = schemas.CertHistory(**stored_data)
+                new_data = {"cert_proof": new_proof}
+                updated = stored_model.copy(update=new_data)
+                stored_data.update(updated)
+                certH_query.update(stored_data)
+                db.commit()
+
+def _copy_div_data(year: int, db: Session):
+    divs = db.query(Division).all()
+
+    for d in divs:
+        try:
+            dh = get_emp(d.dh_id, db)
+        except Exception:
+            dh = None
+
+        divH = DivisionHistory(
+            year        = year,
+            short_name  = d.short_name,
+            long_name   = d.long_name,
+            dh_name     = dh.name if dh else None,
+            dh_nik      = dh.staff_id if dh else None
+        )
+
+        db.add(divH)
+        db.commit()
+        db.refresh(divH)
 
 def _delete_training_data(year: int, db: Session):
     endDate = datetime.date(year,12,31)

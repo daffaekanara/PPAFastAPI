@@ -167,6 +167,22 @@ def migrate_pa_completion(old_filepath:str, year:int, prj_id:int):
     
     return full_filepath
 
+def migrate_cert(old_filepath:str, year:int, emp_id:int, cert_id:int):
+    dir_name = os.path.join(DATA_FOLDER, HISTORY_FOLDER, str(year), CERTS_FOLDER, str(emp_id), str(cert_id))
+    os.makedirs(dir_name, exist_ok=True)
+
+    _, old_filename = os.path.split(old_filepath)
+    new_fname = f"{cert_id}.{old_filename.split('.')[-1]}"
+
+    remove_duplicate_file(dir_name, new_fname)
+
+    # Migrate
+    full_filepath = os.path.join(dir_name, new_fname)
+    shutil.copy(old_filepath, full_filepath)
+    
+    return full_filepath
+
+
 ### utils
 def remove_duplicate_file(dir_name, new_fname):
     # Check if file with same name exist

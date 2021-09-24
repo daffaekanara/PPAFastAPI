@@ -532,3 +532,16 @@ class EmployeeHistory(Base):
     date_first_employment   = Column(Date)
     date_first_uob          = Column(Date)
     date_first_ia           = Column(Date)
+
+    certs  = relationship("CertHistory", back_populates="owner")
+
+
+class CertHistory(Base):
+    __tablename__ = 'certhistory'
+    id = Column(Integer, primary_key=True, index=True)
+    
+    cert_name   = Column(String)
+    cert_proof  = Column(String)
+
+    emp_id = Column(Integer, ForeignKey('employeehistory.id'))
+    owner = relationship("EmployeeHistory", back_populates="certs")

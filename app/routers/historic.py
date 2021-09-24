@@ -57,3 +57,18 @@ def get_attr_rot_historic(db: Session = Depends(get_db)):
 def get_prj_historic(db: Session = Depends(get_db)):
     query = db.query(ProjectHistory).all()
     return query
+
+@router.get('/emp')
+def get_emp_historic(db: Session = Depends(get_db)):
+    query = db.query(EmployeeHistory).all()
+    return query
+
+@router.get('/cert')
+def get_cert_historic(db: Session = Depends(get_db)):
+    query = db.query(CertHistory).all()
+    return query
+
+@router.get('/div')
+def get_div_historic(db: Session = Depends(get_db)):
+    query = db.query(DivisionHistory).all()
+    return query
