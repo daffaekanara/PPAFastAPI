@@ -52,3 +52,8 @@ def get_attr_jrt_historic(db: Session = Depends(get_db)):
 def get_attr_rot_historic(db: Session = Depends(get_db)):
     query = db.query(AttritionRotationTableHistory).all()
     return query
+
+@router.get('/project')
+def get_prj_historic(db: Session = Depends(get_db)):
+    query = db.query(ProjectHistory).all()
+    return query

@@ -152,6 +152,21 @@ def migrate_busu_proof(old_filepath:str, year:int, emp_id:int, busu_id:int):
     
     return full_filepath
 
+def migrate_pa_completion(old_filepath:str, year:int, prj_id:int):
+    dir_name = os.path.join(DATA_FOLDER, HISTORY_FOLDER, str(year), PA_CMPLT_FOLDER, str(prj_id))
+    os.makedirs(dir_name, exist_ok=True)
+
+    _, old_filename = os.path.split(old_filepath)
+    new_fname = f"{prj_id}.{old_filename.split('.')[-1]}"
+
+    remove_duplicate_file(dir_name, new_fname)
+
+    # Migrate
+    full_filepath = os.path.join(dir_name, new_fname)
+    shutil.copy(old_filepath, full_filepath)
+    
+    return full_filepath
+
 ### utils
 def remove_duplicate_file(dir_name, new_fname):
     # Check if file with same name exist

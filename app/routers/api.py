@@ -44,6 +44,7 @@ def copy_data_to_historic_tables(year: int, db: Session):
     _copy_csf_data(year, db)
     _copy_qaip_data(year, db)
     _copy_attr_data(year, db)
+    _copy_prj_data(year, db)
 
 def delete_old_data(year: int, db: Session):
     _delete_training_data(year,db)
@@ -52,6 +53,7 @@ def delete_old_data(year: int, db: Session):
     _delete_csf_data(year, db)
     _delete_qaip_data(year, db)
     _delete_attr_data(year, db)
+    _delete_prj_data(year, db)
 
 def _copy_training_data(year: int, db: Session):
     endDate = datetime.date(year,12,31)
@@ -325,6 +327,50 @@ def _copy_attr_data(year: int, db: Session):
     __copy_jrt_attr_data()
     __copy_rot_attr_data()
 
+def _copy_prj_data(year: int, db: Session):
+    prjs = db.query(Project).filter(
+        Project.year == year
+    ).all()
+
+    for p in prjs:
+        try:
+            tl = get_emp(p.tl_id, db)
+        except Exception:
+            tl = None
+
+        # Create History Entry
+        projectH = ProjectHistory(
+            year        = year,
+            p_name      = p.name,
+            div         = p.div.short_name,
+            tl_name     = tl.name if tl else None,
+            tl_nik      = tl.staff_id if tl else None,
+            status      = p.status.name,
+            use_da      = p.used_DA,
+            carried_over= p.is_carried_over,
+            timely      = p.timely_report,
+            pa_proof    = None
+        )
+        db.add(projectH)
+        db.commit()
+        db.refresh(projectH)
+
+        # Handle Proof File Copy
+        if fio.is_file_exist(p.completion_PA):
+            new_proof = fio.migrate_pa_completion(p.completion_PA, year, projectH.id)
+
+            # Update History Proof
+            eH_query = db.query(BUSUHistory).filter(
+                ProjectHistory.id == projectH.id
+            )
+            stored_data = jsonable_encoder(projectH)
+            stored_model = schemas.ProjectHistory(**stored_data)
+            new_data = {"pa_proof": new_proof}
+            updated = stored_model.copy(update=new_data)
+            stored_data.update(updated)
+            eH_query.update(stored_data)
+            db.commit()
+
 def _delete_training_data(year: int, db: Session):
     endDate = datetime.date(year,12,31)
     trainings = db.query(Training).filter(
@@ -401,6 +447,16 @@ def _delete_attr_data(year:int, db: Session):
         db.delete(c)
     for r in rots:
         db.delete(r)
+    db.commit()
+
+def _delete_prj_data(year:int, db: Session):
+    prjs = db.query(Project).filter(
+        Project.year == year
+    ).all()
+
+    # Delete Data
+    for p in prjs:
+        db.delete(p)
     db.commit()
 
 ### File ###

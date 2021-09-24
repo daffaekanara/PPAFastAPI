@@ -396,7 +396,6 @@ class ProjectHistory(Base):
     use_da      = Column(Boolean)
     carried_over= Column(Boolean)
     timely      = Column(Boolean)
-    
     pa_proof    = Column(String)
 
 class SocialContribHistory(Base):

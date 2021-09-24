@@ -800,6 +800,7 @@ class ProjectHistory(BaseModel):
     use_da      : bool
     carried_over: bool
     timely      : bool
+    pa_proof    : str
 
 class SocialContribHistory(BaseModel):
     year        : int
