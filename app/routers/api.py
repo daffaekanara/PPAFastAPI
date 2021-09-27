@@ -469,7 +469,7 @@ def migrate_data(req: schemas.Migration, db: Session = Depends(get_db)):
 def get_migration_year(db: Session = Depends(get_db)):
     div = db.query(DivisionHistory).order_by(desc(DivisionHistory.year)).first()
 
-    year = div.year + 1 if div else 2022
+    year = div.year + 1 if div else 2021
 
     return {'year' : year}
 
