@@ -8,9 +8,8 @@ import datetime
 import calendar
 from operator import itemgetter
 from dateutil.relativedelta import relativedelta
-from sqlalchemy.sql.expression import or_
+from sqlalchemy.sql.expression import desc, or_
 from fastapi.responses import FileResponse
-from sqlalchemy.sql.schema import ColumnCollectionConstraint
 from fileio import fileio_module as fio
 import schemas, datetime, utils, hashing
 from models import *
@@ -25,6 +24,964 @@ router = APIRouter(
     tags=['API'],
     prefix="/api"
 )
+
+# '/api/historic/training/year/{year}'
+# '/api/historic/busu/year/{year}'
+# '/api/historic/auditnews/year/{year}'
+# '/api/historic/csf/year/{year}'
+# '/api/historic/qaip/year/{year}'
+# '/api/historic/attr/year/{year}'
+# '/api/historic/project/year/{year}'
+# '/api/historic/employee/year/{year}'
+# '/api/historic/division/year/{year}'
+
+### History ###
+@router.get('/historic/employee/year/{year}')
+def get_employee_historic(year:int, db: Session = Depends(get_db)):
+    endDate = datetime.date(year,12,31)
+
+    datas = db.query(EmployeeHistory).filter(
+        EmployeeHistory.year == year
+    ).all()
+
+    res = []
+
+    for e in datas:
+        age             = utils.get_year_diff_to_now(e.date_of_birth, now = endDate)
+        gen             = utils.get_gen(e.date_of_birth)
+        auditUOBYears   = utils.get_year_diff_to_now(e.date_first_uob, now = endDate)
+
+        # Process Certs
+        certs = [
+            "SMR", "CISA", "CEH", "ISO27001", "CHFI", 
+            "IDEA", "QualifiedIA", "CBIA", "CIA", "CPA", "CA"]
+
+        cert_res = []
+
+        for c in certs:
+            cert_res.append({
+                'title': c,
+                'value': 0
+            })
+
+        otherCerts = []
+        max_smr = 0
+
+        for c in e.certs:
+            # SMR (Levels)
+            smr_level = utils.extract_SMR_level(c.cert_name)
+            
+            if smr_level: # SMR
+                if c.cert_proof:
+                    if smr_level > max_smr:
+                        cert_res[0]['value'] = smr_level
+                        max_smr = smr_level
+            elif c.cert_name == "SMR In Progress":
+                cert_res[0]['value'] = "In Progress"
+            elif c.cert_name in certs and c.cert_proof: # Pro Certs
+                index = utils.find_index(cert_res, 'title', c.cert_name)
+                cert_res[index]['value'] = 1
+            elif c.cert_proof:                          # Other Certs
+                otherCerts.append(c.cert_name)
+
+        smr_lvl = cert_res[0]['value']
+
+        if smr_lvl == "In Progress":
+            smr_str = smr_lvl
+        elif smr_lvl:
+            smr_str = f"Level {smr_lvl}"
+        else:
+            smr_str = "-"
+
+        res.append({
+            "id"                          : e.id,
+            "staffNIK"                    : e.staff_id,
+            "staffName"                   : e.name,
+            "email"                       : e.email,
+            "role"                        : e.role,
+            "divison"                     : e.division,
+            "stream"                      : e.div_stream,
+            "corporateTitle"              : e.corporate_title,
+            "corporateGrade"              : e.corporate_grade,
+            "dateOfBirth"                 : e.date_of_birth.strftime("%m/%d/%Y"),
+            "dateStartFirstEmployment"    : e.date_first_employment.strftime("%m/%d/%Y"),
+            "dateJoinUOB"                 : e.date_first_uob.strftime("%m/%d/%Y"),
+            "dateJoinIAFunction"          : e.date_first_ia.strftime("%m/%d/%Y"),
+            "asOfNow"                     : endDate.strftime("%m/%d/%Y"),
+            "age"                         : age,
+            "gen"                         : gen,
+            "gender"                      : e.gender,
+            "auditUOBExp"                 : auditUOBYears,
+            "auditNonUOBExp"              : e.year_audit_non_uob,
+            "totalAuditExp"               : e.year_audit_non_uob + auditUOBYears,
+            "educationLevel"              : e.edu_level,
+            "educationMajor"              : e.edu_major,
+            "educationCategory"           : e.edu_category,
+            "RMGCertification"            : smr_str,
+            "CISA"                        : cert_res[1]['value'],
+            "CEH"                         : cert_res[2]['value'],
+            "ISO27001"                    : cert_res[3]['value'],
+            "CHFI"                        : cert_res[4]['value'],
+            "IDEA"                        : cert_res[5]['value'],
+            "QualifiedIA"                 : cert_res[6]['value'],
+            "CBIA"                        : cert_res[7]['value'],
+            "CIA"                         : cert_res[8]['value'],
+            "CPA"                         : cert_res[9]['value'],
+            "CA"                          : cert_res[10]['value'],
+            "other_cert"                  : ", ".join(otherCerts),
+            "IABackgground"               : e.ia_background,
+            "EABackground"                : e.ea_background,
+            "active"                      : e.active
+        })
+    
+    return res
+
+@router.get('/historic/division/year/{year}')
+def get_division_historic(year:int, db: Session = Depends(get_db)):
+    datas = db.query(DivisionHistory).filter(
+        DivisionHistory.year == year
+    ).all()
+
+    res = []
+
+    for d in datas:
+        res.append({
+            "id"            : d.id,
+            "short_name"    : d.short_name,
+            "long_name"     : d.long_name,
+            "dh_id"         : d.dh_nik,
+            "dh_name"       : d.dh_name
+        })
+    
+    return res
+
+@router.get('/historic/attr/rot/year/{year}')
+def get_attrjrt_historic(year:int, db: Session = Depends(get_db)):
+    datas = db.query(AttritionJRTTableHistory).filter(
+        AttritionJRTTableHistory.year == year
+    ).all()
+
+    res = []
+
+    for j in datas:
+        res.append({
+            "id"                : str(j.id),
+            "employee_name"     : j.emp_name,
+            "employee_nik"      : j.emp_nik,
+            "category"          : j.category,
+            "date"              : j.date.strftime("%m/%d/%Y"),
+            "division"          : j.division
+        })
+    
+    return res
+
+@router.get('/historic/attr/jrt/year/{year}')
+def get_attrjrt_historic(year:int, db: Session = Depends(get_db)):
+    datas = db.query(AttritionJRTTableHistory).filter(
+        AttritionJRTTableHistory.year == year
+    ).all()
+
+    res = []
+
+    for j in datas:
+        res.append({
+            "id"                : str(j.id),
+            "employee_name"     : j.emp_name,
+            "employee_nik"      : j.emp_nik,
+            "category"          : j.category,
+            "date"              : j.date.strftime("%m/%d/%Y"),
+            "division"          : j.division
+        })
+    
+    return res
+
+@router.get('/historic/attr/main/year/{year}')
+def get_attrmain_historic(year:int, db: Session = Depends(get_db)):
+    datas = db.query(AttritionMainTableHistory).filter(
+        AttritionMainTableHistory.year == year
+    ).all()
+
+    res = []
+
+    for d in datas:
+        if d.hc_start > 0:
+            attr_rate = (d.resign + d.t_out + d.r_out) / d.hc_start
+            attr_rate_str = str(round(attr_rate*100, 2)) + '%'
+        else:
+            attr_rate_str = "-%"
+
+        curr_hc = d.hc_start + (d.join + d.t_in + d.t_out) - (d.resign + d.t_out + d.r_out)
+
+        res.append({
+            "id"                : str(d.id),
+            "division"          : d.year,
+            "totalBudgetHC"     : d.hc_budget,
+            "totalHCNewYear"    : d.hc_start,
+            "join"              : d.join,
+            "resign"            : d.resign,
+            "rotation_in"       : d.r_in,
+            "rotation_out"      : d.r_out,
+            "transfer_in"       : d.t_in,
+            "transfer_out"      : d.t_out,
+            "attritionRate"     : attr_rate_str,
+            "CurrentHC"         : curr_hc
+        })
+    
+    return res
+
+@router.get('/historic/qaip/year/{year}')
+def get_training_historic(year:int, db: Session = Depends(get_db)):
+    datas = db.query(QAResultHistory).filter(
+        QAResultHistory.year == year
+    ).all()
+
+    res = []
+
+    for q in datas:
+        res.append({
+            "id"            : str(q.id),
+            "QAType"        : q.qa_type,
+            "auditProject"  : q.p_name,
+            "TL"            : q.tl_name,
+            "divisionHead"  : q.div_head,
+            "result"        : q.qa_grading_result,
+            "category"      : q.qaf_category,
+            "stage"         : q.qaf_stage,
+            "deliverable"   : q.qaf_deliv,
+            "noOfIssues"    : q.issue_count,
+            "QASample"      : q.qa_sample
+        })
+    
+    return res
+
+@router.get('/historic/busu/year/{year}')
+def get_busu_historic(year:int, db: Session = Depends(get_db)):
+    datas = db.query(BUSUHistory).filter(
+        BUSUHistory.year == year
+    ).all()
+
+    res = []
+
+    for e in datas:
+        res.append({
+            "id"        : str(e.id),
+            "emp_name"  : e.tl_name,
+            "division"  : e.division,
+            "WorRM"     : e.WorM,
+            "activity"  : e.name,
+            "date"      : e.date.strftime("%m/%d/%Y")
+        })
+    
+    return res
+
+@router.get('/historic/busu/download/proof/id/{id}')
+def get_busu_proof(id: int, db: Session = Depends(get_db)):
+    b_q = db.query(BUSUHistory).filter(
+        BUSUHistory.id == id
+    )
+    try:
+        busu = b_q.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No BUSUHistory of ID ({id}) was found!")
+
+    if busu.proof == "" or busu.proof == None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No uploaded proof for BUSUHistory ({busu.name})")
+    elif fio.is_file_exist(busu.proof):
+        return FileResponse(busu.proof)
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Cannot find file on filepath ({busu.proof})")
+
+@router.get('/historic/csf/year/{year}')
+def get_csf_historic(year:int, db: Session = Depends(get_db)):
+    datas = db.query(CSFHistory).filter(
+        CSFHistory.year == year
+    ).all()
+
+    res = []
+
+    for c in datas:
+        sum_atp = c.atp_1 + c.atp_2 + c.atp_3 + c.atp_4 + c.atp_5 + c.atp_6
+        avg_atp = round(sum_atp / 6, 2)
+
+        sum_ac = c.ac_1 + c.ac_2 + c.ac_3 + c.ac_4 + c.ac_5 + c.ac_6
+        avg_ac = round(sum_ac / 6, 2)
+
+        sum_paw = c.paw_1 + c.paw_2 + c.paw_3
+        avg_paw = round(sum_paw / 3, 2)       
+
+        avg = round((avg_ac + avg_atp + avg_paw)/3, 2)
+
+        res.append({
+            'id'                : str(c.id),
+            'division_project'  : c.division,
+            'auditProject'      : c.p_name,
+            'clientName'        : c.client_name,
+            'unitJabatan'       : c.client_unit,
+            'TL'                : c.tl_name,
+            'CSFDate'           : utils.date_to_str(c.date),
+            'atp1'              : c.atp_1,
+            'atp2'              : c.atp_2,
+            'atp3'              : c.atp_3,
+            'atp4'              : c.atp_4,
+            'atp5'              : c.atp_5,
+            'atp6'              : c.atp_6,
+            'atpOverall'        : avg_atp,
+            'ac1'               : c.ac_1,
+            'ac2'               : c.ac_2,
+            'ac3'               : c.ac_3,
+            'ac4'               : c.ac_4,
+            'ac5'               : c.ac_5,
+            'ac6'               : c.ac_6,
+            'acOverall'         : avg_ac,
+            'paw1'              : c.paw_1,
+            'paw2'              : c.paw_2,
+            'paw3'              : c.paw_3,
+            'pawOverall'        : avg_paw,
+            'overall'           : avg,
+            'division_by_inv'   : c.division_by_inv
+        })
+    
+    return res
+
+@router.get('/historic/auditnews/year/{year}')
+def get_auditnews_historic(year:int, db: Session = Depends(get_db)):
+    datas = db.query(SocialContribHistory).filter(
+        SocialContribHistory.year == year
+    ).all()
+
+    res = []
+
+    for c in datas:
+        res.append({
+            "id"            : str(c.id),
+            "creator_name"  : c.creator_name,
+            "creator_nik"   : c.creator_nik,
+            "division"      : c.div,
+            "category"      : c.category,
+            "title"         : c.sc_name,
+            "date"          : c.date.strftime("%m/%d/%Y")
+        })
+    
+    return res
+
+@router.get('/historic/project/download/proof/id/{id}')
+def get_project_proof(id: int, db: Session = Depends(get_db)):
+    p_q = db.query(ProjectHistory).filter(
+        ProjectHistory.id == id
+    )
+
+    try:
+        project = p_q.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No ProjectHistory of ID ({id}) was found!")
+
+
+    if project.pa_proof == "" or project.pa_proof == None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No uploaded proof for ProjectHistory ({project.p_name})")
+    elif fio.is_file_exist(project.pa_proof):
+        return FileResponse(project.pa_proof)
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Cannot find file on filepath ({project.pa_proof})")
+
+@router.get('/historic/project/year/{year}')
+def get_project_historic(year:int, db: Session = Depends(get_db)):
+    datas = db.query(ProjectHistory).filter(
+        ProjectHistory.year == year
+    ).all()
+
+    res = []
+
+    for p in datas:
+        completion_pa = False if p.pa_proof == "" or p.pa_proof == None else True
+
+        res.append({
+            "id"        : str(p.id),
+            "auditPlan" : p.p_name,
+            "division"  : p.div,
+            "tl_name"   : p.tl_name,
+            "tl_nik"    : p.tl_nik,
+            "status"    : p.status,
+            "useOfDA"   : p.use_da,
+            "year"      : p.year,
+
+            "is_carried_over" : p.carried_over,
+            "timely_report"   : p.timely,
+            "completion_PA"   : completion_pa
+        })
+    return res
+
+@router.get('/historic/training/download/proof/id/{id}')
+def get_training_proof(id: int, db: Session = Depends(get_db)):
+    t_q = db.query(TrainingHistory).filter(
+        TrainingHistory.id == id
+    )
+
+    try:
+        train = t_q.one()
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No TrainingHistory of ID ({id}) was found!")
+
+
+    if train.proof == "" or train.proof == None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No uploaded proof for Training ({train.name})")
+    elif fio.is_file_exist(train.proof):
+        return FileResponse(train.proof)
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"Cannot find file on filepath ({train.proof})")
+
+@router.get('/historic/training/year/{year}')
+def get_training_historic(year:int, db: Session = Depends(get_db)):
+    datas = db.query(TrainingHistory).filter(
+        TrainingHistory.year == year
+    ).all()
+
+    res = []
+
+    for d in datas:
+        res.append({
+            "id"                : d.id,
+            "division"          : d.division,
+            "name"              : d.emp_name,
+            "nik"               : d.nik,
+            "trainingTitle"     : d.name,
+            "date"              : d.date.strftime("%m/%d/%Y"),
+            "numberOfHours"     : d.hours,
+            "budget"            : d.budget,
+            "costRealization"   : d.realized,
+            "chargedByFinance"  : d.charged,
+            "mandatoryFrom"     : d.mandatory,
+            "remark"            : d.remark
+        })
+    
+    return res
+
+@router.post('/admin/operation/migrate_data')
+def migrate_data(req: schemas.Migration, db: Session = Depends(get_db)):
+    year = req.year - 1
+    
+    # Copy Data
+    copy_data_to_historic_tables(year, db)
+    delete_old_data(year,db)
+
+    return {"Details": "Success"}
+
+@router.get('/admin/operation/migrate_data')
+def get_migration_year(db: Session = Depends(get_db)):
+    div = db.query(DivisionHistory).order_by(desc(DivisionHistory.year)).first()
+
+    year = div.year + 1 if div else 2022
+
+    return {'year' : year}
+
+def copy_data_to_historic_tables(year: int, db: Session):
+    _copy_training_data(year, db)
+    _copy_busu_data(year, db)
+    _copy_socContrrib_data(year, db)
+    _copy_csf_data(year, db)
+    _copy_qaip_data(year, db)
+    _copy_attr_data(year, db)
+    _copy_prj_data(year, db)
+    _copy_emp_data(year, db)
+    _copy_div_data(year, db)
+
+def delete_old_data(year: int, db: Session):
+    _delete_training_data(year,db)
+    _delete_busu_data(year,db)
+    _delete_socContrrib_data(year, db)
+    _delete_csf_data(year, db)
+    _delete_qaip_data(year, db)
+    _delete_attr_data(year, db)
+    _delete_prj_data(year, db)
+
+def _copy_training_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    trainings = db.query(Training).filter(
+        Training.date <= endDate
+    ).all()
+
+    for t in trainings:
+        emp = get_emp(t.emp_id, db)
+
+        # Create History Entry
+        trainingH = TrainingHistory(
+            year        = year,
+            nik         = emp.staff_id if emp else None,
+            division    = emp.part_of_div.short_name if emp else None,
+            emp_name    = emp.name if emp else None,
+            name        = t.name,
+            date        = t.date,
+            hours       = t.duration_hours,
+            budget      = t.budget,
+            realized    = t.realization,
+            charged     = t.charged_by_fin,
+            mandatory   = t.mandatory_from,
+            remark      = t.remark,
+
+            proof       = ""
+        )
+        db.add(trainingH)
+        db.commit()
+        db.refresh(trainingH)
+
+        # Handle Proof File Copy
+        if fio.is_file_exist(t.proof):
+            new_proof = fio.migrate_training_proof(t.proof, year, emp.id, trainingH.id)
+
+            # Update History Proof
+            tH_query = db.query(TrainingHistory).filter(
+                TrainingHistory.id == trainingH.id
+            )
+            stored_data = jsonable_encoder(trainingH)
+            stored_model = schemas.TrainingHistory(**stored_data)
+            new_data = {"proof": new_proof}
+            updated = stored_model.copy(update=new_data)
+            stored_data.update(updated)
+            tH_query.update(stored_data)
+            db.commit()
+
+def _copy_busu_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    engs = db.query(BUSUEngagement).filter(
+        BUSUEngagement.date <= endDate
+    ).all()
+
+    for e in engs:
+        emp = get_emp(e.creator_id, db)
+
+        # Create History Entry
+        engH = BUSUHistory(
+            year        = year,
+            tl_name     = emp.name,
+            division    = emp.part_of_div.short_name,
+            WorM        = e.eng_type.name,
+            name        = e.activity_name,
+            date        = e.date,
+
+            proof       = None
+        )
+        db.add(engH)
+        db.commit()
+        db.refresh(engH)
+
+        # Handle Proof File Copy
+        if fio.is_file_exist(e.proof):
+            new_proof = fio.migrate_busu_proof(e.proof, year, emp.id, engH.id)
+
+            # Update History Proof
+            eH_query = db.query(BUSUHistory).filter(
+                BUSUHistory.id == engH.id
+            )
+            stored_data = jsonable_encoder(engH)
+            stored_model = schemas.BUSUHistory(**stored_data)
+            new_data = {"proof": new_proof}
+            updated = stored_model.copy(update=new_data)
+            stored_data.update(updated)
+            eH_query.update(stored_data)
+            db.commit()
+
+def _copy_socContrrib_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    contribs = db.query(SocialContrib).filter(
+        SocialContrib.date <= endDate
+    ).all()
+
+    for s in contribs:
+        emp = get_emp(s.creator_id, db)
+
+        # Create History Entry
+        scH = SocialContribHistory(
+            year        = year,
+            div         = emp.part_of_div.short_name,
+            category    = s.social_type.name,
+            sc_name     = s.topic_name,
+            date        = s.date,
+            creator_name= emp.name,
+            creator_nik = emp.staff_id
+        )
+        db.add(scH)
+    db.commit()
+
+def _copy_csf_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    csfs = db.query(CSF).filter(
+        CSF.csf_date <= endDate
+    ).all()
+
+    for c in csfs:
+        try:
+            tl = get_emp(c.prj.tl_id, db)
+        except Exception:
+            tl = None
+
+        # Create History Entry
+        cH = CSFHistory(
+            year        = year,
+            p_name      = c.prj.name,
+            tl_name     = tl.name if tl else None,
+            client_name = c.client_name,
+            client_unit = c.client_unit,
+            date        = c.csf_date,
+            atp_1       = c.atp_1,
+            atp_2       = c.atp_2,
+            atp_3       = c.atp_3,
+            atp_4       = c.atp_4,
+            atp_5       = c.atp_5,
+            atp_6       = c.atp_6,
+            ac_1        = c.ac_1,
+            ac_2        = c.ac_2,
+            ac_3        = c.ac_3,
+            ac_4        = c.ac_4,
+            ac_5        = c.ac_5,
+            ac_6        = c.ac_6,
+            paw_1       = c.paw_1,
+            paw_2       = c.paw_2,
+            paw_3       = c.paw_3,
+            division        = tl.part_of_div.short_name if tl else None,
+            division_by_inv = c.by_invdiv_div.short_name
+        )
+        db.add(cH)
+    db.commit()
+
+def _copy_qaip_data(year: int, db: Session):
+    qaips = db.query(QAIP).filter(
+        QAIP.prj.has(year=year)
+    ).all()
+
+    for q in qaips:
+        try:
+            dh = get_emp(q.prj.div.dh_id, db)
+        except Exception:
+            dh = None
+
+        cats    = utils.qa_to_category_str(q)
+        stages  = utils.qa_to_stage_str(q)
+        delivs  = utils.qa_to_delivs_str(q)
+
+        # Create History Entry
+        qaH = QAResultHistory(
+            year                = year,
+            qa_type             = q.qa_type.name,
+            p_name              = q.prj.name,
+            tl_name             = q.prj.tl.name,
+            division            = q.prj.div.short_name,
+            div_head            = dh.name if dh else None,
+            qa_grading_result   = q.qa_grading_result.name,
+            qaf_category        = ", ".join(cats),
+            qaf_stage           = ", ".join(stages),
+            qaf_deliv           = ", ".join(delivs),
+            issue_count         = len(delivs),
+            qa_sample           = q.qa_sample
+        )
+        db.add(qaH)
+    db.commit()
+
+def _copy_attr_data(year: int, db: Session):
+    def __copy_main_attr_data():
+        divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+        res = []
+
+        # Result Dict
+        for div in divs:
+            # HCBudget and NewYear
+            yAttr = get_yAttr_by_div_shortname(year, div, db)
+            div_id = yAttr.div_id
+
+            join = resign = t_in = t_out = r_in = r_out = curr_hc = 0
+
+            # Join, Resign, Transfer (jrt)
+            attr_jrts = get_jrtAttrs(year, db, div_id=div_id)
+            for a in attr_jrts:
+                jrt_type = a.type.name
+
+                join += 1   and jrt_type == "Join"
+                resign += 1 and jrt_type == "Resign"
+                t_in += 1   and jrt_type == "Transfer In"
+                t_out += 1  and jrt_type == "Transfer Out"
+
+            # Rotation (rot)
+            attr_rots = get_rotAttrs(year, db, div_id=div_id)
+            for b in attr_rots:
+                r_in += 1   and b.to_div_id == div_id
+                r_out += 1  and b.from_div_id == div_id
+
+            # CurrentHC
+            start_count = yAttr.start_headcount
+            plus_count  = join + t_in + r_in
+            minus_count = resign + t_out + r_out
+            curr_hc = start_count + plus_count - minus_count
+
+            # Attr Rate
+            attr_rate = minus_count / yAttr.start_headcount
+            attr_rate_str = str(round(attr_rate*100, 2)) + '%'
+
+            mainAttrHistory = AttritionMainTableHistory(
+                year        = year,
+                division    = div,
+                hc_budget   = yAttr.budget_headcount,
+                hc_start    = yAttr.start_headcount,
+                join        = join,
+                resign      = resign,
+                r_in        = r_in,
+                r_out       = r_out,
+                t_in        = t_in,
+                t_out       = t_out
+            )
+            db.add(mainAttrHistory)
+        
+        db.commit()
+    
+    def __copy_jrt_attr_data():
+        jrts = get_jrtAttrs(year, db)
+
+        for j in jrts:
+            div_name = get_div_by_id(j.div_id, db).short_name
+
+            jrtHistory = AttritionJRTTableHistory(
+                year        = year,
+                emp_name    = j.staff_name,
+                emp_nik     = j.staff_nik,
+                category    = j.type.name,
+                date        = j.date,
+                division    = div_name
+            )
+
+            db.add(jrtHistory)
+        db.commit()
+
+    def __copy_rot_attr_data():
+        rots = get_rotAttrs(year, db)
+
+        for r in rots:
+            from_div_name   = get_div_by_id(r.from_div_id, db).short_name
+            to_div_name     = get_div_by_id(r.to_div_id, db).short_name
+
+            rotHistory = AttritionRotationTableHistory(
+                year        = year,
+                emp_name    = r.staff_name,
+                emp_nik     = r.staff_nik,
+                date        = r.date,
+                from_div    = from_div_name,
+                to_div      = to_div_name,
+            )
+            db.add(rotHistory)
+        db.commit()
+
+    __copy_main_attr_data()
+    __copy_jrt_attr_data()
+    __copy_rot_attr_data()
+
+def _copy_prj_data(year: int, db: Session):
+    prjs = db.query(Project).filter(
+        Project.year == year
+    ).all()
+
+    for p in prjs:
+        try:
+            tl = get_emp(p.tl_id, db)
+        except Exception:
+            tl = None
+
+        # Create History Entry
+        projectH = ProjectHistory(
+            year        = year,
+            p_name      = p.name,
+            div         = p.div.short_name,
+            tl_name     = tl.name if tl else None,
+            tl_nik      = tl.staff_id if tl else None,
+            status      = p.status.name,
+            use_da      = p.used_DA,
+            carried_over= p.is_carried_over,
+            timely      = p.timely_report,
+            pa_proof    = None
+        )
+        db.add(projectH)
+        db.commit()
+        db.refresh(projectH)
+
+        # Handle Proof File Copy
+        if fio.is_file_exist(p.completion_PA):
+            new_proof = fio.migrate_pa_completion(p.completion_PA, year, projectH.id)
+
+            # Update History Proof
+            eH_query = db.query(BUSUHistory).filter(
+                ProjectHistory.id == projectH.id
+            )
+            stored_data = jsonable_encoder(projectH)
+            stored_model = schemas.ProjectHistory(**stored_data)
+            new_data = {"pa_proof": new_proof}
+            updated = stored_model.copy(update=new_data)
+            stored_data.update(updated)
+            eH_query.update(stored_data)
+            db.commit()
+
+def _copy_emp_data(year: int, db: Session):
+    emps = db.query(Employee).all()
+
+    for e in emps:
+        # Create History Entry
+        empH = EmployeeHistory(
+            year                    = year,
+            name                    = e.name,
+            email                   = e.email,
+            staff_id                = e.staff_id,
+            role                    = e.role.name,
+            division                = e.part_of_div.short_name,
+            div_stream              = e.div_stream,
+            corporate_title         = e.corporate_title,
+            corporate_grade         = e.corporate_grade,
+            gender                  = e.gender,
+            edu_level               = e.edu_level,
+            edu_major               = e.edu_major,
+            edu_category            = e.edu_category,
+            ia_background           = e.ia_background,
+            ea_background           = e.ea_background,
+            year_audit_non_uob      = e.year_audit_non_uob,
+            date_of_birth           = e.date_of_birth,
+            date_first_employment   = e.date_first_employment,
+            date_first_uob          = e.date_first_uob,
+            date_first_ia           = e.date_first_ia,
+            active                  = e.active
+        )
+        db.add(empH)
+        db.commit()
+        db.refresh(empH)
+
+        # Handle Certs
+        for c in e.emp_certifications:
+            certHistory = CertHistory(
+                cert_name   = c.cert_name,
+                cert_proof  = "",
+                emp_id = empH.id
+            )
+
+            db.add(certHistory)
+            db.commit()
+            db.refresh(certHistory)
+
+            # Handle Proofs
+            if fio.is_file_exist(c.cert_proof):
+                new_proof = fio.migrate_cert(c.cert_proof, year, empH.id, certHistory.id)
+
+                # Update History Proof
+                certH_query = db.query(CertHistory).filter(
+                    CertHistory.id == certHistory.id
+                )
+                stored_data = jsonable_encoder(certHistory)
+                stored_model = schemas.CertHistory(**stored_data)
+                new_data = {"cert_proof": new_proof}
+                updated = stored_model.copy(update=new_data)
+                stored_data.update(updated)
+                certH_query.update(stored_data)
+                db.commit()
+
+def _copy_div_data(year: int, db: Session):
+    divs = db.query(Division).all()
+
+    for d in divs:
+        try:
+            dh = get_emp(d.dh_id, db)
+        except Exception:
+            dh = None
+
+        divH = DivisionHistory(
+            year        = year,
+            short_name  = d.short_name,
+            long_name   = d.long_name,
+            dh_name     = dh.name if dh else None,
+            dh_nik      = dh.staff_id if dh else None
+        )
+
+        db.add(divH)
+        db.commit()
+        db.refresh(divH)
+
+def _delete_training_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    trainings = db.query(Training).filter(
+        Training.date <= endDate
+    ).all()
+
+    # Delete Training Data
+    for t in trainings:
+        if fio.is_file_exist(t.proof):
+            fio.delete_file(t.proof)
+        db.delete(t)
+    db.commit()
+
+def _delete_busu_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    busus = db.query(BUSUEngagement).filter(
+        BUSUEngagement.date <= endDate
+    ).all()
+
+    # Delete Data
+    for b in busus:
+        if fio.is_file_exist(b.proof):
+            fio.delete_file(b.proof)
+        db.delete(b)
+    db.commit()
+
+def _delete_socContrrib_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    contribs = db.query(SocialContrib).filter(
+        SocialContrib.date <= endDate
+    ).all()
+
+    # Delete Data
+    for c in contribs:
+        db.delete(c)
+    db.commit()
+
+def _delete_csf_data(year: int, db: Session):
+    endDate = datetime.date(year,12,31)
+    csfs = db.query(CSF).filter(
+        CSF.csf_date <= endDate
+    ).all()
+
+    # Delete Data
+    for c in csfs:
+        db.delete(c)
+    db.commit()
+
+def _delete_qaip_data(year: int, db: Session):
+    qaips = db.query(QAIP).filter(
+        QAIP.prj.has(year=year)
+    ).all()
+
+    # Delete Data
+    for q in qaips:
+        db.delete(q)
+    db.commit()
+
+def _delete_attr_data(year:int, db: Session):
+    endDate = datetime.date(year,12,31)
+    
+    # JRT
+    jrts = db.query(AttritionJoinResignTransfer).filter(
+        AttritionJoinResignTransfer.date <= endDate
+    ).all()
+
+    # Rotation
+    rots = db.query(AttritionRotation).filter(
+        AttritionRotation.date <= endDate
+    ).all()
+
+    # Delete Data
+    for c in jrts:
+        db.delete(c)
+    for r in rots:
+        db.delete(r)
+    db.commit()
+
+def _delete_prj_data(year:int, db: Session):
+    prjs = db.query(Project).filter(
+        Project.year == year
+    ).all()
+
+    # Delete Data
+    for p in prjs:
+        db.delete(p)
+    db.commit()
 
 ### File ###
 @router.get('/admin/audit_project_data/download/pa/id/{id}')
@@ -227,7 +1184,7 @@ def post_training_proof_file(nik: str, training_id: int, attachment_proof: Uploa
     data = attachment_proof.file.read()
 
     # Check NIK
-    emp = get_emp_by_nik(id,db)
+    emp = get_emp_by_nik(nik,db)
     emp_id = emp.id
 
     # Check training_id
@@ -1906,7 +2863,6 @@ def get_attr_summary_details_by_div_shortname(year: int, div: str, db: Session):
     curr_hc = start_count + plus_count - minus_count
 
     return (join, resign, t_in, t_out, r_in, r_out, start_count, curr_hc)
-
 
 @router.get('/attrition/staff_attrition/{year}')
 def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
@@ -4377,7 +5333,7 @@ def get_all_active_emps(db: Session):
         Employee.active == True
     ).all()
 
-def get_emp(input_id, db: Session):
+def get_emp(input_id, db: Session) -> Employee:
     if not input_id:
         return None
 

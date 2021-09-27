@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import models
 from routers import division, employee, auth, training, debug, qaip, csf, states
 from routers import socialContrib, attrition, engagement, project, budget, api
+from routers import historic
 from database import engine
 
 models.Base.metadata.create_all(engine)
@@ -36,6 +37,7 @@ app.include_router(socialContrib.router)
 app.include_router(training.router)
 app.include_router(division.router)
 app.include_router(employee.router)
+app.include_router(historic.router)
 
 
 @app.get('/')

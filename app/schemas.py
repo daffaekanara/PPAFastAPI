@@ -774,3 +774,153 @@ class ServerState(BaseModel):
 class ServerStateIn(BaseModel):
     name          : Optional[str]
     value         : Optional[bool]
+
+### Histories ###
+class TrainingHistory(BaseModel):
+    year        : int
+    nik         : str
+    division    : str
+    emp_name    : str
+    name        : str
+    date        : datetime.date
+    hours       : int
+    budget      : float
+    realized    : float
+    charged     : float
+    mandatory   : str
+    remark      : str
+
+class ProjectHistory(BaseModel):
+    year        : int
+    p_name      : str
+    div         : str
+    tl_name     : str
+    tl_nik      : str
+    status      : str
+    use_da      : bool
+    carried_over: bool
+    timely      : bool
+    pa_proof    : str
+
+class SocialContribHistory(BaseModel):
+    year        : int
+    div         : str
+    category    : str
+    sc_name     : str
+    date        : datetime.date
+    creator_name: str
+    creator_nik : str
+
+class AttritionMainTableHistory(BaseModel):
+    year        : int
+    division    : str
+    hc_budget   : int
+    hc_start    : int
+    join        : int
+    resign      : int
+    r_in        : int
+    r_out       : int
+    t_in        : int
+    t_out       : int
+
+class AttritionJRTTableHistory(BaseModel):
+    year        : int
+    emp_name    : str
+    emp_nik     : str
+    category    : str
+    date        : datetime.date
+    division    : str
+
+class AttritionRotationTableHistory(BaseModel):
+    year        : int
+    emp_name    : str
+    emp_nik     : str
+    date        : datetime.date
+    from_div    : str
+    to_div      : str
+
+class CSFHistory(BaseModel):
+    year        : int
+    p_name      : str
+    client_name : str
+    client_unit : str
+    date        : datetime.date
+    atp_1       : float
+    atp_2       : float
+    atp_3       : float
+    atp_4       : float
+    atp_5       : float
+    atp_6       : float
+    ac_1        : float
+    ac_2        : float
+    ac_3        : float
+    ac_4        : float
+    ac_5        : float
+    ac_6        : float
+    paw_1       : float
+    paw_2       : float
+    paw_3       : float
+
+    division        : str
+    division_by_inv : str
+
+class QAResultHistory(BaseModel):
+    year                : int
+    qa_type             : str
+    p_name              : str
+    tl_name             : str
+    div_head            : str
+    qa_grading_result   : str
+    qaf_category        : str
+    qaf_stage           : str
+    qaf_deliv           : str
+    issue_count         : int
+    qa_sample           : bool
+
+class BUSUHistory(BaseModel):
+    year        : int
+    tl_name     : str
+    division    : str
+    WorM        : str
+    name        : str
+    date        : datetime.date
+
+class DivisionHistory(BaseModel):
+    year        : int
+    short_name  : str
+    long_name   : str
+    dh_name     : str
+    dh_nik      : str
+
+class EmployeeHistory(BaseModel):
+    year                    : int
+    name                    : str
+    email                   : str
+    staff_id                : str
+    role                    : str
+
+    division                : str
+    div_stream              : str
+
+    corporate_title         : str
+    corporate_grade         : str
+    gender                  : str
+    edu_level               : str
+    edu_major               : str
+    edu_category            : str
+    ia_background           : bool
+    ea_background           : bool
+    year_audit_non_uob      : int
+
+    date_of_birth           : datetime.date
+    date_first_employment   : datetime.date
+    date_first_uob          : datetime.date
+    date_first_ia           : datetime.date
+
+class CertHistory(BaseModel):
+    cert_name   : str
+    cert_proof  : str
+    emp_id      : int
+
+class Migration(BaseModel):
+    year: int
