@@ -921,3 +921,6 @@ class CertHistory(BaseModel):
     cert_name   : str
     cert_proof  : str
     emp_id      : int
+
+class Migration(BaseModel):
+    year: int

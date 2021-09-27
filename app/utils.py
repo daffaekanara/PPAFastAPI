@@ -109,8 +109,8 @@ def role_str_to_id(text):
     roles   = ["User", "Power User", "Administrator"]
     return roles.index(text)+1
 
-def get_year_diff_to_now(start_date):
-    today = datetime.date.today()
+def get_year_diff_to_now(start_date, now = None):
+    today = datetime.date.today() if not now else now
     return today.year - start_date.year - ((today.month, today.day) < (start_date.month, start_date.day))
 
 def get_gen(dob):

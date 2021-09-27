@@ -448,6 +448,7 @@ class CSFHistory(Base):
     id      = Column(Integer, primary_key=True, index=True)
     year        = Column(Integer)
     p_name      = Column(String)
+    tl_name     = Column(String)
     client_name = Column(String)
     client_unit = Column(String)
     date        = Column(Date)
@@ -477,6 +478,7 @@ class QAResultHistory(Base):
     qa_type             = Column(String)
     p_name              = Column(String)
     tl_name             = Column(String)
+    division            = Column(String)
     div_head            = Column(String)
     qa_grading_result   = Column(String)
     qaf_category        = Column(String)
@@ -533,8 +535,9 @@ class EmployeeHistory(Base):
     date_first_uob          = Column(Date)
     date_first_ia           = Column(Date)
 
-    certs  = relationship("CertHistory", back_populates="owner")
+    active                  = Column(Boolean)
 
+    certs  = relationship("CertHistory", back_populates="owner")
 
 class CertHistory(Base):
     __tablename__ = 'certhistory'
