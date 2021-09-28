@@ -924,3 +924,7 @@ class CertHistory(BaseModel):
 
 class Migration(BaseModel):
     year: int
+
+class DivisionMerge(BaseModel):
+    mother_division : str
+    child_division  : str

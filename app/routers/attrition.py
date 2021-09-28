@@ -214,7 +214,7 @@ def update_yearly_attr(id: int, req: schemas.YearlyAttritionIn, db: Session = De
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
 
     stored_data = jsonable_encoder(query_res.first())
-    stored_model = schemas.YearlyAttritionConstIn(**stored_data)
+    stored_model = schemas.YearlyAttritionIn(**stored_data)
 
     new_data = req.dict(exclude_unset=True)
     updated = stored_model.copy(update=new_data)

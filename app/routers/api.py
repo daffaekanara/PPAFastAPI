@@ -25,15 +25,256 @@ router = APIRouter(
     prefix="/api"
 )
 
-# '/api/historic/training/year/{year}'
-# '/api/historic/busu/year/{year}'
-# '/api/historic/auditnews/year/{year}'
-# '/api/historic/csf/year/{year}'
-# '/api/historic/qaip/year/{year}'
-# '/api/historic/attr/year/{year}'
-# '/api/historic/project/year/{year}'
-# '/api/historic/employee/year/{year}'
-# '/api/historic/division/year/{year}'
+### Merge Division ###
+@router.post('/admin/operation/merge-division')
+def merge_division(req: schemas.DivisionMerge, db: Session = Depends(get_db)):
+    parent_div  = get_div_by_shortname(req.mother_division, db)
+    child_div   = get_div_by_shortname(req.child_division, db)
+
+    _merge_yearlyattr(parent_div, child_div, db)
+    _delete_yearlyattr(child_div, db)
+
+    _merge_yearlytrainingbudget(parent_div, child_div, db)
+    _delete_yearlytrainingbudget(child_div, db)
+
+    _merge_project(parent_div, child_div, db)
+    _merge_csf(parent_div, child_div, db)
+    _merge_employee(parent_div, child_div, db)
+    _merge_attr_jrt(parent_div, child_div, db)
+    _merge_attr_rot(parent_div, child_div, db)
+
+    db.commit()
+
+    return {'details': 'Success'}
+
+def _delete_yearlyattr(c_div: Division, db: Session):
+    child_q = db.query(YearlyAttrition).filter(
+        YearlyAttrition.div_id == c_div.id
+    )
+
+    try:
+        child   = child_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Either Parent or Child Div has more than one YearlyAttrition")
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Either Parent or Child Div has no YearlyAttrition")
+
+    child_q.delete()
+
+def _delete_yearlytrainingbudget(c_div: Division, db: Session):
+    child_q = db.query(TrainingBudget).filter(
+        TrainingBudget.div_id == c_div.id
+    )
+
+    try:
+        child   = child_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Either Parent or Child Div has more than one TrainingBudget")
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Either Parent or Child Div has no TrainingBudget")
+
+    child_q.delete()
+
+def _merge_attr_jrt(p_div: Division, c_div: Division, db: Session):
+    child_jrts = db.query(AttritionJoinResignTransfer).filter(
+        AttritionJoinResignTransfer.div_id == c_div
+    ).all()
+
+    for c in child_jrts:
+        c_q = db.query(AttritionJoinResignTransfer).filter(
+            AttritionJoinResignTransfer.id == c.id
+        )
+
+        stored_data = jsonable_encoder(e)
+        stored_model = schemas.AttritionJoinResignTransferIn(**stored_data)
+
+        new_data = {
+            "div_id"   : p_div.id
+        }
+        updated = stored_model.copy(update=new_data)
+        stored_data.update(updated)
+
+        c_q.update(stored_data)
+
+def _merge_attr_rot(p_div: Division, c_div: Division, db: Session):
+    # from_div_id
+    child_rots = db.query(AttritionRotation).filter(
+        AttritionRotation.from_div_id == c_div.id
+    ).all()
+
+    for c in child_rots:
+        c_q = db.query(AttritionRotation).filter(
+            AttritionRotation.id == c.id
+        )
+
+        stored_data = jsonable_encoder(c)
+        stored_model = schemas.AttritionRotationIn(**stored_data)
+
+        new_data = {
+            "from_div_id"   : p_div.id
+        }
+        updated = stored_model.copy(update=new_data)
+        stored_data.update(updated)
+
+        c_q.update(stored_data)
+    
+    # to_div_id
+    child_rots = db.query(AttritionRotation).filter(
+        AttritionRotation.to_div_id == c_div.id
+    ).all()
+
+    for c in child_rots:
+        c_q = db.query(AttritionRotation).filter(
+            AttritionRotation.id == c.id
+        )
+
+        stored_data = jsonable_encoder(c)
+        stored_model = schemas.AttritionRotationIn(**stored_data)
+
+        new_data = {
+            "to_div_id"   : p_div.id
+        }
+        updated = stored_model.copy(update=new_data)
+        stored_data.update(updated)
+
+        c_q.update(stored_data)
+
+def _merge_employee(p_div: Division, c_div: Division, db: Session):
+    child_emp = db.query(Employee).filter(
+        Employee.div_id == c_div.id
+    ).all()
+
+    for e in child_emp:
+        e_q = db.query(Employee).filter(
+            Employee.id == e.id
+        )
+
+        stored_data = jsonable_encoder(e)
+        stored_model = schemas.EmployeeIn(**stored_data)
+
+        new_data = {
+            "div_id"   : p_div.id
+        }
+        updated = stored_model.copy(update=new_data)
+        stored_data.update(updated)
+
+        e_q.update(stored_data)
+    
+def _merge_csf(p_div: Division, c_div: Division, db: Session):
+    child_csfs = db.query(CSF).filter(
+        CSF.by_invdiv_div_id == c_div.id
+    ).all()
+
+    for c in child_csfs:
+        c_q = db.query(CSF).filter(
+            CSF.id == c.id
+        )
+
+        stored_data = jsonable_encoder(c)
+        stored_model = schemas.CSFIn(**stored_data)
+
+        new_data = {
+            "by_invdiv_div_id"   : p_div.id
+        }
+        updated = stored_model.copy(update=new_data)
+        stored_data.update(updated)
+
+        c_q.update(stored_data)
+    
+def _merge_project(p_div: Division, c_div: Division, db: Session):
+    child_prjs = db.query(Project).filter(
+        Project.div_id == c_div.id
+    ).all()
+
+    for p in child_prjs:
+        p_q = db.query(Project).filter(
+            Project.id == p.id
+        )
+
+        stored_data = jsonable_encoder(p)
+        stored_model = schemas.ProjectIn(**stored_data)
+
+        new_data = {
+            "div_id"   : p_div.id
+        }
+        updated = stored_model.copy(update=new_data)
+        stored_data.update(updated)
+
+        p_q.update(stored_data)
+    
+def __switch_project_div(p:Project, new_div: Division, db:Session):
+    p_q = db.query(Project).filter(Project.id == p.id)
+
+    stored_data = jsonable_encoder(p)
+    stored_model = schemas.ProjectIn(**stored_data)
+
+    new_data = {
+        "div_id"   : new_div.id
+    }
+    updated = stored_model.copy(update=new_data)
+    stored_data.update(updated)
+
+    p_q.update(stored_data)
+    db.commit()
+
+    return
+
+def _merge_yearlytrainingbudget(p_div: Division, c_div: Division, db: Session):
+    parent_q = db.query(TrainingBudget).filter(
+        TrainingBudget.div_id == p_div.id
+    )
+
+    child_q = db.query(TrainingBudget).filter(
+        TrainingBudget.div_id == c_div.id
+    )
+
+    try:
+        parent  = parent_q.one()
+        child   = child_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Either Parent or Child Div has more than one TrainingBudget")
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Either Parent or Child Div has no TrainingBudget")
+
+    stored_data = jsonable_encoder(parent)
+    stored_model = schemas.TrainingBudgetIn(**stored_data)
+
+    new_data = {
+        "budget"   : parent.budget + child.budget
+    }
+    updated = stored_model.copy(update=new_data)
+    stored_data.update(updated)
+
+    parent_q.update(stored_data)
+
+def _merge_yearlyattr(p_div: Division, c_div: Division, db: Session):
+    parent_q = db.query(YearlyAttrition).filter(
+        YearlyAttrition.div_id == p_div.id
+    )
+
+    child_q = db.query(YearlyAttrition).filter(
+        YearlyAttrition.div_id == c_div.id
+    )
+
+    try:
+        parent  = parent_q.one()
+        child   = child_q.one()
+    except MultipleResultsFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Either Parent or Child Div has more than one YearlyAttrition")
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Either Parent or Child Div has no YearlyAttrition")
+
+    stored_data = jsonable_encoder(parent)
+    stored_model = schemas.YearlyAttritionIn(**stored_data)
+
+    new_data = {
+        "start_headcount"   : parent.start_headcount + child.start_headcount,
+        "budget_headcount"  : parent.budget_headcount + child.budget_headcount
+    }
+    updated = stored_model.copy(update=new_data)
+    stored_data.update(updated)
+
+    parent_q.update(stored_data)
 
 ### History ###
 @router.get('/historic/employee/year/{year}')
@@ -2853,8 +3094,9 @@ def get_attr_summary_details_by_div_shortname(year: int, div: str, db: Session):
     # Rotation (rot)
     attr_rots = get_rotAttrs(year, db, div_id=div_id)
     for b in attr_rots:
-        r_in += 1   and b.to_div_id == div_id
-        r_out += 1  and b.from_div_id == div_id
+        if b.to_div_id != b.from_div_id:
+            r_in += 1   and b.to_div_id == div_id
+            r_out += 1  and b.from_div_id == div_id
 
     # CurrentHC
     start_count = yAttr.start_headcount
