@@ -43,6 +43,8 @@ def merge_division(req: schemas.DivisionMerge, db: Session = Depends(get_db)):
     _merge_attr_jrt(parent_div, child_div, db)
     _merge_attr_rot(parent_div, child_div, db)
 
+    db.delete(child_div)
+
     db.commit()
 
     return {'details': 'Success'}
