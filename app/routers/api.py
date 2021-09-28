@@ -920,7 +920,7 @@ def _copy_qaip_data(year: int, db: Session):
 
 def _copy_attr_data(year: int, db: Session):
     def __copy_main_attr_data():
-        divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+        divs = get_divs_name_exclude_IAH(db)
         res = []
 
         # Result Dict
@@ -2245,7 +2245,7 @@ def get_project_table(nik: str, year: int, db: Session = Depends(get_db)):
 
 @router.patch('/projects/edit_project_table/{id}')
 def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    divs = get_divs_name_exclude_IAH(db)
 
     prj = db.query(Project).filter(
         Project.id == id
@@ -2489,7 +2489,7 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
         SocialContrib.creator.has(active=True)
     ).all()
     
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    divs = get_divs_name_exclude_IAH(db)
     res = []
 
     # Init result dict
@@ -2509,7 +2509,7 @@ def get_total_by_division_by_year_type_categorized(year: int, db: Session = Depe
 
     query = db.query(SocialContrib).filter(SocialContrib.date >= startDate, SocialContrib.date <= endDate).all()
     
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    divs = get_divs_name_exclude_IAH(db)
     res = {}
 
     # Init result dict
@@ -2563,7 +2563,8 @@ def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
         Training.date <= endDate
     ).all()
 
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA", "Mandatory/Inhouse"]
+    divs = get_divs_name_exclude_IAH(db)
+    divs.append("Mandatory/Inhouse")
 
     # Init values dict
     values = []
@@ -2628,7 +2629,8 @@ def get_training_progress_percentage(year: int, db: Session = Depends(get_db)):
         Training.emp_id > 0
     ).all()
 
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA", "IAH"]
+    divs = get_divs_name_exclude_IAH(db)
+    divs.append("IAH")
 
     # Init values dict
     values = []
@@ -2780,7 +2782,7 @@ def delete_training_table_entry(id: int, db: Session = Depends(get_db)):
 
 @router.get('/csf/client_survey/{year}')
 def get_csf_bar_chart_data(year: int, db: Session = Depends(get_db)):
-    divs    = ["WBGM", "RBA", "BRDS", "TAD"]
+    divs    = get_divs_name_exclude_IAH(db)
     
     # Get All CSF where Project's year is {year}
     csfs = db.query(CSF).filter(
@@ -2864,7 +2866,7 @@ def get_csf_bar_chart_data(year: int, db: Session = Depends(get_db)):
 
 @router.get('/csf/overall_csf/{year}')
 def get_csf_donut_data(year: int, db: Session = Depends(get_db)):
-    divs    = ["WBGM", "RBA", "BRDS", "TAD"]
+    divs    = get_divs_name_exclude_IAH(db)
     
     # Get All CSF where Project's year is {year}
     csfs = db.query(CSF).filter(
@@ -3057,7 +3059,7 @@ def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
         BUSUEngagement.date <= endDate
     ).all()
     
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    divs = get_divs_name_exclude_IAH(db)
     res = []
 
     # Init result dict
@@ -3110,7 +3112,7 @@ def get_attr_summary_details_by_div_shortname(year: int, div: str, db: Session):
 
 @router.get('/attrition/staff_attrition/{year}')
 def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    divs = get_divs_name_exclude_IAH(db)
     res = []
 
     for div in divs:
@@ -3158,7 +3160,7 @@ def get_dynamic_attr_rate_byYear(year: int, db: Session = Depends(get_db)):
 @router.get('/attrition/rate_v4/year/{year}')
 def get_dynamic_attr_rate_byYear(year: int, db: Session = Depends(get_db)):
     """Returns List of List of Dict"""
-    divs    = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    divs    = get_divs_name_exclude_IAH(db)
 
     res = []
 
@@ -3186,7 +3188,7 @@ def get_dynamic_attr_rate_byYear(year: int, db: Session = Depends(get_db)):
 def get_dynamic_attr_rate_byYear(year: int, db: Session = Depends(get_db)):
     """Returns List of Dict"""
 
-    divs    = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    divs    = get_divs_name_exclude_IAH(db)
 
     res = []
 
@@ -4493,7 +4495,7 @@ def get_project_table(year: int, db: Session = Depends(get_db)):
 
 @router.post('/admin/audit_project_data/table_data')
 def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
-    divs    = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    divs    = get_divs_name_exclude_IAH(db)
 
     div_id = divs.index(req.division)+1
     status_id = get_project_status_id(req.status)
@@ -4563,7 +4565,7 @@ def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = D
 
 @router.patch('/admin/audit_project_data/table_data/{id}')
 def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    divs = get_divs_name_exclude_IAH(db)
 
     prj = db.query(Project).filter(
         Project.id == id
@@ -4815,7 +4817,7 @@ def delete_busu_table_entry(id:int, db: Session = Depends(get_db)):
 # Attrition MainTable
 @router.get('/admin/attrition/summary_table/year/{year}')
 def get_summary_attr_table(year: int, db: Session = Depends(get_db)):
-    divs = ["WBGM", "RBA", "BRDS", "TAD", "PPA"]
+    divs = get_divs_name_exclude_IAH(db)
     res = []
 
     # Result Dict
