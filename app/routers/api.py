@@ -5099,6 +5099,17 @@ def patch_rot_attr_table_entry(id: int, db: Session = Depends(get_db)):
     return {'details': 'Deleted'}
 
 ### Utils ###
+@router.get('/utils/employee/jwt_info/nik/{nik}')
+def get_name(nik: int, db: Session = Depends(get_db)):
+    emp = get_emp_by_nik(nik, db)
+
+    res = {
+        "name"      : emp.name,
+        "division"  : emp.part_of_div.short_name
+    }
+
+    return res
+
 @router.get('/utils/employee/show_aas')
 def get_employee_table(db: Session = Depends(get_db)):
     emps = get_all_active_emps(db)
