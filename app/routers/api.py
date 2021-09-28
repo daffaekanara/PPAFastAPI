@@ -77,7 +77,7 @@ def _delete_yearlytrainingbudget(c_div: Division, db: Session):
 
 def _merge_attr_jrt(p_div: Division, c_div: Division, db: Session):
     child_jrts = db.query(AttritionJoinResignTransfer).filter(
-        AttritionJoinResignTransfer.div_id == c_div
+        AttritionJoinResignTransfer.div_id == c_div.id
     ).all()
 
     for c in child_jrts:
