@@ -710,11 +710,19 @@ def migrate_data(req: schemas.Migration, db: Session = Depends(get_db)):
 
 @router.get('/admin/operation/migrate_data')
 def get_migration_year(db: Session = Depends(get_db)):
-    div = db.query(DivisionHistory).order_by(desc(DivisionHistory.year)).first()
+    res_year = _get_latest_historic_year_or_none(db)
 
-    year = div.year + 1 if div else 2021
+    year = res_year + 1 if res_year else 2021
 
     return {'year' : year}
+
+def _get_latest_historic_year_or_none(db: Session):
+    div = db.query(DivisionHistory).order_by(desc(DivisionHistory.year)).first()
+
+    if div:
+        return div.year
+    else:
+        return None
 
 def copy_data_to_historic_tables(year: int, db: Session):
     _copy_training_data(year, db)
@@ -2552,12 +2560,6 @@ def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
         TrainingBudget.year == year
     ).all()
 
-    mandatories = db.query(Training).filter(
-        Training.date >= startDate,
-        Training.date <= endDate,
-        Training.emp_id == 0
-    ).all()
-
     trainings = db.query(Training).filter(
         Training.date >= startDate,
         Training.date <= endDate
@@ -2565,6 +2567,8 @@ def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
 
     divs = get_divs_name_exclude_IAH(db)
     divs.append("Mandatory/Inhouse")
+
+    mandatory_index = len(divs) - 1
 
     # Init values dict
     values = []
@@ -2578,18 +2582,18 @@ def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
 
     # Get Divisions Yearly Training Budget
     for y in yearlyBudgets:
-        if 0 < y.div_id < 6:
+        if y.div.short_name in divs:
             i = utils.find_index(values, "div", y.div.short_name)
             values[i]["budget"] = y.budget
     
     # Get Each Training's Charged and Realized
     for t in trainings:
         if t.emp_id == 0: # Mandatory (Not specific to a employee)
-            values[5]["budget"]     += t.budget
-            values[5]["realized"]   += t.realization
-            values[5]["charged"]    += t.charged_by_fin
+            values[mandatory_index]["budget"]     += t.budget
+            values[mandatory_index]["realized"]   += t.realization
+            values[mandatory_index]["charged"]    += t.charged_by_fin
         elif t.employee.active:
-            if 1 <= t.employee.div_id <= 5: # Not Including IAH
+            if t.employee.part_of_div.short_name in divs: # Not Including IAH
                 i = utils.find_index(values, "div", t.employee.part_of_div.short_name)
                 values[i]["realized"]   += t.realization
                 values[i]["charged"]    += t.charged_by_fin
