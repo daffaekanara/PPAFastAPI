@@ -85,7 +85,7 @@ def _merge_attr_jrt(p_div: Division, c_div: Division, db: Session):
             AttritionJoinResignTransfer.id == c.id
         )
 
-        stored_data = jsonable_encoder(e)
+        stored_data = jsonable_encoder(c)
         stored_model = schemas.AttritionJoinResignTransferIn(**stored_data)
 
         new_data = {
