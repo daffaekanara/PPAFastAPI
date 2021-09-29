@@ -795,6 +795,11 @@ class TrainingHistory(BaseModel):
     mandatory   : str
     remark      : str
 
+class TrainingBudgetHistory(BaseModel):
+    year        : int
+    budget      : float
+    division    : str
+
 class ProjectHistory(BaseModel):
     year        : int
     p_name      : str

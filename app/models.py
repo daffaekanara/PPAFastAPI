@@ -366,6 +366,13 @@ class ServerState(Base):
     value   = Column(Boolean)
 
 ### Histories ###
+class TrainingBudgetHistory(Base):
+    __tablename__ = 'trainingbudgethistory'
+    id      = Column(Integer, primary_key=True, index=True)
+    year        = Column(Integer)
+    budget      = Column(Float)
+    division    = Column(String)
+
 class TrainingHistory(Base):
     __tablename__ = 'traininghistory'
     id      = Column(Integer, primary_key=True, index=True)

@@ -698,6 +698,23 @@ def get_training_historic(year:int, db: Session = Depends(get_db)):
     
     return res
 
+@router.get('/historic/training/budget/year/{year}')
+def get_training_budget_historic(year:int, db: Session = Depends(get_db)):
+    datas = db.query(TrainingBudgetHistory).filter(
+        TrainingBudgetHistory.year == year
+    ).all()
+
+    res = []
+
+    for d in datas:
+        res.append({
+            "id"                : d.id,
+            "division"          : d.division,
+            "budget"            : d.budget
+        })
+    
+    return res
+
 @router.post('/admin/operation/migrate_data')
 def migrate_data(req: schemas.Migration, db: Session = Depends(get_db)):
     year = req.year - 1
@@ -733,6 +750,7 @@ def _get_curr_year(db: Session):
         return 2021
 
 def copy_data_to_historic_tables(year: int, db: Session):
+    _copy_training_budget_data(year, db)
     _copy_training_data(year, db)
     _copy_busu_data(year, db)
     _copy_socContrrib_data(year, db)
@@ -744,6 +762,7 @@ def copy_data_to_historic_tables(year: int, db: Session):
     _copy_div_data(year, db)
 
 def delete_old_data(year: int, db: Session):
+    _delete_training_budget_data(year, db)
     _delete_training_data(year,db)
     _delete_busu_data(year,db)
     _delete_socContrrib_data(year, db)
@@ -751,6 +770,23 @@ def delete_old_data(year: int, db: Session):
     _delete_qaip_data(year, db)
     _delete_attr_data(year, db)
     _delete_prj_data(year, db)
+
+def _copy_training_budget_data(year: int, db: Session):
+    budgets = db.query(TrainingBudget).filter(
+        TrainingBudget.year == year
+    ).all()
+
+    for b in budgets:
+        # Create History Entry
+        budgetH = TrainingBudgetHistory(
+            year        = b.year,
+            budget      = b.budget,
+            division    = b.div.short_name
+        )
+
+        db.add(budgetH)
+        db.commit()
+        db.refresh(budgetH)
 
 def _copy_training_data(year: int, db: Session):
     endDate = datetime.date(year,12,31)
@@ -1153,6 +1189,15 @@ def _copy_div_data(year: int, db: Session):
         db.add(divH)
         db.commit()
         db.refresh(divH)
+
+def _delete_training_budget_data(year: int, db: Session):
+    budgets = db.query(TrainingBudget).filter(
+        TrainingBudget.year == year
+    ).all()
+
+    for b in budgets:
+        db.delete(b)
+    db.commit()
 
 def _delete_training_data(year: int, db: Session):
     endDate = datetime.date(year,12,31)
