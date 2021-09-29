@@ -4352,8 +4352,8 @@ def post_training_annoucement(req: schemas.AnnouncementCreate, db: Session = Dep
         db.commit()
         return updated
 
-@router.get('/admin/training_budget_data/table_data/year/{year}')
-def get_trainingbudget_table(year: int, db: Session = Depends(get_db)):
+@router.get('/admin/training_budget_data/table_data')
+def get_trainingbudget_table(db: Session = Depends(get_db)):
     divs = get_divs_name_exclude_IAH(db)
 
     res = []
@@ -4370,7 +4370,7 @@ def get_trainingbudget_table(year: int, db: Session = Depends(get_db)):
 
     return res
 
-@router.patch('/admin/training_budget_data/table_data/{year}')
+@router.patch('/admin/training_budget_data/table_data')
 def patch_trainingbudget_table(req: schemas.TrainingBudgetInHiCoupling, year: int, db: Session = Depends(get_db)):
     d_obj = get_div_by_shortname(req.division, db)
     t_budget = get_yTrainingBudget_by_div_id(d_obj.id, db)
