@@ -705,7 +705,7 @@ def migrate_data(req: schemas.Migration, db: Session = Depends(get_db)):
     # Copy Data
     copy_data_to_historic_tables(year, db)
     delete_old_data(year,db)
-
+    # TODO Create new Yearly Initial Data (YearlyTraining Budget, YearlyAttr)
     return {"Details": "Success"}
 
 @router.get('/admin/operation/migrate_data')
@@ -723,6 +723,14 @@ def _get_latest_historic_year_or_none(db: Session):
         return div.year
     else:
         return None
+
+def _get_curr_year(db: Session):
+    y = _get_latest_historic_year_or_none(db)
+
+    if y:
+        return y+1
+    else:
+        return 2021
 
 def copy_data_to_historic_tables(year: int, db: Session):
     _copy_training_data(year, db)
@@ -4343,7 +4351,45 @@ def post_training_annoucement(req: schemas.AnnouncementCreate, db: Session = Dep
         ann_query.update(stored_data)
         db.commit()
         return updated
-        
+
+@router.get('/admin/training_budget_data/table_data/year/{year}')
+def get_trainingbudget_table(year: int, db: Session = Depends(get_db)):
+    divs = get_divs_name_exclude_IAH(db)
+
+    res = []
+
+    for d in divs:
+        d_obj = get_div_by_shortname(d, db)
+        t_budget = get_yTrainingBudget_by_div_id(d_obj.id, db)
+
+        res.append({
+            "id"                : str(t_budget.id), 
+            "division"          : d, 
+            "budget"            : t_budget.budget
+        })
+
+    return res
+
+@router.patch('/admin/training_budget_data/table_data/{year}')
+def patch_trainingbudget_table(req: schemas.TrainingBudgetInHiCoupling, year: int, db: Session = Depends(get_db)):
+    d_obj = get_div_by_shortname(req.division, db)
+    t_budget = get_yTrainingBudget_by_div_id(d_obj.id, db)
+
+    t_q = db.query(TrainingBudget).filter(
+        TrainingBudget.id == t_budget.id
+    )
+
+    stored_data = jsonable_encoder(t_budget)
+    stored_model = schemas.TrainingBudgetIn(**stored_data)
+
+    new_data = {"budget": req.budget}
+    updated = stored_model.copy(update=new_data)
+
+    stored_data.update(updated)
+    t_q.update(stored_data)
+    db.commit()
+    return updated
+
 @router.get('/admin/training_data/table_data/{year}')
 def get_training_table(year: int, db: Session = Depends(get_db)):
     startDate   = datetime.date(year,1,1)
@@ -4738,7 +4784,7 @@ def get_busu_table(year: int, db: Session = Depends(get_db)):
         res.append({
             "id"        : str(e.id),
             "nik"       : e.creator.staff_id,
-            "division"  : e.creator.part_of_div.short_name,
+            "division"  : e.creator.part_of_div.id,
             "WorRM"     : e.eng_type.name,
             "activity"  : e.activity_name,
             "date"      : e.date.strftime("%m/%d/%Y")
@@ -5412,6 +5458,20 @@ def get_div_by_id(div_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f'Multiple Divs of ID ({div_id}) were found!')
 
     return div
+
+def get_yTrainingBudget_by_div_id(div_id: int, db: Session):
+    query = db.query(TrainingBudget).filter(
+        TrainingBudget.div_id == div_id
+    )
+
+    try:
+        data = query.one()
+    except MultipleResultsFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"More than one Training Budget of div_id ({div_id}) was found!")
+    except NoResultFound:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f"No Training Budget of div_id ({div_id}) was found!")
+
+    return data
 
 def create_or_update_mActual(data, db: Session):
     actual_query = db.query(MonthlyActualBudget).filter(

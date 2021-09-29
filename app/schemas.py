@@ -246,6 +246,11 @@ class TrainingBudgetIn(BaseModel):
     budget  :Optional[float]
     div_id  :Optional[int]
 
+class TrainingBudgetInHiCoupling(BaseModel):
+    id                : str
+    division          : str
+    budget            : float
+
 class TrainingInHiCoupling(BaseModel):
     id                  : Optional[str]
     divison             : Optional[str]
