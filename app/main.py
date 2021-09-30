@@ -42,5 +42,5 @@ app.include_router(historic.router)
 
 @app.get('/')
 def index():
-    return {"Msg": "Go to site/docs for the API docs"}
+    return {"Msg": "Go to site/docs for the API docs testing"}
 
