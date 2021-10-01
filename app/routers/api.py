@@ -2419,7 +2419,6 @@ def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Sess
 def get_total_by_division_by_year_v2(year: int, db: Session = Depends(get_db)):
     this_year = _get_curr_year(db)
 
-    #TODO
     if year == this_year:
         projects = db.query(Project).filter(Project.year == year).all()
         
@@ -2908,59 +2907,117 @@ def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
 
 @router.get('/training/progress_percentange/{year}')
 def get_training_progress_percentage(year: int, db: Session = Depends(get_db)):
-    startDate   = datetime.date(year,1,1)
-    endDate     = datetime.date(year,12,31)
+    this_year = _get_curr_year(db)
 
-    targets = db.query(TrainingTarget).filter(
-        TrainingTarget.year == year
-    ).all()
+    if year == this_year:
+        startDate   = datetime.date(year,1,1)
+        endDate     = datetime.date(year,12,31)
 
-    trainings = db.query(Training).filter(
-        Training.date >= startDate,
-        Training.date <= endDate,
-        Training.emp_id > 0
-    ).all()
+        targets = db.query(TrainingTarget).filter(
+            TrainingTarget.year == year
+        ).all()
 
-    divs = get_divs_name_exclude_IAH(db)
-    divs.append("IAH")
+        trainings = db.query(Training).filter(
+            Training.date >= startDate,
+            Training.date <= endDate,
+            Training.emp_id > 0
+        ).all()
 
-    # Init values dict
-    values = []
-    for d in divs:
-        values.append({
-            "div"           : d,
-            "target_hours"   : 0,
-            "curr_hours"     : 0
-        })
-    
-    # Get Targets
-    for t in targets:
-        i = utils.find_index(values, "div", t.trainee.part_of_div.short_name)
-        values[i]["target_hours"] += t.target_hours
+        divs = get_divs_name_exclude_IAH(db)
+        divs.append("IAH")
 
-    # Get Currs
-    for t in trainings:
-        if t.employee and t.employee.active:
-            i = utils.find_index(values, "div", t.employee.part_of_div.short_name)
-            values[i]["curr_hours"] += t.duration_hours
-    
-    # Translate to Percentage
-    res = []
-    for d in divs:
-        res.append({
-            "percentage" : 0,
-            "divisions": d
-        })
-    
-    for i, r in enumerate(res):
-        if values[i]["target_hours"] == 0:
-            res[i]["percentage"]   = 0.0
-        else:
-            pctg = values[i]["curr_hours"] / values[i]["target_hours"] * 100
-            res[i]["percentage"]   = round(pctg, 2)
+        # Init values dict
+        values = []
+        for d in divs:
+            values.append({
+                "div"           : d,
+                "target_hours"   : 0,
+                "curr_hours"     : 0
+            })
         
+        # Get Targets
+        for t in targets:
+            i = utils.find_index(values, "div", t.trainee.part_of_div.short_name)
+            values[i]["target_hours"] += t.target_hours
 
-    return res
+        # Get Currs
+        for t in trainings:
+            if t.employee and t.employee.active:
+                i = utils.find_index(values, "div", t.employee.part_of_div.short_name)
+                values[i]["curr_hours"] += t.duration_hours
+        
+        # Translate to Percentage
+        res = []
+        for d in divs:
+            res.append({
+                "percentage" : 0,
+                "divisions": d
+            })
+        
+        for i, r in enumerate(res):
+            if values[i]["target_hours"] == 0:
+                res[i]["percentage"]   = 0.0
+            else:
+                pctg = values[i]["curr_hours"] / values[i]["target_hours"] * 100
+                res[i]["percentage"]   = round(pctg, 2)
+            
+
+        return res
+    
+    elif year < this_year:
+
+        targets = db.query(TrainingTarget).filter(
+            TrainingTarget.year == year
+        ).all()
+
+        trainings = db.query(TrainingHistory).filter(
+            TrainingHistory.year == year
+        ).all()
+
+        divs = get_divs_name_exclude_IAH_history(db)
+        divs.append("IAH")
+
+        # Init values dict
+        values = []
+        for d in divs:
+            values.append({
+                "div"           : d,
+                "target_hours"   : 0,
+                "curr_hours"     : 0
+            })
+        
+        # Get Targets
+        for t in targets:
+            i = utils.find_index(values, "div", t.trainee.part_of_div.short_name)
+            values[i]["target_hours"] += t.target_hours
+
+        # Get Currs
+        for t in trainings:
+            if t.emp_name:
+                i = utils.find_index(values, "div", t.division)
+                values[i]["curr_hours"] += t.hours
+        
+        # Translate to Percentage
+        res = []
+        for d in divs:
+            res.append({
+                "percentage" : 0,
+                "divisions": d
+            })
+        
+        for i, r in enumerate(res):
+            if values[i]["target_hours"] == 0:
+                res[i]["percentage"]   = 0.0
+            else:
+                pctg = values[i]["curr_hours"] / values[i]["target_hours"] * 100
+                res[i]["percentage"]   = round(pctg, 2)
+            
+
+        return res
+
+    else:
+
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,f'Requested year {year} is higher than current year.')
 
 @router.post('/training/form', status_code=status.HTTP_201_CREATED)
 def create_training_from_form(req: schemas.TrainingInHiCouplingForm, db: Session = Depends(get_db)):
@@ -3244,61 +3301,124 @@ def get_csf_bar_chart_data(year: int, db: Session = Depends(get_db)):
 
 @router.get('/csf/overall_csf/{year}')
 def get_csf_donut_data(year: int, db: Session = Depends(get_db)):
-    divs    = get_divs_name_exclude_IAH(db)
-    
-    # Get All CSF where Project's year is {year}
-    csfs = db.query(CSF).filter(
-        CSF.prj.has(year=year)
-    ).all()
+    this_year = _get_curr_year(db)
 
-    scores = []
+    if year == this_year:
+        divs    = get_divs_name_exclude_IAH(db)
+        
+        # Get All CSF where Project's year is {year}
+        csfs = db.query(CSF).filter(
+            CSF.prj.has(year=year)
+        ).all()
 
-    # Calc byInvDiv Score
-    for d in divs:
-        prj_ids = []
-        list_of_prj_scores = []
+        scores = []
 
-        # Find Unique Project IDs of a div
-        for c in csfs:
-            if c.by_invdiv_div.short_name == d:
-                if c.prj_id not in prj_ids:
-                    prj_ids.append(c.prj_id)
+        # Calc byInvDiv Score
+        for d in divs:
+            prj_ids = []
+            list_of_prj_scores = []
 
-        # Calc each project overall score
-        for prj_id in prj_ids:
-            list_of_csf_scores = []
-            
-            # Get project's feedback scores
+            # Find Unique Project IDs of a div
             for c in csfs:
-                if c.prj_id == prj_id and c.by_invdiv_div.short_name == d:
-                    score = utils.calc_single_csf_score(c)
-                    list_of_csf_scores.append(score)
-            
-            # Project Overall Score
-            if list_of_csf_scores:
-                score = sum(list_of_csf_scores) / len(list_of_csf_scores)
-                list_of_prj_scores.append(round(score,2))
+                if c.by_invdiv_div.short_name == d:
+                    if c.prj_id not in prj_ids:
+                        prj_ids.append(c.prj_id)
 
-        if list_of_prj_scores:
-            score = sum(list_of_prj_scores) / len(list_of_prj_scores)
-            scores.append(round(score, 2))
-        else:
-            scores.append(0)
-  
-    avg = sum(scores) / len(scores)
+            # Calc each project overall score
+            for prj_id in prj_ids:
+                list_of_csf_scores = []
+                
+                # Get project's feedback scores
+                for c in csfs:
+                    if c.prj_id == prj_id and c.by_invdiv_div.short_name == d:
+                        score = utils.calc_single_csf_score(c)
+                        list_of_csf_scores.append(score)
+                
+                # Project Overall Score
+                if list_of_csf_scores:
+                    score = sum(list_of_csf_scores) / len(list_of_csf_scores)
+                    list_of_prj_scores.append(round(score,2))
 
-    res = [
-        {
-            "title" : "score",
-	        "rate"  : round(avg, 2)
-        },
-        {
-            "title" : "",
-	        "rate"  : round(4-avg, 2)
-        }
-    ]
+            if list_of_prj_scores:
+                score = sum(list_of_prj_scores) / len(list_of_prj_scores)
+                scores.append(round(score, 2))
+            else:
+                scores.append(0)
+    
+        avg = sum(scores) / len(scores)
 
-    return res
+        res = [
+            {
+                "title" : "score",
+                "rate"  : round(avg, 2)
+            },
+            {
+                "title" : "",
+                "rate"  : round(4-avg, 2)
+            }
+        ]
+
+        return res
+
+    elif year < this_year:
+        divs    = get_divs_name_exclude_IAH_history(db)
+        
+        # Get All CSF where Project's year is {year}
+        csfs = db.query(CSFHistory).filter(
+            CSFHistory.year == year
+        ).all()
+
+        scores = []
+
+        # Calc byInvDiv Score
+        for d in divs:
+            p_names = []
+            list_of_prj_scores = []
+
+            # Find Unique Project IDs of a div
+            for c in csfs:
+                if c.p_name == d:
+                    if c.p_name not in p_names:
+                        p_names.append(c.p_name)
+
+            # Calc each project overall score
+            for p_name in p_names:
+                list_of_csf_scores = []
+                
+                # Get project's feedback scores
+                for c in csfs:
+                    if c.p_name == p_name and c.division_by_inv == d:
+                        score = utils.calc_single_csf_score(c)
+                        list_of_csf_scores.append(score)
+                
+                # Project Overall Score
+                if list_of_csf_scores:
+                    score = sum(list_of_csf_scores) / len(list_of_csf_scores)
+                    list_of_prj_scores.append(round(score,2))
+
+            if list_of_prj_scores:
+                score = sum(list_of_prj_scores) / len(list_of_prj_scores)
+                scores.append(round(score, 2))
+            else:
+                scores.append(0)
+    
+        avg = sum(scores) / len(scores)
+
+        res = [
+            {
+                "title" : "score",
+                "rate"  : round(avg, 2)
+            },
+            {
+                "title" : "",
+                "rate"  : round(4-avg, 2)
+            }
+        ]
+
+        return res
+
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,f'Requested year {year} is higher than current year.')
 
 ### BUSU Engagement ###
 
@@ -3620,29 +3740,58 @@ def get_dynamic_attr_rate_byYear(year: int, db: Session = Depends(get_db)):
 @router.get('/attrition/rate_v3/year/{year}')
 def get_dynamic_attr_rate_byYear(year: int, db: Session = Depends(get_db)):
     """Returns List of Dict"""
+    this_year = _get_curr_year(db)
+    
+    if year == this_year:
+        divs    = get_divs_name_exclude_IAH(db)
 
-    divs    = get_divs_name_exclude_IAH(db)
-
-    res = []
+        res = []
 
 
-    for index,div in enumerate(divs):
-        (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div, db)
+        for index,div in enumerate(divs):
+            (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div, db)
 
-        attr_sum = resign + t_out + r_out
-        attr_rate = (attr_sum / start_hc) * 100
+            attr_sum = resign + t_out + r_out
+            attr_rate = (attr_sum / start_hc) * 100
 
-        res.append({
-            'id'        : index+1,
-            'division'  : div,
-            'rate'      : round(attr_rate, 2),
-            'else_rate' : round(100-attr_rate,2),
-            'title_rate': f'{div} Attrition Rate',
-            'title_else': '',
-            'text'      : f'Attrition Rate: {round(attr_rate, 2)}%'
-        })
+            res.append({
+                'id'        : index+1,
+                'division'  : div,
+                'rate'      : round(attr_rate, 2),
+                'else_rate' : round(100-attr_rate,2),
+                'title_rate': f'{div} Attrition Rate',
+                'title_else': '',
+                'text'      : f'Attrition Rate: {round(attr_rate, 2)}%'
+            })
 
-    return res
+        return res
+    #TODOO
+    elif year < this_year:
+        divs    = get_divs_name_exclude_IAH_history(db)
+
+        res = []
+
+
+        for index,div in enumerate(divs):
+            (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div, db)
+
+            attr_sum = resign + t_out + r_out
+            attr_rate = (attr_sum / start_hc) * 100
+
+            res.append({
+                'id'        : index+1,
+                'division'  : div,
+                'rate'      : round(attr_rate, 2),
+                'else_rate' : round(100-attr_rate,2),
+                'title_rate': f'{div} Attrition Rate',
+                'title_else': '',
+                'text'      : f'Attrition Rate: {round(attr_rate, 2)}%'
+            })
+
+        return res
+
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,f'Requested year {year} is higher than current year.')
 
 @router.get('/attrition/rate_v2/div/{div_name}/year/{year}')
 def get_rate_by_division_by_yearmonth(div_name: str, year: int, db: Session = Depends(get_db)):
