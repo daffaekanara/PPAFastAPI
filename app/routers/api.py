@@ -2606,70 +2606,141 @@ def get_training_annoucement(db: Session = Depends(get_db)):
 
 @router.get('/training/budget_percentange/{year}')
 def get_training_budget_percentage(year: int, db: Session = Depends(get_db)):
-    startDate   = datetime.date(year,1,1)
-    endDate     = datetime.date(year,12,31)
 
-    yearlyBudgets = db.query(TrainingBudget).filter(
-        TrainingBudget.year == year
-    ).all()
-
-    trainings = db.query(Training).filter(
-        Training.date >= startDate,
-        Training.date <= endDate
-    ).all()
-
-    divs = get_divs_name_exclude_IAH(db)
-    divs.append("Mandatory/Inhouse")
-
-    mandatory_index = len(divs) - 1
-
-    # Init values dict
-    values = []
-    for d in divs:
-        values.append({
-            "div"       : d,
-            "budget"    : 0,
-            "realized"  : 0,
-            "charged"   : 0
-        })
-
-    # Get Divisions Yearly Training Budget
-    for y in yearlyBudgets:
-        if y.div.short_name in divs:
-            i = utils.find_index(values, "div", y.div.short_name)
-            values[i]["budget"] = y.budget
+    this_year = _get_curr_year(db)
     
-    # Get Each Training's Charged and Realized
-    for t in trainings:
-        if t.emp_id == 0: # Mandatory (Not specific to a employee)
-            values[mandatory_index]["budget"]     += t.budget
-            values[mandatory_index]["realized"]   += t.realization
-            values[mandatory_index]["charged"]    += t.charged_by_fin
-        elif t.employee.active:
-            if t.employee.part_of_div.short_name in divs: # Not Including IAH
-                i = utils.find_index(values, "div", t.employee.part_of_div.short_name)
-                values[i]["realized"]   += t.realization
-                values[i]["charged"]    += t.charged_by_fin
+    if year == this_year:
 
-    # Translate to Percentage
-    res = []
-    for d in divs:
-        res.append({
-            "budget"            : 0,
-            "cost_realization"  : 0,
-            "charged_by_finance": 0,
-            "divisions_and_mandatory": d
-        })
+        startDate   = datetime.date(year,1,1)
+        endDate     = datetime.date(year,12,31)
+        yearlyBudgets = db.query(TrainingBudget).filter(
+            TrainingBudget.year == year
+        ).all()
+
+        trainings = db.query(Training).filter(
+            Training.date >= startDate,
+            Training.date <= endDate
+        ).all()
+
+        divs = get_divs_name_exclude_IAH(db)
+        divs.append("Mandatory/Inhouse")
+
+        mandatory_index = len(divs) - 1
+
+        # Init values dict
+        values = []
+        for d in divs:
+            values.append({
+                "div"       : d,
+                "budget"    : 0,
+                "realized"  : 0,
+                "charged"   : 0
+            })
+
+        # Get Divisions Yearly Training Budget
+        for y in yearlyBudgets:
+            if y.div.short_name in divs:
+                i = utils.find_index(values, "div", y.div.short_name)
+                values[i]["budget"] = y.budget
+        
+        # Get Each Training's Charged and Realized
+        for t in trainings:
+            if t.emp_id == 0: # Mandatory (Not specific to a employee)
+                values[mandatory_index]["budget"]     += t.budget
+                values[mandatory_index]["realized"]   += t.realization
+                values[mandatory_index]["charged"]    += t.charged_by_fin
+            elif t.employee.active:
+                if t.employee.part_of_div.short_name in divs: # Not Including IAH
+                    i = utils.find_index(values, "div", t.employee.part_of_div.short_name)
+                    values[i]["realized"]   += t.realization
+                    values[i]["charged"]    += t.charged_by_fin
+
+        # Translate to Percentage
+        res = []
+        for d in divs:
+            res.append({
+                "budget"            : 0,
+                "cost_realization"  : 0,
+                "charged_by_finance": 0,
+                "divisions_and_mandatory": d
+            })
+        
+        for i, r in enumerate(res):
+            cost_realized   = values[i]["realized"] / values[i]["budget"] * 100 if values[i]["budget"] != 0 else 0
+            charged         = values[i]["charged"] / values[i]["budget"] * 100 if values[i]["budget"] != 0 else 0
+            
+            res[i]["budget"]             = 100.0
+            res[i]["cost_realization"]   = round(cost_realized, 2)
+            res[i]["charged_by_finance"] = round(charged, 2)
+            
+        return res
     
-    for i, r in enumerate(res):
-        cost_realized   = values[i]["realized"] / values[i]["budget"] * 100 if values[i]["budget"] != 0 else 0
-        charged         = values[i]["charged"] / values[i]["budget"] * 100 if values[i]["budget"] != 0 else 0
+    elif year < this_year:
+
+        yearlyBudgets = db.query(TrainingBudgetHistory).filter(
+            TrainingBudgetHistory.year == year
+        ).all()
+
+        trainings = db.query(TrainingHistory).filter(
+            TrainingHistory.year == year
+        ).all()
+
+        divs = get_divs_name_exclude_IAH_history(db)
+        divs.append("Mandatory/Inhouse")
+
+        mandatory_index = len(divs) - 1
+
+        # Init values dict
+        values = []
+        for d in divs:
+            values.append({
+                "div"       : d,
+                "budget"    : 0,
+                "realized"  : 0,
+                "charged"   : 0
+            })
+
+        # Get Divisions Yearly Training Budget
+        for y in yearlyBudgets:
+            if y.division in divs:
+                i = utils.find_index(values, "div", y.division)
+                values[i]["budget"] = y.budget
         
-        res[i]["budget"]             = 100.0
-        res[i]["cost_realization"]   = round(cost_realized, 2)
-        res[i]["charged_by_finance"] = round(charged, 2)
-        
-    return res
+        # Get Each Training's Charged and Realized
+        for t in trainings:
+            if t.division == None: # Mandatory (Not specific to a employee)
+                values[mandatory_index]["budget"]     += t.budget
+                values[mandatory_index]["realized"]   += t.realized
+                values[mandatory_index]["charged"]    += t.charged
+
+            elif t.division in divs: # Not Including IAH
+                i = utils.find_index(values, "div", t.division)
+                values[i]["realized"]   += t.realized
+                values[i]["charged"]    += t.charged
+
+        # Translate to Percentage
+        res = []
+        for d in divs:
+            res.append({
+                "budget"            : 0,
+                "cost_realization"  : 0,
+                "charged_by_finance": 0,
+                "divisions_and_mandatory": d
+            })
+
+        for i, r in enumerate(res):
+            cost_realized   = values[i]["realized"] / values[i]["budget"] * 100 if values[i]["budget"] != 0 else 0
+            charged         = values[i]["charged"] / values[i]["budget"] * 100 if values[i]["budget"] != 0 else 0
+            
+            res[i]["budget"]             = 100.0
+            res[i]["cost_realization"]   = round(cost_realized, 2)
+            res[i]["charged_by_finance"] = round(charged, 2)
+            
+        return res
+
+    else:
+
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,f'Requested year {year} is higher than current year.')
 
 @router.get('/training/progress_percentange/{year}')
 def get_training_progress_percentage(year: int, db: Session = Depends(get_db)):
@@ -2839,87 +2910,173 @@ def delete_training_table_entry(id: int, db: Session = Depends(get_db)):
 
 @router.get('/csf/client_survey/{year}')
 def get_csf_bar_chart_data(year: int, db: Session = Depends(get_db)):
-    divs    = get_divs_name_exclude_IAH(db)
+    this_year = _get_curr_year(db)
     
     # Get All CSF where Project's year is {year}
-    csfs = db.query(CSF).filter(
-        CSF.prj.has(year=year)
-    ).all()
+    if year == this_year:
+        divs = get_divs_name_exclude_IAH(db)
+        csfs = db.query(CSF).filter(
+            CSF.prj.has(year=year)
+        ).all()
 
-    # Init result dict
-    res = []
-    for d in divs:
-        res.append({
-            "division"      : d, 
-            "by_division"   : 0, 
-            "by_project"    : 0
-        })
+        # Init result dict
+        res = []
+        for d in divs:
+            res.append({
+                "division"      : d, 
+                "by_division"   : 0, 
+                "by_project"    : 0
+            })
 
-    # Calc byProject Score
-    for d in divs:
-        prj_ids = []
-        list_of_prj_scores = []
+        # Calc byProject Score
+        for d in divs:
+            prj_ids = []
+            list_of_prj_scores = []
 
-        # Find Unique Project IDs of a div
-        for c in csfs:
-            if c.prj.div.short_name == d:
-                if c.prj_id not in prj_ids:
-                    prj_ids.append(c.prj_id)
-
-        # Calc each project overall score
-        for prj_id in prj_ids:
-            list_of_csf_scores = []
-            
-            # Get project's feedback scores
+            # Find Unique Project IDs of a div
             for c in csfs:
-                if c.prj_id == prj_id:
-                    score = utils.calc_single_csf_score(c)
-                    list_of_csf_scores.append(score)
-            
-            # Project Overall Score
-            if list_of_csf_scores:
-                score = sum(list_of_csf_scores) / len(list_of_csf_scores)
-                list_of_prj_scores.append(round(score,2))
+                if c.prj.div.short_name == d:
+                    if c.prj_id not in prj_ids:
+                        prj_ids.append(c.prj_id)
 
-        if list_of_prj_scores:
-            score = sum(list_of_prj_scores) / len(list_of_prj_scores)
+            # Calc each project overall score
+            for prj_id in prj_ids:
+                list_of_csf_scores = []
+                
+                # Get project's feedback scores
+                for c in csfs:
+                    if c.prj_id == prj_id:
+                        score = utils.calc_single_csf_score(c)
+                        list_of_csf_scores.append(score)
+                
+                # Project Overall Score
+                if list_of_csf_scores:
+                    score = sum(list_of_csf_scores) / len(list_of_csf_scores)
+                    list_of_prj_scores.append(round(score,2))
 
-            index = utils.find_index(res, "division", d)
-            res[index]["by_project"] = round(score, 2)
-  
-    # Calc byInvDiv Score
-    for d in divs:
-        prj_ids = []
-        list_of_prj_scores = []
+            if list_of_prj_scores:
+                score = sum(list_of_prj_scores) / len(list_of_prj_scores)
 
-        # Find Unique Project IDs of a div
-        for c in csfs:
-            if c.by_invdiv_div.short_name == d:
-                if c.prj_id not in prj_ids:
-                    prj_ids.append(c.prj_id)
+                index = utils.find_index(res, "division", d)
+                res[index]["by_project"] = round(score, 2)
+    
+        # Calc byInvDiv Score
+        for d in divs:
+            prj_ids = []
+            list_of_prj_scores = []
 
-        # Calc each project overall score
-        for prj_id in prj_ids:
-            list_of_csf_scores = []
-            
-            # Get project's feedback scores
+            # Find Unique Project IDs of a div
             for c in csfs:
-                if c.prj_id == prj_id and c.by_invdiv_div.short_name == d:
-                    score = utils.calc_single_csf_score(c)
-                    list_of_csf_scores.append(score)
-            
-            # Project Overall Score
-            if list_of_csf_scores:
-                score = sum(list_of_csf_scores) / len(list_of_csf_scores)
-                list_of_prj_scores.append(round(score,2))
+                if c.by_invdiv_div.short_name == d:
+                    if c.prj_id not in prj_ids:
+                        prj_ids.append(c.prj_id)
 
-        if list_of_prj_scores:
-            score = sum(list_of_prj_scores) / len(list_of_prj_scores)
+            # Calc each project overall score
+            for prj_id in prj_ids:
+                list_of_csf_scores = []
+                
+                # Get project's feedback scores
+                for c in csfs:
+                    if c.prj_id == prj_id and c.by_invdiv_div.short_name == d:
+                        score = utils.calc_single_csf_score(c)
+                        list_of_csf_scores.append(score)
+                
+                # Project Overall Score
+                if list_of_csf_scores:
+                    score = sum(list_of_csf_scores) / len(list_of_csf_scores)
+                    list_of_prj_scores.append(round(score,2))
 
-            index = utils.find_index(res, "division", d)
-            res[index]["by_division"] = round(score, 2)
+            if list_of_prj_scores:
+                score = sum(list_of_prj_scores) / len(list_of_prj_scores)
 
-    return res
+                index = utils.find_index(res, "division", d)
+                res[index]["by_division"] = round(score, 2)
+
+        return res
+    
+    elif year < this_year:
+        divs = get_divs_name_exclude_IAH_history(db)
+        csfs = db.query(CSFHistory).filter(
+            CSFHistory.year.has(year=year)
+        ).all()
+
+        # Init result dict
+        res = []
+        for d in divs:
+            res.append({
+                "division"      : d, 
+                "by_division"   : 0, 
+                "by_project"    : 0
+            })
+
+        # Calc byProject Score
+        for d in divs:
+            p_names = []
+            list_of_prj_scores = []
+
+            # Find Unique Project Names of a div
+            for c in csfs:
+                if c.division == d:
+                    if c.p_name not in p_names:
+                        p_names.append(c.p_name)
+
+            # Calc each project overall score
+            for p_name in p_names:
+                list_of_csf_scores = []
+                
+                # Get project's feedback scores
+                for c in csfs:
+                    if c.p_name == p_name:
+                        score = utils.calc_single_csf_score(c)
+                        list_of_csf_scores.append(score)
+                
+                # Project Overall Score
+                if list_of_csf_scores:
+                    score = sum(list_of_csf_scores) / len(list_of_csf_scores)
+                    list_of_prj_scores.append(round(score,2))
+
+            if list_of_prj_scores:
+                score = sum(list_of_prj_scores) / len(list_of_prj_scores)
+
+                index = utils.find_index(res, "division", d)
+                res[index]["by_project"] = round(score, 2)
+    
+        # Calc byInvDiv Score
+        for d in divs:
+            p_names = []
+            list_of_prj_scores = []
+
+            # Find Unique Project IDs of a div
+            for c in csfs:
+                if c.division == d:
+                    if c.p_name not in p_names:
+                        p_names.append(c.p_name)
+
+            # Calc each project overall score
+            for p_name in p_names:
+                list_of_csf_scores = []
+                
+                # Get project's feedback scores
+                for c in csfs:
+                    if c.p_name == p_name and c.division_by_inv == d:
+                        score = utils.calc_single_csf_score(c)
+                        list_of_csf_scores.append(score)
+                
+                # Project Overall Score
+                if list_of_csf_scores:
+                    score = sum(list_of_csf_scores) / len(list_of_csf_scores)
+                    list_of_prj_scores.append(round(score,2))
+
+            if list_of_prj_scores:
+                score = sum(list_of_prj_scores) / len(list_of_prj_scores)
+
+                index = utils.find_index(res, "division", d)
+                res[index]["by_division"] = round(score, 2)
+
+        return res
+    
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,f'Requested year {year} is higher than current year.')
 
 @router.get('/csf/overall_csf/{year}')
 def get_csf_donut_data(year: int, db: Session = Depends(get_db)):
@@ -5468,6 +5625,17 @@ def get_project_by_NIK(year:int, nik: str, db: Session = Depends(get_db)):
 def get_divs_name_exclude_IAH(db: Session = Depends(get_db)):
     divs = db.query(Division).filter(
         Division.short_name != "IAH"
+    )
+
+    res = []
+    for d in divs:
+        res.append(d.short_name)
+    
+    return res
+
+def get_divs_name_exclude_IAH_history(db: Session = Depends(get_db)):
+    divs = db.query(DivisionHistory).filter(
+        DivisionHistory.short_name != "IAH"
     )
 
     res = []
