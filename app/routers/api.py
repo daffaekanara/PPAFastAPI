@@ -2205,73 +2205,146 @@ def change_password(id: int, req: schemas.PasswordChangeIn, db: Session = Depend
 
 @router.get('/budget/budgetdata/{year}/{month}')
 def get_total_by_division_by_year(year: int, month: int, db: Session = Depends(get_db)):
+    this_year = _get_curr_year(db)
 
-    yearlyQuery = db.query(MonthlyBudget).filter(
-        MonthlyBudget.year == year
-    ).all() # 12 data
+    if year == this_year:
+        yearlyQuery = db.query(MonthlyBudget).filter(
+            MonthlyBudget.year == year
+        ).all() # 12 data
 
-    query = db.query(MonthlyActualBudget).filter(
-        MonthlyActualBudget.year == year, 
-        MonthlyActualBudget.month == month
-    ).first()
+        query = db.query(MonthlyActualBudget).filter(
+            MonthlyActualBudget.year == year, 
+            MonthlyActualBudget.month == month
+        ).first()
 
-    # Init result dict
-    cats = [
-        "Staff Expense", 
-        "Revenue Related", 
-        "IT Related", 
-        "Occupancy Related", 
-        "Other Related",
-        "Direct Expense",
-        "Indirect Expense",
-        "Total"
-    ]
-    res = []
-    yearlyBudget = {}
-    actualMonthBudget = {}
+        # Init result dict
+        cats = [
+            "Staff Expense", 
+            "Revenue Related", 
+            "IT Related", 
+            "Occupancy Related", 
+            "Other Related",
+            "Direct Expense",
+            "Indirect Expense",
+            "Total"
+        ]
+        res = []
+        yearlyBudget = {}
+        actualMonthBudget = {}
 
-    for cat in cats:
-        res.append({
-            "yearly":0,
-            "month_to_year":0,
-            "expense_category":cat
-        })
+        for cat in cats:
+            res.append({
+                "yearly":0,
+                "month_to_year":0,
+                "expense_category":cat
+            })
 
-        yearlyBudget[cat] = 0
-        actualMonthBudget[cat] = 0
+            yearlyBudget[cat] = 0
+            actualMonthBudget[cat] = 0
 
-    # Process YearlyBudget
-    for y in yearlyQuery:
-        yearlyBudget['Staff Expense']               += y.staff_salaries
-        yearlyBudget['Staff Expense']               += y.staff_training_reg_meeting
-        yearlyBudget['Revenue Related']             += y.revenue_related
-        yearlyBudget['IT Related']                  += y.it_related
-        yearlyBudget['Occupancy Related']           += y.occupancy_related
-        yearlyBudget['Other Related']               += y.other_transport_travel
-        yearlyBudget['Other Related']               += y.other_other
-        yearlyBudget['Direct Expense']              += y.staff_salaries + y.revenue_related + y.it_related + y.occupancy_related + y.other_transport_travel + y.other_other   
-        yearlyBudget['Indirect Expense']            += y.indirect_expense 
-        yearlyBudget['Total']                       += yearlyBudget['Direct Expense'] + yearlyBudget['Indirect Expense']
-        
-    # process MonthlyActualBudget
-    actualMonthBudget['Staff Expense']               = query.staff_salaries if query else 0
-    actualMonthBudget['Staff Expense']               = query.staff_training_reg_meeting  if query else 0
-    actualMonthBudget['Revenue Related']             = query.revenue_related  if query else 0
-    actualMonthBudget['IT Related']                  = query.it_related  if query else 0
-    actualMonthBudget['Occupancy Related']           = query.occupancy_related  if query else 0
-    actualMonthBudget['Other Related']               = query.other_transport_travel  if query else 0
-    actualMonthBudget['Other Related']               = query.other_other  if query else 0
-    actualMonthBudget['Direct Expense']              = query.staff_salaries + query.revenue_related + query.it_related + query.occupancy_related + query.other_transport_travel + query.other_other if query else 0  
-    actualMonthBudget['Indirect Expense']            = query.indirect_expense if query else 0
-    actualMonthBudget['Total']                       = actualMonthBudget['Direct Expense'] + actualMonthBudget['Indirect Expense']
+        # Process YearlyBudget
+        for y in yearlyQuery:
+            yearlyBudget['Staff Expense']               += y.staff_salaries
+            yearlyBudget['Staff Expense']               += y.staff_training_reg_meeting
+            yearlyBudget['Revenue Related']             += y.revenue_related
+            yearlyBudget['IT Related']                  += y.it_related
+            yearlyBudget['Occupancy Related']           += y.occupancy_related
+            yearlyBudget['Other Related']               += y.other_transport_travel
+            yearlyBudget['Other Related']               += y.other_other
+            yearlyBudget['Direct Expense']              += y.staff_salaries + y.revenue_related + y.it_related + y.occupancy_related + y.other_transport_travel + y.other_other   
+            yearlyBudget['Indirect Expense']            += y.indirect_expense 
+            yearlyBudget['Total']                       += yearlyBudget['Direct Expense'] + yearlyBudget['Indirect Expense']
+            
+        # process MonthlyActualBudget
+        actualMonthBudget['Staff Expense']               = query.staff_salaries if query else 0
+        actualMonthBudget['Staff Expense']               = query.staff_training_reg_meeting  if query else 0
+        actualMonthBudget['Revenue Related']             = query.revenue_related  if query else 0
+        actualMonthBudget['IT Related']                  = query.it_related  if query else 0
+        actualMonthBudget['Occupancy Related']           = query.occupancy_related  if query else 0
+        actualMonthBudget['Other Related']               = query.other_transport_travel  if query else 0
+        actualMonthBudget['Other Related']               = query.other_other  if query else 0
+        actualMonthBudget['Direct Expense']              = query.staff_salaries + query.revenue_related + query.it_related + query.occupancy_related + query.other_transport_travel + query.other_other if query else 0  
+        actualMonthBudget['Indirect Expense']            = query.indirect_expense if query else 0
+        actualMonthBudget['Total']                       = actualMonthBudget['Direct Expense'] + actualMonthBudget['Indirect Expense']
 
 
-    for cat in cats:
-        i = utils.find_index(res, 'expense_category', cat)
-        res[i]["yearly"]        = yearlyBudget[cat]
-        res[i]["month_to_year"] = actualMonthBudget[cat]
+        for cat in cats:
+            i = utils.find_index(res, 'expense_category', cat)
+            res[i]["yearly"]        = yearlyBudget[cat]
+            res[i]["month_to_year"] = actualMonthBudget[cat]
 
-    return res
+        return res
+    
+    elif year < this_year:
+        yearlyQuery = db.query(MonthlyBudget).filter(
+            MonthlyBudget.year == year
+        ).all() # 12 data
+
+        query = db.query(MonthlyActualBudget).filter(
+            MonthlyActualBudget.year == year, 
+            MonthlyActualBudget.month == month
+        ).first()
+
+        # Init result dict
+        cats = [
+            "Staff Expense", 
+            "Revenue Related", 
+            "IT Related", 
+            "Occupancy Related", 
+            "Other Related",
+            "Direct Expense",
+            "Indirect Expense",
+            "Total"
+        ]
+        res = []
+        yearlyBudget = {}
+        actualMonthBudget = {}
+
+        for cat in cats:
+            res.append({
+                "yearly":0,
+                "month_to_year":0,
+                "expense_category":cat
+            })
+
+            yearlyBudget[cat] = 0
+            actualMonthBudget[cat] = 0
+
+        # Process YearlyBudget
+        for y in yearlyQuery:
+            yearlyBudget['Staff Expense']               += y.staff_salaries
+            yearlyBudget['Staff Expense']               += y.staff_training_reg_meeting
+            yearlyBudget['Revenue Related']             += y.revenue_related
+            yearlyBudget['IT Related']                  += y.it_related
+            yearlyBudget['Occupancy Related']           += y.occupancy_related
+            yearlyBudget['Other Related']               += y.other_transport_travel
+            yearlyBudget['Other Related']               += y.other_other
+            yearlyBudget['Direct Expense']              += y.staff_salaries + y.revenue_related + y.it_related + y.occupancy_related + y.other_transport_travel + y.other_other   
+            yearlyBudget['Indirect Expense']            += y.indirect_expense 
+            yearlyBudget['Total']                       += yearlyBudget['Direct Expense'] + yearlyBudget['Indirect Expense']
+            
+        # process MonthlyActualBudget
+        actualMonthBudget['Staff Expense']               = query.staff_salaries if query else 0
+        actualMonthBudget['Staff Expense']               = query.staff_training_reg_meeting  if query else 0
+        actualMonthBudget['Revenue Related']             = query.revenue_related  if query else 0
+        actualMonthBudget['IT Related']                  = query.it_related  if query else 0
+        actualMonthBudget['Occupancy Related']           = query.occupancy_related  if query else 0
+        actualMonthBudget['Other Related']               = query.other_transport_travel  if query else 0
+        actualMonthBudget['Other Related']               = query.other_other  if query else 0
+        actualMonthBudget['Direct Expense']              = query.staff_salaries + query.revenue_related + query.it_related + query.occupancy_related + query.other_transport_travel + query.other_other if query else 0  
+        actualMonthBudget['Indirect Expense']            = query.indirect_expense if query else 0
+        actualMonthBudget['Total']                       = actualMonthBudget['Direct Expense'] + actualMonthBudget['Indirect Expense']
+
+
+        for cat in cats:
+            i = utils.find_index(res, 'expense_category', cat)
+            res[i]["yearly"]        = yearlyBudget[cat]
+            res[i]["month_to_year"] = actualMonthBudget[cat]
+
+        return res
+
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,f'Requested year {year} is higher than current year.')
 
 ### Audit Project ###
 
@@ -2344,62 +2417,127 @@ def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Sess
 # Chart
 @router.get('/projects/total_by_division/v2/{year}')
 def get_total_by_division_by_year_v2(year: int, db: Session = Depends(get_db)):
-    projects = db.query(Project).filter(Project.year == year).all()
+    this_year = _get_curr_year(db)
+
+    #TODO
+    if year == this_year:
+        projects = db.query(Project).filter(Project.year == year).all()
+        
+        status = [
+            "Total Projects",
+            "Completed",
+            "Sign-off",
+            "Reporting",
+            "Fieldwork",
+            "Planning",
+            "Timely Report",
+            "DA",
+            "PA"
+        ]
+
+        # Init result dict
+        res = {
+            'labels': status,
+            'datasets': []
+        }
+
+        divs_name = get_divs_name_exclude_IAH(db)
+        colors = [
+            "#F44336", "#9C27B0", "#FFEB3B", "#4CAF50", "#2196F3", 
+            "#3F51B5", "#FF5722", "#795548", "#9E9E9E", "#000000",
+            "#F44336", "#9C27B0", "#FFEB3B", "#4CAF50", "#2196F3", 
+            "#3F51B5", "#FF5722", "#795548", "#9E9E9E", "#000000"
+        ]
+
+        datasets = []
+        for idx, d in enumerate(divs_name):
+            datasets.append({
+                "label"             : d,
+                "data"              : [0,0,0,0,0,0,0,0,0],
+                "backgroundColor"   : colors[idx]
+            })
+
+        for p in projects:
+            # Cek Divisi
+            div_name = p.div.short_name
+            div_index = utils.find_index(datasets, "label", div_name)
+            # Process Each Prj Status
+            # res[utils.find_index(res, 'project_status', status[0])]
+
+            datasets[div_index]["data"][0] += 1
+            datasets[div_index]["data"][1] += 1 and p.status.name == status[1]
+            datasets[div_index]["data"][2] += 1 and p.status.name == status[2]
+            datasets[div_index]["data"][3] += 1 and p.status.name == status[3]
+            datasets[div_index]["data"][4] += 1 and p.status.name == status[4]
+            datasets[div_index]["data"][5] += 1 and p.status.name == status[5]
+            datasets[div_index]["data"][6] += 1 and p.timely_report
+            datasets[div_index]["data"][7] += 1 and p.used_DA
+            datasets[div_index]["data"][8] += 1 and len(p.completion_PA) > 0        
+        
+        res["datasets"] = datasets
+
+        return res
     
-    status = [
-        "Total Projects",
-        "Completed",
-        "Sign-off",
-        "Reporting",
-        "Fieldwork",
-        "Planning",
-        "Timely Report",
-        "DA",
-        "PA"
-    ]
+    elif year < this_year:
+        projects = db.query(ProjectHistory).filter(ProjectHistory.year == year).all()
+        status = [
+            "Total Projects",
+            "Completed",
+            "Sign-off",
+            "Reporting",
+            "Fieldwork",
+            "Planning",
+            "Timely Report",
+            "DA",
+            "PA"
+        ]
 
-    # Init result dict
-    res = {
-        'labels': status,
-        'datasets': []
-    }
+        # Init result dict
+        res = {
+            'labels': status,
+            'datasets': []
+        }
 
-    divs_name = get_divs_name_exclude_IAH(db)
-    colors = [
-        "#F44336", "#9C27B0", "#FFEB3B", "#4CAF50", "#2196F3", 
-        "#3F51B5", "#FF5722", "#795548", "#9E9E9E", "#000000",
-        "#F44336", "#9C27B0", "#FFEB3B", "#4CAF50", "#2196F3", 
-        "#3F51B5", "#FF5722", "#795548", "#9E9E9E", "#000000"
-    ]
+        divs_name = get_divs_name_exclude_IAH(db)
+        colors = [
+            "#F44336", "#9C27B0", "#FFEB3B", "#4CAF50", "#2196F3", 
+            "#3F51B5", "#FF5722", "#795548", "#9E9E9E", "#000000",
+            "#F44336", "#9C27B0", "#FFEB3B", "#4CAF50", "#2196F3", 
+            "#3F51B5", "#FF5722", "#795548", "#9E9E9E", "#000000"
+        ]
 
-    datasets = []
-    for idx, d in enumerate(divs_name):
-        datasets.append({
-            "label"             : d,
-            "data"              : [0,0,0,0,0,0,0,0,0],
-            "backgroundColor"   : colors[idx]
-        })
+        datasets = []
+        for idx, d in enumerate(divs_name):
+            datasets.append({
+                "label"             : d,
+                "data"              : [0,0,0,0,0,0,0,0,0],
+                "backgroundColor"   : colors[idx]
+            })
 
-    for p in projects:
-        # Cek Divisi
-        div_name = p.div.short_name
-        div_index = utils.find_index(datasets, "label", div_name)
-        # Process Each Prj Status
-        # res[utils.find_index(res, 'project_status', status[0])]
+        for p in projects:
+            # Cek Divisi
+            div_name = p.div
+            div_index = utils.find_index(datasets, "label", div_name)
+            # Process Each Prj Status
+            # res[utils.find_index(res, 'project_status', status[0])]
 
-        datasets[div_index]["data"][0] += 1
-        datasets[div_index]["data"][1] += 1 and p.status.name == status[1]
-        datasets[div_index]["data"][2] += 1 and p.status.name == status[2]
-        datasets[div_index]["data"][3] += 1 and p.status.name == status[3]
-        datasets[div_index]["data"][4] += 1 and p.status.name == status[4]
-        datasets[div_index]["data"][5] += 1 and p.status.name == status[5]
-        datasets[div_index]["data"][6] += 1 and p.timely_report
-        datasets[div_index]["data"][7] += 1 and p.used_DA
-        datasets[div_index]["data"][8] += 1 and len(p.completion_PA) > 0        
-    
-    res["datasets"] = datasets
+            datasets[div_index]["data"][0] += 1
+            datasets[div_index]["data"][1] += 1 and p.status == status[1]
+            datasets[div_index]["data"][2] += 1 and p.status == status[2]
+            datasets[div_index]["data"][3] += 1 and p.status == status[3]
+            datasets[div_index]["data"][4] += 1 and p.status == status[4]
+            datasets[div_index]["data"][5] += 1 and p.status == status[5]
+            datasets[div_index]["data"][6] += 1 and p.timely
+            datasets[div_index]["data"][7] += 1 and p.use_da
+            datasets[div_index]["data"][8] += 1 and len(p.pa_proof) > 0        
+        
+        res["datasets"] = datasets
 
-    return res
+        return res
+
+    else:
+
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,f'Requested year {year} is higher than current year.')
 
 @router.get('/projects/total_by_division/{year}')
 def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
@@ -2541,27 +2679,53 @@ def delete_contrib_table_entry(id: int, db: Session = Depends(get_db)):
 
 @router.get('/socialcontrib/total_by_division/{year}')
 def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
-    startDate   = datetime.date(year,1,1)
-    endDate     = datetime.date(year,12,31)
+    this_year = _get_curr_year(db)
 
-    query = db.query(SocialContrib).filter(
-        SocialContrib.date >= startDate, 
-        SocialContrib.date <= endDate,
-        SocialContrib.creator.has(active=True)
-    ).all()
+    if year == this_year:
+        startDate   = datetime.date(year,1,1)
+        endDate     = datetime.date(year,12,31)
+
+        query = db.query(SocialContrib).filter(
+            SocialContrib.date >= startDate, 
+            SocialContrib.date <= endDate,
+            SocialContrib.creator.has(active=True)
+        ).all()
+        
+        divs = get_divs_name_exclude_IAH(db)
+        res = []
+
+        # Init result dict
+        for div in divs:
+            res.append({"contribute_sum":0, "division":div})
+
+        for q in query:
+            contrib_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.creator.part_of_div.short_name), None)
+            res[contrib_by_div]["contribute_sum"] += 1
+
+        return res
     
-    divs = get_divs_name_exclude_IAH(db)
-    res = []
+    if year < this_year:
 
-    # Init result dict
-    for div in divs:
-        res.append({"contribute_sum":0, "division":div})
+        query = db.query(SocialContribHistory).filter(
+            SocialContribHistory.year == year
+        ).all()
+        
+        divs = get_divs_name_exclude_IAH_history(db)
+        res = []
 
-    for q in query:
-        contrib_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.creator.part_of_div.short_name), None)
-        res[contrib_by_div]["contribute_sum"] += 1
+        # Init result dict
+        for div in divs:
+            res.append({"contribute_sum":0, "division":div})
 
-    return res
+        for q in query:
+            contrib_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.div), None)
+            res[contrib_by_div]["contribute_sum"] += 1
+
+        return res
+    
+    else:
+
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,f'Requested year {year} is higher than current year.')
 
 @router.get('/socialcontrib/total_by_division_type_categorized/{year}')
 def get_total_by_division_by_year_type_categorized(year: int, db: Session = Depends(get_db)):
@@ -3263,32 +3427,61 @@ def get_view_busu_table(nik: str, year: int, db: Session = Depends(get_db)):
     
     return res
 
+# BUSU Chart
 @router.get('/engagement/total_by_division/{year}')
 def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
-    startDate   = datetime.date(year,1,1)
-    endDate     = datetime.date(year,12,31)
+    this_year = _get_curr_year(db)
 
-    query = db.query(BUSUEngagement).filter(
-        BUSUEngagement.date >= startDate,
-        BUSUEngagement.date <= endDate
-    ).all()
+    if year == this_year:
+        startDate   = datetime.date(year,1,1)
+        endDate     = datetime.date(year,12,31)
+
+        query = db.query(BUSUEngagement).filter(
+            BUSUEngagement.date >= startDate,
+            BUSUEngagement.date <= endDate
+        ).all()
+        
+        divs = get_divs_name_exclude_IAH(db)
+        res = []
+
+        # Init result dict
+        for div in divs:
+            res.append({"quarterly_meeting":0, "workshop":0, "division":div})
+
+        for q in query:
+            eng_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.creator.part_of_div.short_name), None)
+
+            if q.eng_type_id == 1:
+                res[eng_by_div]["quarterly_meeting"] += 1
+            if q.eng_type_id == 2:
+                res[eng_by_div]["workshop"] += 1
+
+        return res
     
-    divs = get_divs_name_exclude_IAH(db)
-    res = []
+    if year < this_year:
+        query = db.query(BUSUHistory).filter(
+            BUSUHistory.year == year
+        ).all()
+        
+        divs = get_divs_name_exclude_IAH_history(db)
+        res = []
 
-    # Init result dict
-    for div in divs:
-        res.append({"quarterly_meeting":0, "workshop":0, "division":div})
+        # Init result dict
+        for div in divs:
+            res.append({"quarterly_meeting":0, "workshop":0, "division":div})
 
-    for q in query:
-        eng_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.creator.part_of_div.short_name), None)
+        for q in query:
+            eng_by_div = next((index for (index, d) in enumerate(res) if d["division"] == q.division), None)
 
-        if q.eng_type_id == 1:
-            res[eng_by_div]["quarterly_meeting"] += 1
-        if q.eng_type_id == 2:
-            res[eng_by_div]["workshop"] += 1
+            if q.WorM == 1:
+                res[eng_by_div]["quarterly_meeting"] += 1
+            if q.WorM == 2:
+                res[eng_by_div]["workshop"] += 1
 
-    return res
+        return res
+
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,f'Requested year {year} is higher than current year.')
 
 ### Attrition ###
 def get_attr_summary_details_by_div_shortname(year: int, div: str, db: Session):
@@ -3326,24 +3519,50 @@ def get_attr_summary_details_by_div_shortname(year: int, div: str, db: Session):
 
 @router.get('/attrition/staff_attrition/{year}')
 def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
-    divs = get_divs_name_exclude_IAH(db)
-    res = []
+    this_year = _get_curr_year(db)
 
-    for div in divs:
-        (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div, db)
+    if this_year == year:
+        divs = get_divs_name_exclude_IAH(db)
+        res = []
 
-        res.append({
-            "headcounts"    :curr_hc,
-            "join"          :join,
-            "resign"        :resign,
-            "transfer_in"   :t_in, 
-            "transfer_out"  :t_out,
-            "rotation_in"   :r_in, 
-            "rotation_out"  :r_out, 
-            "division"      :div
-        })
+        for div in divs:
+            (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div, db)
+
+            res.append({
+                "headcounts"    :curr_hc,
+                "join"          :join,
+                "resign"        :resign,
+                "transfer_in"   :t_in, 
+                "transfer_out"  :t_out,
+                "rotation_in"   :r_in, 
+                "rotation_out"  :r_out, 
+                "division"      :div
+            })
+        
+        return res
     
-    return res
+    elif this_year < year:
+        divs = get_divs_name_exclude_IAH_history(db)
+        res = []
+
+        for div in divs:
+            (join, resign, t_in, t_out, r_in, r_out, start_hc, curr_hc) = get_attr_summary_details_by_div_shortname(year, div, db)
+
+            res.append({
+                "headcounts"    :curr_hc,
+                "join"          :join,
+                "resign"        :resign,
+                "transfer_in"   :t_in, 
+                "transfer_out"  :t_out,
+                "rotation_in"   :r_in, 
+                "rotation_out"  :r_out, 
+                "division"      :div
+            })
+        
+        return res
+
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,f'Requested year {year} is higher than current year.')
 
 @router.get('/attrition/rate_wbgm_testing/year/{year}')
 def get_dynamic_attr_rate_byYear(year: int, db: Session = Depends(get_db)):
