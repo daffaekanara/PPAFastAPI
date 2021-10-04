@@ -2346,6 +2346,70 @@ def get_total_by_division_by_year(year: int, month: int, db: Session = Depends(g
     else:
         raise HTTPException(status.HTTP_400_BAD_REQUEST,f'Requested year {year} is higher than current year.')
 
+### QA Results ###
+@router.get('/qaresults/qa_data/{year}')
+def get_qaip_table_dashboard(year: int, db: Session = Depends(get_db)):
+    this_year = _get_curr_year(db)
+
+    if year == this_year:
+        qaips = db.query(QAIP).filter(
+            QAIP.prj.has(year=year)
+        ).all()
+
+        res = []
+
+        for q in qaips:
+            cats    = utils.qa_to_category_str(q)
+            stages  = utils.qa_to_stage_str(q)
+            delivs  = utils.qa_to_delivs_str(q)
+
+            # Get DH Name
+            dh = get_emp(q.prj.div.dh_id, db)
+
+            res.append({
+                "id"            : str(q.id),
+                "QAType"        : q.qa_type.name,
+                "auditProject"  : q.prj.name,
+                "TL"            : q.prj.tl.name,
+                "divisionHead"  : dh.name,
+                "result"        : q.qa_grading_result.name,
+                "category"      : ", ".join(cats),
+                "stage"         : ", ".join(stages),
+                "deliverable"   : ", ".join(delivs),
+                "noOfIssues"    : len(delivs),
+                "QASample"      : q.qa_sample
+            })
+        
+        return res
+    
+    if year < this_year:
+        qaips = db.query(QAResultHistory).filter(
+            QAResultHistory.year == year
+        ).all()
+
+        res = []
+
+        for q in qaips:
+
+            res.append({
+                "id"            : str(q.id),
+                "QAType"        : q.qa_type,
+                "auditProject"  : q.p_name,
+                "TL"            : q.tl_name,
+                "divisionHead"  : q.div_head,
+                "result"        : q.qa_grading_result,
+                "category"      : q.qaf_category,
+                "stage"         : q.qaf_stage,
+                "deliverable"   : q.qaf_deliv,
+                "noOfIssues"    : len(q.qaf_category),
+                "QASample"      : q.qa_sample
+            })
+        
+        return res
+
+    else:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,f'Requested year {year} is higher than current year.')
+
 ### Audit Project ###
 
 # EditStatusProject Table
@@ -3765,7 +3829,7 @@ def get_dynamic_attr_rate_byYear(year: int, db: Session = Depends(get_db)):
             })
 
         return res
-    #TODOO
+    
     elif year < this_year:
         divs    = get_divs_name_exclude_IAH_history(db)
 
