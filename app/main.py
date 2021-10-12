@@ -44,3 +44,6 @@ app.include_router(historic.router)
 def index():
     return {"Msg": "Go to site/docs for the API docs testing"}
 
+if __name__ == "__main__":
+    uvicorn.run(app, host="103.200.4.18", port=8989)
+
