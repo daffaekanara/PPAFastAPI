@@ -13,7 +13,8 @@ from sqlalchemy.orm import sessionmaker
 #-------------------------------------------------------------------------------------
 #SQL Server configuration
 
-SERVER = 'DESKTOP-RR8SR4K'
+#SERVER = 'DESKTOP-RR8SR4K' #PC Daffa
+SERVER = 'PPAKPIMONITORIN' #DEWAWEB
 DATABASE = 'master'
 DRIVER = 'ODBC Driver 17 for SQL Server'
 DATABASE_CONNECTION = f'mssql://@{SERVER}/{DATABASE}?driver={DRIVER}'

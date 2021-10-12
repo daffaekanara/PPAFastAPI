@@ -5893,6 +5893,104 @@ def get_employee_table(db: Session = Depends(get_db)):
 
     return res
 
+@router.get('/utils/employee/show_aas/nik/{nik}')
+#TODOO
+def get_employee_table(nik: str, db: Session = Depends(get_db)):
+    emps = get_one_active_emps(nik, db)
+
+    res = []
+
+    for e in emps:
+        as_of_now       = datetime.date.today().strftime("%m/%d/%Y")
+        age             = utils.get_year_diff_to_now(e.date_of_birth)
+        gen             = utils.get_gen(e.date_of_birth)
+        auditUOBYears   = utils.get_year_diff_to_now(e.date_first_uob)
+
+        # Process Certs
+        certs = [
+            "SMR", "CISA", "CEH", "ISO27001", "CHFI", 
+            "IDEA", "QualifiedIA", "CBIA", "CIA", "CPA", "CA"]
+
+        cert_res = []
+
+        for c in certs:
+            cert_res.append({
+                'title': c,
+                'value': 0
+            })
+
+        otherCerts = []
+        max_smr = 0
+
+        for c in e.emp_certifications:
+            # SMR (Levels)
+            smr_level = utils.extract_SMR_level(c.cert_name)
+            
+            if smr_level: # SMR
+                if c.cert_proof:
+                    if smr_level > max_smr:
+                        cert_res[0]['value'] = smr_level
+                        max_smr = smr_level
+            elif c.cert_name == "SMR In Progress":
+                cert_res[0]['value'] = "In Progress"
+            elif c.cert_name in certs and c.cert_proof: # Pro Certs
+                index = utils.find_index(cert_res, 'title', c.cert_name)
+                cert_res[index]['value'] = 1
+            elif c.cert_proof:                          # Other Certs
+                otherCerts.append(c.cert_name)
+
+        smr_lvl = cert_res[0]['value']
+
+        if smr_lvl == "In Progress":
+            smr_str = smr_lvl
+        elif smr_lvl:
+            smr_str = f"Level {smr_lvl}"
+        else:
+            smr_str = "-"
+
+        res.append([
+            str(e.id),
+            e.staff_id,
+            e.name,
+            e.email,
+            e.role.name,
+            str(e.part_of_div.id),
+            e.div_stream,
+            e.corporate_title,
+            e.corporate_grade,
+            e.date_of_birth.strftime("%m/%d/%Y"),
+            e.date_first_employment.strftime("%m/%d/%Y"),
+            e.date_first_uob.strftime("%m/%d/%Y"),
+            e.date_first_ia.strftime("%m/%d/%Y"),
+            as_of_now,
+            str(age),
+            gen,
+            e.gender,
+            str(auditUOBYears),
+            str(e.year_audit_non_uob),
+            str(e.year_audit_non_uob + auditUOBYears),
+            e.edu_level,
+            e.edu_major,
+            e.edu_category,
+            smr_str,
+            "false" if cert_res[1]['value'] == 0 else "true",
+            "false" if cert_res[2]['value'] == 0 else "true",
+            "false" if cert_res[3]['value'] == 0 else "true",
+            "false" if cert_res[4]['value'] == 0 else "true",
+            "false" if cert_res[5]['value'] == 0 else "true",
+            "false" if cert_res[6]['value'] == 0 else "true",
+            "false" if cert_res[7]['value'] == 0 else "true",
+            "false" if cert_res[8]['value'] == 0 else "true",
+            "false" if cert_res[9]['value'] == 0 else "true",
+            "false" if cert_res[10]['value'] == 0 else "true",
+            ", ".join(otherCerts),
+            str(e.ia_background),
+            str(e.ea_background),
+            str(e.active)
+        ])
+
+    return res
+
 @router.get('/utils/csf/show_aas/year/{year}')
 def get_csf_table(year: int, db: Session = Depends(get_db)):
     prjs = db.query(Project).filter(
@@ -6297,6 +6395,14 @@ def _create_employee_from_table(req: schemas.EmployeeInHiCoupling, db : Session)
 def get_all_active_emps(db: Session):
     return db.query(Employee).filter(
         Employee.active == True
+    ).all()
+
+def get_one_active_emps(input_nik, db: Session):
+    #TODOO 2
+    return db.query(Employee).filter(
+        Employee.active == True
+    ).filter(
+        Employee.staff_id == input_nik
     ).all()
 
 def get_emp(input_id, db: Session) -> Employee:
