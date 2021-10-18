@@ -19,7 +19,7 @@ DATABASE = 'master'
 DRIVER = 'ODBC Driver 17 for SQL Server'
 USERNAME = 'ADMIN'
 PASSWORD = 'Admin123'
-DATABASE_CONNECTION = f'mssql://{USERNAME}:{PASSWORD}@{SERVER}/{DATABASE}?driver={DRIVER}?Trusted_Connection=False'
+DATABASE_CONNECTION = f'mssql://{USERNAME}:{PASSWORD}@{SERVER}/{DATABASE}?driver={DRIVER}'
 
 #Server=localhost\MSSQLSERVER01;Database=master;Trusted_Connection=True;
 
