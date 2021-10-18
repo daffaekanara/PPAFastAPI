@@ -13,11 +13,13 @@ from sqlalchemy.orm import sessionmaker
 #-------------------------------------------------------------------------------------
 #SQL Server configuration
 
-#SERVER = 'DESKTOP-RR8SR4K' #PC Daffa
-SERVER = 'PPAKPIMONITORIN' #DEWAWEB
+SERVER = '103.200.4.18, 1433' #PC Daffa
+#SERVER = 'PPAKPIMONITORIN' #DEWAWEB
 DATABASE = 'master'
 DRIVER = 'ODBC Driver 17 for SQL Server'
-DATABASE_CONNECTION = f'mssql://@{SERVER}/{DATABASE}?driver={DRIVER}'
+USERNAME = 'ADMIN'
+PASSWORD = 'Admin123'
+DATABASE_CONNECTION = f'mssql://{USERNAME}:{PASSWORD}@{SERVER}/{DATABASE}?driver={DRIVER}?Trusted_Connection=False'
 
 #Server=localhost\MSSQLSERVER01;Database=master;Trusted_Connection=True;
 
