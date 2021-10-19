@@ -5300,11 +5300,14 @@ def delete_project_table_entry(id: int, db: Session = Depends(get_db)):
     if len(prj.first().qaips) > 1 :
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='More than one QA Result entry associated with this project is found.')
 
-    
-    db.delete(prj.first().qaips[0])
+    if len(prj.first().qaips) == 1 :
+        db.delete(prj.first().qaips[0])
+        prj.delete()
+        db.commit()
 
-    prj.delete()
-    db.commit()
+    if len(prj.first().qaips) == 0 :
+        prj.delete()
+        db.commit()
 
     return {'details': 'Deleted'}
 
