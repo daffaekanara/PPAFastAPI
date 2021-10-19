@@ -15,7 +15,7 @@ from sqlalchemy.orm import sessionmaker
 
 SERVER = '103.200.4.18, 1433' #PC Daffa
 #SERVER = 'PPAKPIMONITORIN' #DEWAWEB
-DATABASE = 'master'
+DATABASE = 'db1'
 DRIVER = 'ODBC Driver 17 for SQL Server'
 USERNAME = 'ADMIN'
 PASSWORD = 'Admin123'
