@@ -4480,8 +4480,6 @@ def get_csf_table(year: int, db: Session = Depends(get_db)):
 
     return res
 
-
-#CPoint
 @router.post('/admin/csf_data/table_data', status_code=status.HTTP_201_CREATED)
 def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(get_db)):
     invdiv_id = div_str_to_divID_v2(req.division_by_inv, db)
@@ -5289,6 +5287,7 @@ def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Sess
     db.commit()
     return updated
 
+#CPoint
 @router.delete('/admin/audit_project_data/table_data/{id}')
 def delete_project_table_entry(id: int, db: Session = Depends(get_db)):
     prj = db.query(Project).filter(
@@ -5298,7 +5297,7 @@ def delete_project_table_entry(id: int, db: Session = Depends(get_db)):
     if not prj.first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
 
-    if len(prj.first().qaips) != 1:
+    if len(prj.first().qaips) > 1 :
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='More than one QA Result entry associated with this project is found.')
 
     
@@ -6053,7 +6052,6 @@ def get_csf_table(year: int, db: Session = Depends(get_db)):
 
 
 @router.get('/utils/divs')
-#CPoint 1
 def get_divs(db: Session = Depends(get_db)):
     divs = db.query(Division).filter(
         Division.short_name != "IAH"
