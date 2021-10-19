@@ -2094,7 +2094,7 @@ def patch_employee_table_entry(nik: str, req: schemas.EmployeeInHiCoupling, db: 
         ea_background           = req.EABackground,
         active                  = req.active,
 
-        div_id = utils.div_str_to_divID(req.divison),
+        div_id = div_str_to_divID_v2(req.divison, db),
         role_id = utils.role_str_to_id(req.role)
     )
 
@@ -4482,7 +4482,7 @@ def get_csf_table(year: int, db: Session = Depends(get_db)):
 
 @router.post('/admin/csf_data/table_data', status_code=status.HTTP_201_CREATED)
 def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(get_db)):
-    invdiv_id = utils.div_str_to_divID(req.division_by_inv)
+    invdiv_id = div_str_to_divID_v2(req.division_by_inv, db)
     
     if not invdiv_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Div Name not found')
@@ -4538,7 +4538,7 @@ def patch_csf_table_entry(id: int, req: schemas.CSFInHiCoupling, db: Session = D
     stored_model = schemas.CSFIn(**stored_data)
 
     # Data Validation
-    invdiv_id = utils.div_str_to_divID(req.division_by_inv)
+    invdiv_id = div_str_to_divID_v2(req.division_by_inv, db)
     
     if not invdiv_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Div Name not found')
@@ -6051,6 +6051,7 @@ def get_csf_table(year: int, db: Session = Depends(get_db)):
 
 
 @router.get('/utils/divs')
+#CPoint 1
 def get_divs(db: Session = Depends(get_db)):
     divs = db.query(Division).filter(
         Division.short_name != "IAH"
@@ -6564,3 +6565,16 @@ def get_cert_by_empnik_certname(nik:str, cname:str, db:Session):
     )
 
     return cert_q.one()
+
+## NEW ##
+
+def div_str_to_divID_v2(division:str, db: Session = Depends(get_db)):
+    divs = db.query(Division).filter(
+        Division.short_name == division
+    )
+
+    
+    for d in divs:
+        res = str(d.id)
+
+    return res
