@@ -4480,6 +4480,8 @@ def get_csf_table(year: int, db: Session = Depends(get_db)):
 
     return res
 
+
+#CPoint
 @router.post('/admin/csf_data/table_data', status_code=status.HTTP_201_CREATED)
 def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(get_db)):
     invdiv_id = div_str_to_divID_v2(req.division_by_inv, db)
@@ -4496,6 +4498,7 @@ def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(g
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Audit Project must be an ID of an existing project')
     
     new_csf = CSF(
+        id                  = prj_id,
         client_name         = req.clientName,
         client_unit         = req.unitJabatan,
         csf_date            = utils.tablestr_to_datetime(req.CSFdate),
