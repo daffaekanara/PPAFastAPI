@@ -4498,7 +4498,6 @@ def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(g
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Audit Project must be an ID of an existing project')
     
     new_csf = CSF(
-        id                  = prj_id,
         client_name         = req.clientName,
         client_unit         = req.unitJabatan,
         csf_date            = utils.tablestr_to_datetime(req.CSFdate),
