@@ -105,6 +105,7 @@ class TrainingTarget(Base):
     emp_id = Column(Integer, ForeignKey('employees.id'))
     trainee = relationship("Employee", back_populates="emp_trainingtargets") #employee id
 
+#TODOO
 class TrainingBudget(Base):
     __tablename__ = 'trainingbudgets'
     id      = Column(Integer, primary_key=True, index=True)

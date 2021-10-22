@@ -471,6 +471,7 @@ class ProjectInHiCoupling(BaseModel):
     id          : Optional[str]
     auditPlan   : Optional[str]
     division    : Optional[str]
+    div_id      :Optional[int]
 
     tl_name     : Optional[str]
     tl_nik      : Optional[str]
@@ -744,8 +745,8 @@ class CSFIn(BaseModel):
     by_invdiv_div_id    :Optional[int]
 
 class CSFInHiCoupling(BaseModel):
-	id                  : str
-	division_project    : str
+	id                  : Optional[str]
+	division_project    : Optional[str]
 	auditProject        : str
 	clientName          : str
 	unitJabatan         : str

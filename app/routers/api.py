@@ -2602,7 +2602,8 @@ def get_total_by_division_by_year_v2(year: int, db: Session = Depends(get_db)):
 
         raise HTTPException(status.HTTP_400_BAD_REQUEST,f'Requested year {year} is higher than current year.')
 
-@router.get('/projects/total_by_division/{year}') #no longer used
+#no longer used
+@router.get('/projects/total_by_division/{year}')
 def get_total_by_division_by_year(year: int, db: Session = Depends(get_db)):
     query = db.query(Project).filter(Project.year == year).all()
     
@@ -4498,7 +4499,7 @@ def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(g
     new_csf = CSF(
         client_name         = req.clientName,
         client_unit         = req.unitJabatan,
-        csf_date            = utils.tablestr_to_datetime(req.CSFdate),
+        csf_date            = utils.tablestr_to_datetime(req.CSFDate),
         atp_1               = req.atp1,
         atp_2               = req.atp2,
         atp_3               = req.atp3,
@@ -5247,7 +5248,8 @@ def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = D
 
     return new_prj
 
-@router.put('/admin/audit_project_data/table_data/{id}')
+#TODOO
+@router.patch('/admin/audit_project_data/table_data/{id}')
 def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
     divs = get_divs_name_exclude_IAH(db)
 
@@ -5898,7 +5900,6 @@ def get_employee_table(db: Session = Depends(get_db)):
     return res
 
 @router.get('/utils/employee/show_aas/nik/{nik}')
-#TODOO
 def get_employee_table(nik: str, db: Session = Depends(get_db)):
     emps = get_one_active_emps(nik, db)
 
