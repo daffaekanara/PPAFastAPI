@@ -40,7 +40,7 @@ def create_state(req: schemas.ServerState, db: Session = Depends(get_db)):
 
     return newState
 
-@router.patch('/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_state(id: int, req: schemas.ServerStateIn, db: Session = Depends(get_db)):
     query_res = db.query(ServerState).filter(
         ServerState.id == id

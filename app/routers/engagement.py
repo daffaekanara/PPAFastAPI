@@ -39,7 +39,7 @@ def create_engagement_type(req: schemas.EngagementType, db: Session = Depends(ge
 
     return newType
 
-@router.patch('/type/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/type/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_engagement_type(id: int, req: schemas.EngagementTypeIn, db: Session = Depends(get_db)):
     query_res = db.query(EngagementType).filter(EngagementType.id == id)
 
@@ -103,7 +103,7 @@ def create_engagement(req: schemas.BUSUEngagement, db: Session = Depends(get_db)
 
     return newEng
 
-@router.patch('/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_engagement(id: int, req: schemas.BUSUEngagementIn, db: Session = Depends(get_db)):
     query_res = db.query(BUSUEngagement).filter(BUSUEngagement.id == id)
 

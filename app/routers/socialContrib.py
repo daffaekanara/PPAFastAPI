@@ -39,7 +39,7 @@ def create_social_type(req: schemas.SocialType, db: Session = Depends(get_db)):
 
     return newType
 
-@router.patch('/type/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/type/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_social_type(id: int, req: schemas.SocialTypeIn, db: Session = Depends(get_db)):
     query_res = db.query(SocialType).filter(SocialType.id == id)
 
@@ -100,7 +100,7 @@ def create_contrib(req: schemas.SocialContrib, db: Session = Depends(get_db)):
 
     return newContrib
 
-@router.patch('/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_contrib(id: int, req: schemas.SocialContribIn, db: Session = Depends(get_db)):
     query_res = db.query(SocialContrib).filter(SocialContrib.id == id)
 

@@ -38,7 +38,7 @@ def create_qa_type(req: schemas.QAType, db: Session = Depends(get_db)):
 
     return newType
 
-@router.patch('/types/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/types/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_qa_type(id: int, req: schemas.QATypeIn, db: Session = Depends(get_db)):
     query_res = db.query(QAType).filter(QAType.id == id)
 
@@ -98,7 +98,7 @@ def create_qa_grading_result(req: schemas.QAGradingResult, db: Session = Depends
 
     return newType
 
-@router.patch('/gradingresult/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/gradingresult/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_qa_grading_result(id: int, req: schemas.QATypeIn, db: Session = Depends(get_db)):
     query_res = db.query(QAGradingResult).filter(
         QAGradingResult.id == id
@@ -189,7 +189,7 @@ def create_qaip(req: schemas.QAIP, db: Session = Depends(get_db)):
 
     return newQA
 
-@router.patch('/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_qaip(id: int, req: schemas.QAIPIn, db: Session = Depends(get_db)):
     query_res = db.query(QAIP).filter(QAIP.id == id)
 

@@ -30,7 +30,7 @@ def create_attr_type(req: schemas.AttrType, db: Session = Depends(get_db)):
 
     return newAttrTyoe
 
-@router.patch('/type/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/type/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_attr_type(id: int, req: schemas.AttrType, db: Session = Depends(get_db)):
     query_res = db.query(AttrType).filter(AttrType.id == id)
 
@@ -83,7 +83,7 @@ def create_jrt_attrition(req: schemas.AttritionJoinResignTransfer, db: Session =
 
     return newJtr
 
-@router.patch('/jrt/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/jrt/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_jrt_attrition(id: int, req: schemas.AttritionJoinResignTransferIn, db: Session = Depends(get_db)):
     query_res = db.query(AttritionJoinResignTransfer).filter(
         AttritionJoinResignTransfer.id == id
@@ -140,7 +140,7 @@ def create_rotation_attrition(req: schemas.AttritionRotation, db: Session = Depe
 
     return newAttr
 
-@router.patch('/rotation/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/rotation/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_rotation_attrition(id: int, req: schemas.AttritionRotationIn, db: Session = Depends(get_db)):
     query_res = db.query(AttritionRotation).filter(
         AttritionRotation.id == id
@@ -206,7 +206,7 @@ def create_yearly_attr(req: schemas.YearlyAttrition, db: Session = Depends(get_d
 
     return newYAttr
 
-@router.patch('/yearly/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/yearly/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_yearly_attr(id: int, req: schemas.YearlyAttritionIn, db: Session = Depends(get_db)):
     query_res = db.query(YearlyAttrition).filter(YearlyAttrition.id == id)
 

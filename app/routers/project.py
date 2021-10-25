@@ -29,7 +29,7 @@ def create_status(req: schemas.ProjectStatus, db: Session = Depends(get_db)):
 
     return newType
 
-@router.patch('/status/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/status/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_status(id: int, req: schemas.ProjectStatusIn, db: Session = Depends(get_db)):
     query_res = db.query(ProjectStatus).filter(ProjectStatus.id == id)
 
@@ -95,7 +95,7 @@ def create_project(req: schemas.Project, db: Session = Depends(get_db)):
 
     return newPrj
 
-@router.patch('/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_project(id: int, req: schemas.ProjectIn, db: Session = Depends(get_db)):
     query_res = db.query(Project).filter(Project.id == id)
 

@@ -59,7 +59,7 @@ def create(req: schemas.CSF, db: Session = Depends(get_db)):
 
     return newType
 
-@router.patch('/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update(id: int, req: schemas.CSFIn, db: Session = Depends(get_db)):
     query_res = db.query(CSF).filter(CSF.id == id)
 

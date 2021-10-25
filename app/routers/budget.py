@@ -48,7 +48,7 @@ def create_monthly_actual_budget(req: schemas.MonthlyActualBudget, db: Session =
 
     return newMonthActualBudget
 
-@router.patch('/monthlyactual/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/monthlyactual/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_monthly_actual_budget(id: int, req: schemas.MonthlyActualBudgetIn, db: Session = Depends(get_db)):
     query_res = db.query(MonthlyActualBudget).filter(MonthlyActualBudget.id == id)
 
@@ -115,7 +115,7 @@ def create_monthly_budget(req: schemas.MonthlyBudget, db: Session = Depends(get_
 
     return newMonthBudget
 
-@router.patch('/monthly/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/monthly/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_monthly_budget(id: int, req: schemas.MonthlyBudgetIn, db: Session = Depends(get_db)):
     query_res = db.query(MonthlyBudget).filter(MonthlyBudget.id == id)
 
@@ -181,7 +181,7 @@ def create_yearly_budget(req: schemas.YearlyBudget, db: Session = Depends(get_db
 
     return newYearBudget
 
-@router.patch('/yearly/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/yearly/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_yearly_budget(id: int, req: schemas.YearlyBudgetIn, db: Session = Depends(get_db)):
     query_res = db.query(YearlyBudget).filter(YearlyBudget.id == id)
 

@@ -41,7 +41,7 @@ def create_role(req: schemas.Role, db: Session = Depends(get_db)):
 
     return newRole
 
-@router.patch('/role/{id}', status_code=status.HTTP_202_ACCEPTED)
+@router.put('/role/{id}', status_code=status.HTTP_202_ACCEPTED)
 def update_role(id: int, req: schemas.RoleIn, db: Session = Depends(get_db)):
     query_res = db.query(Role).filter(Role.id == id)
 
@@ -101,7 +101,7 @@ def create_cert(req: schemas.Certification, db: Session = Depends(get_db)):
 
     return newCert
 
-@router.patch('/cert/{id}', status_code=status.HTTP_202_ACCEPTED)
+@router.put('/cert/{id}', status_code=status.HTTP_202_ACCEPTED)
 def update_cert(id: int, req: schemas.CertificationIn, db: Session = Depends(get_db)):
     query_res = db.query(Certification).filter(Certification.id == id)
 
@@ -201,7 +201,7 @@ def create(req: schemas.Employee, db: Session = Depends(get_db)):
 
     return newEmp
 
-@router.patch('/{id}', status_code=status.HTTP_202_ACCEPTED)
+@router.put('/{id}', status_code=status.HTTP_202_ACCEPTED)
 def update(id: int, req: schemas.EmployeeIn, db: Session = Depends(get_db)):
     query_res = db.query(Employee).filter(Employee.id == id)
 

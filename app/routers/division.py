@@ -39,7 +39,7 @@ def create(req: schemas.DivisionCreate, db: Session = Depends(get_db)):
 
     return new_div
 
-@router.patch('/{id}', status_code=status.HTTP_202_ACCEPTED)
+@router.put('/{id}', status_code=status.HTTP_202_ACCEPTED)
 def update(id: int, req: schemas.DivisionIn , db: Session = Depends(get_db)):
     query_res = db.query(Division).filter(Division.id == id)
 

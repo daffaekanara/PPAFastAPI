@@ -44,7 +44,7 @@ def create(req: schemas.AnnouncementCreate, db: Session = Depends(get_db)):
 
     return newAnnoucement
 
-@router.patch('/announcement/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/announcement/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update(id: int, req: schemas.AnnouncementCreate, db: Session = Depends(get_db)):
     query_res = db.query(Annoucement).filter(
         Annoucement.id == id
@@ -109,7 +109,7 @@ def create(req: schemas.TrainingTarget, db: Session = Depends(get_db)):
 
     return newTrainTrgt
 
-@router.patch('/target/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/target/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update(id: int, req: schemas.TrainingTargetIn, db: Session = Depends(get_db)):
     query_res = db.query(TrainingTarget).filter(TrainingTarget.id == id)
 
@@ -168,7 +168,7 @@ def create(req: schemas.TrainingBudget, db: Session = Depends(get_db)):
     db.refresh(newTrainBdgt)
     return newTrainBdgt
 
-@router.patch('/budget/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/budget/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_training_budget(id: int, req: schemas.TrainingBudgetIn, db: Session = Depends(get_db)):
     query_res = db.query(TrainingBudget).filter(TrainingBudget.id == id)
 
@@ -249,7 +249,7 @@ def create(req: schemas.Training, db: Session = Depends(get_db)):
     db.refresh(newTrain)
     return newTrain
 
-@router.patch('/{id}',  status_code=status.HTTP_202_ACCEPTED)
+@router.put('/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_training(id: int, req: schemas.TrainingIn, db: Session = Depends(get_db)):
     query_res = db.query(Training).filter(Training.id == id)
 

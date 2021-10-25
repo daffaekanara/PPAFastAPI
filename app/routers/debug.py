@@ -29,7 +29,7 @@ def create(req: schemas.DebugParent, db: Session = Depends(get_db)):
 
     return newParent
 
-@router.patch('parent/{id}', status_code=status.HTTP_202_ACCEPTED)
+@router.put('parent/{id}', status_code=status.HTTP_202_ACCEPTED)
 def patch(id: int, req: schemas.DebugParentIn, db: Session = Depends(get_db)):
     query_res = db.query(DebugParent).filter(DebugParent.id == id)
 

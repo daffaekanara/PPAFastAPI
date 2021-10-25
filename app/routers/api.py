@@ -2060,7 +2060,7 @@ def get_employee_table(nik: str, db: Session = Depends(get_db)):
 
     return res
 
-@router.patch('/profile/about/table_data/{nik}')
+@router.put('/profile/about/table_data/{nik}')
 def patch_employee_table_entry(nik: str, req: schemas.EmployeeInHiCoupling, db: Session = Depends(get_db)):
     emp = db.query(Employee).filter(
         Employee.staff_id == nik
@@ -2441,7 +2441,7 @@ def get_project_table(nik: str, year: int, db: Session = Depends(get_db)):
 
     return res
 
-@router.patch('/projects/edit_project_table/{id}')
+@router.put('/projects/edit_project_table/{id}')
 def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
     divs = get_divs_name_exclude_IAH(db)
 
@@ -2696,7 +2696,7 @@ def create_contrib_table_entry(nik: str, req: schemas.SocialContribHiCouplingUse
 
     return new_con
 
-@router.patch('/auditcontrib/audit_contribution_data/table_data/{id}')
+@router.put('/auditcontrib/audit_contribution_data/table_data/{id}')
 def patch_contrib_table_entry(id: int,req: schemas.SocialContribHiCouplingUserPageIn, db: Session = Depends(get_db)):
     types = ["Audit News", "MyUOB", "Audit Bulletin"]
 
@@ -3148,7 +3148,7 @@ def get_training_table(nik: str, year: int, db: Session = Depends(get_db)):
 
     return res
 
-@router.patch('/training/table/{id}')
+@router.put('/training/table/{id}')
 def update_training_table_entry(id: int, req: schemas.TrainingInHiCouplingUserPage, db: Session = Depends(get_db)):
     train_q = db.query(Training).filter(
         Training.id == id
@@ -3538,7 +3538,7 @@ def create_busu_input_table_entry(nik: str, req: schemas.BUSUEngagementInHiCoupl
 
     return new_eng
 
-@router.patch('/engagement/input_table/{id}')
+@router.put('/engagement/input_table/{id}')
 def patch_busu_input_table_entry(id:int, req: schemas.BUSUEngagementInHiCoupling, db: Session = Depends(get_db)):
     eng = db.query(BUSUEngagement).filter(
         BUSUEngagement.id == id
@@ -3974,7 +3974,7 @@ def get_qaip_table(year: int, db: Session = Depends(get_db)):
     
     return res
 
-@router.patch('/admin/qaip_data/form')
+@router.put('/admin/qaip_data/form')
 def patch_qaip_entry(req: schemas.QAIPFormInHiCoupling, db: Session = Depends(get_db)):
     qaip = db.query(QAIP).filter(
         QAIP.prj.has(name=req.projectTitle),
@@ -4194,7 +4194,7 @@ def get_budget_table(year: int, month: int, db: Session = Depends(get_db)):
 
     return res
 
-@router.patch('/admin/budget_data/table_data/{year}/{month}', status_code=status.HTTP_202_ACCEPTED)
+@router.put('/admin/budget_data/table_data/{year}/{month}', status_code=status.HTTP_202_ACCEPTED)
 def patch_budget_table_entry(year: int, month: int, req: schemas.BudgetTableInHiCoupling, db: Session = Depends(get_db)):
     cats = [
         "Staff Expense",
@@ -4526,7 +4526,7 @@ def create_csf_table_entry(req: schemas.CSFInHiCoupling, db: Session = Depends(g
 
     return new_csf
 
-@router.patch('/admin/csf_data/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
+@router.put('/admin/csf_data/table_data/{id}', status_code=status.HTTP_202_ACCEPTED)
 def patch_csf_table_entry(id: int, req: schemas.CSFInHiCoupling, db: Session = Depends(get_db)):
     csf = db.query(CSF).filter(
         CSF.id == id
@@ -4636,7 +4636,7 @@ def create_division_table_entry(req: schemas.DivisionInHiCoupling, db: Session =
 
     return new_div
 
-@router.patch('/admin/division_table_data/{id}')
+@router.put('/admin/division_table_data/{id}')
 def patch_division_table_entry(id: int, req: schemas.DivisionInHiCoupling, db: Session = Depends(get_db)):
     div = db.query(Division).filter(
         Division.id == id
@@ -4842,7 +4842,7 @@ def create_employee_table_entry(req: schemas.EmployeeInHiCoupling, db: Session =
     emp = _create_employee_from_table(req, db)
     return emp
 
-@router.patch('/admin/employee_data/table_data/{id}')
+@router.put('/admin/employee_data/table_data/{id}')
 def patch_employee_table_entry(id: int, req: schemas.EmployeeInHiCoupling, db: Session = Depends(get_db)):
     emp = db.query(Employee).filter(
         Employee.id == id,
@@ -5005,7 +5005,7 @@ def get_trainingbudget_table(db: Session = Depends(get_db)):
 
     return res
 
-@router.patch('/admin/training_budget_data/table_data')
+@router.put('/admin/training_budget_data/table_data')
 def patch_trainingbudget_table(req: schemas.TrainingBudgetInHiCoupling, year: int, db: Session = Depends(get_db)):
     d_obj = get_div_by_shortname(req.division, db)
     t_budget = get_yTrainingBudget_by_div_id(d_obj.id, db)
@@ -5086,7 +5086,7 @@ def create_training_table_entry(req: schemas.TrainingInHiCoupling, db: Session =
 
     return new_train
 
-@router.patch('/admin/training_data/table_data/{id}')
+@router.put('/admin/training_data/table_data/{id}')
 def patch_training_table_entry(id: int, req: schemas.TrainingInHiCoupling, db: Session = Depends(get_db)):    
     training = db.query(Training).filter(
         Training.id == id
@@ -5359,7 +5359,7 @@ def create_contrib_table_entry(req: schemas.SocialContribHiCouplingIn, db: Sessi
 
     return new_con
 
-@router.patch('/admin/audit_contribution_data/table_data/{id}')
+@router.put('/admin/audit_contribution_data/table_data/{id}')
 def patch_contrib_table_entry(id: int,req: schemas.SocialContribHiCouplingIn, db: Session = Depends(get_db)):
     types = ["Audit News", "MyUOB", "Audit Bulletin"]
 
@@ -5454,7 +5454,7 @@ def create_busu_table_entry(req: schemas.BUSUEngagementInHiCoupling, db: Session
 
     return new_eng
 
-@router.patch('/admin/busu_data/table_data/{id}')
+@router.put('/admin/busu_data/table_data/{id}')
 def patch_busu_table_entry(id:int, req: schemas.BUSUEngagementInHiCoupling, db: Session = Depends(get_db)):
     eng = db.query(BUSUEngagement).filter(
         BUSUEngagement.id == id
@@ -5561,7 +5561,7 @@ def get_summary_attr_table(year: int, db: Session = Depends(get_db)):
 
     return res
 
-@router.patch('/admin/attrition/summary_table/year/{year}/id/{id}')
+@router.put('/admin/attrition/summary_table/year/{year}/id/{id}')
 def get_summary_attr_table(year: int, id: int, req: schemas.YearlyAttritionInHiCoupling, db: Session = Depends(get_db)):
     yAttr_q = db.query(YearlyAttrition).filter(
         YearlyAttrition.id == id
@@ -5641,7 +5641,7 @@ def create_jrt_attr_table_entry(req: schemas.AttritionJoinResignTransferInHiCoup
 
     return newJrtAttr
 
-@router.patch('/admin/attrition/jrt_table/id/{id}')
+@router.put('/admin/attrition/jrt_table/id/{id}')
 def patch_jrt_attr_table_entry(id: int, req: schemas.AttritionJoinResignTransferInHiCoupling, db: Session = Depends(get_db)):
     jrtTypes = ["Join", "Resign", "Transfer In", "Transfer Out"]
     
@@ -5739,7 +5739,7 @@ def create_rot_attr_table_entry(req: schemas.AttritionRotationInHiCoupling, db: 
 
     return newRotAttr
 
-@router.patch('/admin/attrition/rot_table/id/{id}')
+@router.put('/admin/attrition/rot_table/id/{id}')
 def patch_rot_attr_table_entry(id: int, req: schemas.AttritionRotationInHiCoupling, db: Session = Depends(get_db)):    
     # Check Attr ID
     rot_q = db.query(AttritionRotation).filter(
