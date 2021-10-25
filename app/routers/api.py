@@ -5249,7 +5249,7 @@ def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = D
     return new_prj
 
 #TODOO
-@router.patch('/admin/audit_project_data/table_data/{id}')
+@router.put('/admin/audit_project_data/table_data/{id}')
 def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
     divs = get_divs_name_exclude_IAH(db)
 

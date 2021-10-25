@@ -468,7 +468,6 @@ class ProjectIn(BaseModel):
     tl_id           :Optional[int]
 
 class ProjectInHiCoupling(BaseModel):
-    id          : Optional[str]
     auditPlan   : Optional[str]
     division    : Optional[str]
     div_id      :Optional[int]
