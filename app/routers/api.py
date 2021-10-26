@@ -8,7 +8,7 @@ import datetime
 import calendar
 from operator import itemgetter
 from dateutil.relativedelta import relativedelta
-from sqlalchemy.sql.expression import desc, or_
+from sqlalchemy.sql.expression import desc, except_, or_
 from fastapi.responses import FileResponse
 from fileio import fileio_module as fio
 import schemas, datetime, utils, hashing
@@ -5259,7 +5259,7 @@ def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Sess
 
     if not prj.first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
-    
+
     stored_data = jsonable_encoder(prj.first())
     stored_model = schemas.ProjectIn(**stored_data)
     
