@@ -97,22 +97,23 @@ def create_project(req: schemas.Project, db: Session = Depends(get_db)):
 
 @router.put('/{id}',  status_code=status.HTTP_202_ACCEPTED)
 def update_project(id: int, req: schemas.ProjectIn, db: Session = Depends(get_db)):
-    query_res = db.query(Project).filter(Project.id == id)
+    query_res = db.query(Project).filter(Project.id == id).first()
 
-    if not query_res.first():
+    if not query_res:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='ID not found')
 
-    stored_data = jsonable_encoder(query_res.first())
-    stored_model = schemas.ProjectIn(**stored_data)
+    query_res.name = req.name
+    query_res.used_DA = req.used_DA
+    query_res.completion_PA = req.completion_PA
+    query_res.is_carried_over = req.is_carried_over
+    query_res.timely_report = req.timely_report
+    query_res.year = req.year
+    query_res.status_id = req.status_id
+    query_res.div_id = req.div_id
+    
 
-    new_data = req.dict(exclude_unset=True)
-    updated = stored_model.copy(update=new_data)
-
-    stored_data.update(updated)
-
-    query_res.update(stored_data)
     db.commit()
-    return updated
+    return query_res
 
 @router.delete('/{id}', status_code=status.HTTP_202_ACCEPTED)
 def delete_project(id: int, db: Session = Depends(get_db)):

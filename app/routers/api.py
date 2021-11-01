@@ -5253,41 +5253,28 @@ def create_project_table_entry(req: schemas.ProjectInHiCoupling, db: Session = D
 def patch_project_table_entry(id: int,req: schemas.ProjectInHiCoupling, db: Session = Depends(get_db)):
     divs = get_divs_name_exclude_IAH(db)
 
-    prj = db.query(Project).filter(
-        Project.id == id
-    )
+    prj = db.query(Project).filter(Project.id == id).first()
 
-    if not prj.first():
+    if not prj:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='ID not found')
-
-    stored_data = jsonable_encoder(prj.first())
-    stored_model = schemas.ProjectIn(**stored_data)
     
     div_id      = divs.index(req.division)+1
     status_id   = get_project_status_id(req.status)
     # Check NIK
     emp = get_emp_by_nik(req.tl_nik, db)
 
-    dataIn = schemas.ProjectIn(
-        name            = req.auditPlan,
-        used_DA         = req.useOfDA,
-        is_carried_over = req.is_carried_over,
-        timely_report   = req.timely_report,
-        year            = req.year,
+    prj.name            = req.auditPlan,
+    prj.used_DA         = req.useOfDA,
+    prj.is_carried_over = req.is_carried_over,
+    prj.timely_report   = req.timely_report,
+    prj.year            = req.year,
 
-        status_id       = status_id,
-        div_id          = div_id,
-        tl_id           = emp.id 
-    )
+    prj.status_id       = status_id,
+    prj.div_id          = div_id,
+    prj.tl_id           = emp.id
 
-    new_data = dataIn.dict(exclude_unset=True)
-    updated = stored_model.copy(update=new_data)
-
-    stored_data.update(updated)
-
-    prj.update(stored_data)
     db.commit()
-    return updated
+    return prj
 
 #CPoint
 @router.delete('/admin/audit_project_data/table_data/{id}')
